@@ -1,4 +1,4 @@
-import { Controller, Get, Req } from '@nestjs/common';
+import { Controller, Get, Req, ServiceUnavailableException } from '@nestjs/common';
 import type { Request } from 'express';
 import { DatabaseService } from '../database/database.service';
 import { loadEnvironmentConfig } from '@bravo-ii/config';
@@ -26,5 +26,29 @@ export class HealthController {
       correlationId,
       timestamp: new Date().toISOString(),
     };
+  }
+
+  @Get(['v1/saude', 'api/v1/saude'])
+  checkSaudeP07() {
+    const config = loadEnvironmentConfig();
+    const blocked =
+      !config.allowRealPaymentGateway && !config.allowRealRefundExecution && !config.allowRealPayoutExecution;
+    return {
+      api: 'ATIVA',
+      banco: 'NAO_VERIFICADO',
+      ambiente: 'HOMOLOGACAO',
+      publicacaoExterna: false,
+      pagamentosReais: !blocked,
+    };
+  }
+
+  @Get(['v1/saude/banco', 'api/v1/saude/banco'])
+  async checkBancoP07() {
+    try {
+      await this.db.query('SELECT 1');
+      return { banco: 'CONECTADO' };
+    } catch {
+      throw new ServiceUnavailableException({ banco: 'INDISPONIVEL' });
+    }
   }
 }

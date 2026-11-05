@@ -9,7 +9,8 @@ import {
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
 import { DatabaseService } from '../database/database.service';
-import { hashSessionToken } from './crypto.util';
+import { compareSecret, csrfForToken, hashSessionToken } from './crypto.util';
+import { assertCookieToken, isMutating, originAllowed } from '@bravo-ii/core-policy';
 import type { AuthenticatedActorDto, PermissionCode, RoleCode } from '@bravo-ii/contracts';
 import { AuditService } from '../../modules/governance/audit.service';
 import { ensureCorrelationId } from '@bravo-ii/telemetry';
@@ -21,6 +22,7 @@ export const RequirePermission = (permission: PermissionCode) =>
 
 export interface AuthenticatedRequest extends Request {
   actor?: AuthenticatedActorDto;
+  sessionToken?: string;
 }
 
 @Injectable()
@@ -35,20 +37,52 @@ export class AuthGuard implements CanActivate {
     const req = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const correlationId = ensureCorrelationId(req.headers['x-correlation-id']);
 
+    // Validação de Origin quando o cabeçalho Origin é enviado ou APP_ORIGIN está configurado em sessão por Cookie
+    const originHeader = typeof req.headers['origin'] === 'string' ? req.headers['origin'] : undefined;
+    const configuredOrigin = process.env.APP_ORIGIN;
+    if (isMutating(req.method) && originHeader && configuredOrigin && !originAllowed(originHeader, configuredOrigin)) {
+      throw new ForbiddenException({
+        code: 'INVALID_ORIGIN',
+        message: 'Origem não autorizada para mutação.',
+      });
+    }
+
     const authHeader = req.headers['authorization'];
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const cookieHeader = typeof req.headers['cookie'] === 'string' ? req.headers['cookie'] : undefined;
+    const cookieToken = assertCookieToken(cookieHeader);
+
+    let rawToken = '';
+    let usingCookieAuth = false;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      rawToken = authHeader.slice('Bearer '.length).trim();
+    } else if (cookieToken) {
+      rawToken = cookieToken;
+      usingCookieAuth = true;
+    }
+
+    if (!rawToken) {
       throw new UnauthorizedException({
         code: 'AUTH_TOKEN_REQUIRED',
         message: 'Sessão não autenticada. Faça login para acessar este recurso.',
       });
     }
 
-    const rawToken = authHeader.slice('Bearer '.length).trim();
-    if (!rawToken) {
-      throw new UnauthorizedException({
-        code: 'AUTH_TOKEN_INVALID',
-        message: 'Token de sessão inválido.',
-      });
+    // Quando autenticado via cookie HttpOnly (bravo_session), exige Origin válido (se APP_ORIGIN configurado) e X-CSRF-Token em métodos mutáveis
+    if (usingCookieAuth && isMutating(req.method)) {
+      if (configuredOrigin && !originAllowed(originHeader, configuredOrigin)) {
+        throw new ForbiddenException({
+          code: 'INVALID_ORIGIN',
+          message: 'Origem não autorizada.',
+        });
+      }
+      const providedCsrf = typeof req.headers['x-csrf-token'] === 'string' ? req.headers['x-csrf-token'] : '';
+      if (!compareSecret(providedCsrf, csrfForToken(rawToken))) {
+        throw new ForbiddenException({
+          code: 'INVALID_CSRF_TOKEN',
+          message: 'Token CSRF inválido ou ausente.',
+        });
+      }
     }
 
     const tokenHash = hashSessionToken(rawToken);
@@ -85,7 +119,7 @@ export class AuthGuard implements CanActivate {
     const sessionRow = sessionRes.rows[0];
     const now = new Date();
     const expiresAt = new Date(sessionRow.expires_at);
-    if (sessionRow.revoked_at !== null || expiresAt <= now || sessionRow.status !== 'ACTIVE') {
+    if (sessionRow.revoked_at !== null || expiresAt <= now || !['ACTIVE', 'ATIVO'].includes(sessionRow.status)) {
       throw new UnauthorizedException({
         code: 'AUTH_SESSION_EXPIRED',
         message: 'Sua sessão expirou ou foi revogada. Autentique-se novamente.',
@@ -129,6 +163,7 @@ export class AuthGuard implements CanActivate {
     };
 
     req.actor = actor;
+    req.sessionToken = rawToken;
 
     const requiredPermission =
       this.reflector.get<PermissionCode | undefined>(REQUIRED_PERMISSION_KEY, context.getHandler()) ??

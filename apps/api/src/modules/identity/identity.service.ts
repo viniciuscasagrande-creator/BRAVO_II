@@ -1,12 +1,14 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
 import { DatabaseService } from '../../common/database/database.service';
 import {
-  generateSessionToken,
+  csrfForToken,
+  generateCookieSessionToken,
   hashPassword,
   verifyPassword,
 } from '../../common/auth/crypto.util';
@@ -21,6 +23,7 @@ import {
   type PermissionCode,
   type RoleCode,
 } from '@bravo-ii/contracts';
+import { isLoginLocked, menuForRoles, nextFailedLogin } from '@bravo-ii/core-policy';
 import { AuditService } from '../governance/audit.service';
 
 @Injectable()
@@ -76,12 +79,14 @@ export class IdentityService {
 
     const passwordHash = hashPassword(params.plainPassword);
     await this.db.query(
-      `INSERT INTO users (id, email, full_name, password_hash, status)
-       VALUES ($1, $2, $3, $4, 'ACTIVE')
+      `INSERT INTO users (id, email, full_name, password_hash, status, failed_logins, locked_until)
+       VALUES ($1, $2, $3, $4, 'ACTIVE', 0, NULL)
        ON CONFLICT (email) DO UPDATE SET
          full_name = EXCLUDED.full_name,
          password_hash = EXCLUDED.password_hash,
-         status = 'ACTIVE'`,
+         status = 'ACTIVE',
+         failed_logins = 0,
+         locked_until = NULL`,
       [params.id, params.email.toLowerCase(), params.fullName, passwordHash]
     );
 
@@ -124,7 +129,13 @@ export class IdentityService {
     rawPayload: unknown,
     correlationId: string,
     ipAddress?: string
-  ): Promise<{ token: string; actor: AuthenticatedActorDto }> {
+  ): Promise<{
+    token: string;
+    csrfToken: string;
+    expiresAt: string;
+    actor: AuthenticatedActorDto;
+    user: { id: string; email: string; roles: RoleCode[]; forcePasswordChange: boolean };
+  }> {
     const parsed = LoginRequestSchema.safeParse(rawPayload);
     if (!parsed.success) {
       throw new BadRequestException({
@@ -141,7 +152,17 @@ export class IdentityService {
       full_name: string;
       password_hash: string;
       status: string;
-    }>('SELECT id, email, full_name, password_hash, status FROM users WHERE email = $1', [email]);
+      failed_logins: number;
+      locked_until: string | Date | null;
+      force_password_change: boolean;
+    }>(
+      `SELECT id, email, full_name, password_hash, status,
+              COALESCE(failed_logins, 0) AS failed_logins,
+              locked_until,
+              COALESCE(force_password_change, FALSE) AS force_password_change
+       FROM users WHERE email = $1`,
+      [email]
+    );
 
     if (userRes.rows.length === 0) {
       await this.auditService.record({
@@ -161,7 +182,22 @@ export class IdentityService {
     }
 
     const user = userRes.rows[0];
-    if (user.status !== 'ACTIVE' || !verifyPassword(parsed.data.password, user.password_hash)) {
+    const now = new Date();
+    const lockedUntilDate = user.locked_until ? new Date(user.locked_until) : null;
+    if (isLoginLocked(lockedUntilDate, now)) {
+      throw new ForbiddenException({
+        code: 'ACCOUNT_LOCKED',
+        message: 'Conta bloqueada temporariamente por excesso de tentativas; aguarde 30 minutos ou solicite liberação ao administrador.',
+      });
+    }
+
+    if (!['ACTIVE', 'ATIVO'].includes(user.status) || !verifyPassword(parsed.data.password, user.password_hash)) {
+      const next = nextFailedLogin(Number(user.failed_logins ?? 0), lockedUntilDate, now);
+      await this.db.query(
+        `UPDATE users SET failed_logins = $1, locked_until = $2 WHERE id = $3`,
+        [next.failedLogins, next.lockedUntil ? next.lockedUntil.toISOString() : null, user.id]
+      );
+
       await this.auditService.record({
         actorUserId: user.id,
         actorRole: 'ANONYMOUS',
@@ -169,7 +205,7 @@ export class IdentityService {
         resourceType: 'User',
         resourceId: user.id,
         outcome: 'DENIED',
-        justification: 'Tentativa de autenticação com senha inválida ou conta inativa.',
+        justification: `Tentativa de autenticação inválida (tentativa ${next.failedLogins}/5).`,
         correlationId,
       });
       throw new UnauthorizedException({
@@ -178,9 +214,14 @@ export class IdentityService {
       });
     }
 
-    const { rawToken, tokenHash } = generateSessionToken();
+    const { rawToken, tokenHash } = generateCookieSessionToken();
     const sessionId = randomUUID();
-    const expiresAt = new Date(Date.now() + 12 * 60 * 60 * 1000).toISOString();
+    const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString();
+
+    await this.db.query(
+      `UPDATE users SET failed_logins = 0, locked_until = NULL WHERE id = $1`,
+      [user.id]
+    );
 
     await this.db.query(
       `INSERT INTO auth_sessions (id, user_id, token_hash, ip_address, expires_at)
@@ -236,7 +277,19 @@ export class IdentityService {
       correlationId,
     });
 
-    return { token: rawToken, actor };
+    const csrfToken = csrfForToken(rawToken);
+    return {
+      token: rawToken,
+      csrfToken,
+      expiresAt,
+      actor,
+      user: {
+        id: user.id,
+        email: user.email,
+        roles,
+        forcePasswordChange: Boolean(user.force_password_change),
+      },
+    };
   }
 
   async logout(actor: AuthenticatedActorDto, correlationId: string): Promise<void> {
@@ -255,6 +308,14 @@ export class IdentityService {
 
   getNavigationForActor(actor: AuthenticatedActorDto): NavigationMenuItem[] {
     return filterNavigationByPermissions(actor.permissions);
+  }
+
+  getP07MenuForActor(actor: AuthenticatedActorDto) {
+    return {
+      items: menuForRoles(actor.roles),
+      canonicalItems: filterNavigationByPermissions(actor.permissions),
+      version: '07-homologacao',
+    };
   }
 
   async getOperationalOverview(actor: AuthenticatedActorDto): Promise<OperationalOverviewDto> {

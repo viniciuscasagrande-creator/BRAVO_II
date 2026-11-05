@@ -1,5 +1,4 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-
+/** Chamadas same-origin (/v1/*), sessão em cookie HttpOnly (bravo_session) ou Bearer e X-CSRF-Token em métodos mutáveis. */
 export class ApiFailure extends Error {
   constructor(
     public status: number,
@@ -11,35 +10,78 @@ export class ApiFailure extends Error {
   }
 }
 
-export async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const cleanPath = path.replace(/^\/+/, '');
+export type SignedInUser = {
+  id: string;
+  email: string;
+  roles: string[];
+  forcePasswordChange: boolean;
+};
+
+export type SessionInfo = {
+  user: SignedInUser;
+  csrfToken: string;
+};
+
+export type MenuItem = {
+  id: string;
+  label: string;
+  href: string;
+  status: 'ATIVO' | 'EM_IMPLANTACAO';
+  group: string;
+};
+
+async function parseError(res: Response): Promise<never> {
+  const body = await res.json().catch(() => ({}));
+  const message =
+    typeof body?.message === 'string'
+      ? body.message
+      : typeof body?.error?.message === 'string'
+        ? body.error.message
+        : `Falha HTTP ${res.status}`;
+  throw new ApiFailure(res.status, body?.error?.code || body?.code || 'API', message);
+}
+
+export async function currentSession(): Promise<SessionInfo> {
   const token =
     typeof window !== 'undefined' ? window.localStorage.getItem('bravo_ii_session_token') : null;
-
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...((options.headers as Record<string, string>) ?? {}),
-  };
+  const headers: Record<string, string> = {};
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-
-  const res = await fetch(`${API_BASE}/api/v1/p06/${cleanPath}`, {
-    credentials: 'include',
+  const response = await fetch('/v1/auth/me', {
+    credentials: 'same-origin',
     cache: 'no-store',
-    ...options,
     headers,
   });
+  if (!response.ok) return parseError(response);
+  return response.json() as Promise<SessionInfo>;
+}
 
-  if (!res.ok) {
-    const detail = await res.json().catch(() => ({}));
-    throw new ApiFailure(
-      res.status,
-      detail?.error?.code || detail?.code || 'API',
-      detail?.error?.message || detail?.message || `Falha HTTP ${res.status}`
-    );
+export async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const method = (options.method || 'GET').toUpperCase();
+  const mutating = !['GET', 'HEAD', 'OPTIONS'].includes(method);
+  const headers = new Headers(options.headers);
+  const token =
+    typeof window !== 'undefined' ? window.localStorage.getItem('bravo_ii_session_token') : null;
+  if (token) {
+    headers.set('Authorization', `Bearer ${token}`);
   }
-  return (await res.json()) as T;
+  if (mutating) {
+    const session = await currentSession().catch(() => ({ csrfToken: '' }));
+    if (session.csrfToken) {
+      headers.set('X-CSRF-Token', session.csrfToken);
+    }
+    headers.set('Content-Type', 'application/json');
+  }
+  const res = await fetch(`/v1/${path.replace(/^\/+/, '')}`, {
+    ...options,
+    method,
+    credentials: 'same-origin',
+    cache: 'no-store',
+    headers,
+  });
+  if (!res.ok) return parseError(res);
+  return res.json() as Promise<T>;
 }
 
 export const get = <T>(path: string) => request<T>(path);

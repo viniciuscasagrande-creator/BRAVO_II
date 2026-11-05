@@ -3,16 +3,23 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './bootstrap/app.module';
 import { ApiExceptionFilter } from './common/errors/api-exception.filter';
 import { loadEnvironmentConfig } from '@bravo-ii/config';
+import { validateHomologationEnv } from '@bravo-ii/core-policy';
 import { StructuredLogger } from '@bravo-ii/telemetry';
 import { IdentityService } from './modules/identity/identity.service';
 
 async function bootstrap() {
+  if (process.env.BRAVO_ENV === 'HOMOLOGACAO') {
+    const homologationErrors = validateHomologationEnv(process.env);
+    if (homologationErrors.length > 0) {
+      throw new Error(`Homologação bloqueada por configuração insegura: ${homologationErrors.join('; ')}`);
+    }
+  }
   const config = loadEnvironmentConfig();
   const logger = new StructuredLogger('bravo-ii-api');
 
   const app = await NestFactory.create(AppModule, { logger: false });
   app.enableCors({
-    origin: true,
+    origin: process.env.APP_ORIGIN || true,
     credentials: true,
   });
   app.useGlobalFilters(new ApiExceptionFilter());

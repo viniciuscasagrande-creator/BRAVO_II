@@ -8,14 +8,22 @@
     "node": ">=20.0.0"
   },
   "scripts": {
+    "build:packages": "pnpm -r --filter ./packages/* build",
+    "build:api": "pnpm --filter @bravo-ii/api build",
+    "build:web": "pnpm --filter @bravo-ii/backoffice build",
     "build": "pnpm -r --filter ./packages/* build && pnpm -r --filter ./apps/* build",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
-    "test": "pnpm --filter @bravo-ii/domain-p06 test && pnpm --filter @bravo-ii/contracts test && pnpm --filter @bravo-ii/api test",
+    "test": "pnpm --filter @bravo-ii/core-policy test && pnpm --filter @bravo-ii/domain-p06 test && node --test tests/*.test.mjs && pnpm --filter @bravo-ii/contracts test && pnpm --filter @bravo-ii/api test",
     "test:e2e": "pnpm --filter @bravo-ii/api test:e2e",
+    "test:smoke": "node scripts/smoke.mjs",
+    "doctor": "node scripts/doctor.mjs",
+    "doctor:ready": "node scripts/doctor.mjs --stage=ready",
+    "bootstrap:admin": "node scripts/bootstrap-admin.mjs",
     "db:migrate": "pnpm --filter @bravo-ii/api db:migrate",
     "db:seed:technical": "pnpm --filter @bravo-ii/api db:seed:technical",
     "dev:api": "pnpm --filter @bravo-ii/api dev",
+    "dev:web": "pnpm --filter @bravo-ii/backoffice dev",
     "dev:backoffice": "pnpm --filter @bravo-ii/backoffice dev"
   },
   "devDependencies": {

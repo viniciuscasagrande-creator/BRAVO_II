@@ -16,6 +16,7 @@
   "dependencies": {
     "@bravo-ii/config": "workspace:*",
     "@bravo-ii/contracts": "workspace:*",
+    "@bravo-ii/core-policy": "workspace:*",
     "@bravo-ii/domain-p06": "workspace:*",
     "@bravo-ii/telemetry": "workspace:*",
     "@electric-sql/pglite": "^0.2.15",

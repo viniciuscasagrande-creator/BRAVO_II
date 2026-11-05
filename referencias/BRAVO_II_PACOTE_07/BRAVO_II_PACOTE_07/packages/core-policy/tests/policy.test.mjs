@@ -1,0 +1,10 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {menuForRoles,isPermittedNav,originAllowed,isMutating,assertCookieToken} from '../dist/index.js';
+test('Produtor não recebe menu interno do ERP',()=>assert.deepEqual(menuForRoles(['PRODUTOR']),[]));
+test('RH não recebe menu do Financeiro nem Taxa Disk',()=>{let ids=menuForRoles(['RH']).map(x=>x.id);assert(ids.includes('rh'));assert(!ids.includes('financeiro'));assert(!ids.includes('taxas'));});
+test('Financeiro vê referência própria mas não habilita 104 rotas incompletas',()=>{const menu=menuForRoles(['FINANCEIRO_DISK']);assert.equal(menu.find(x=>x.id==='financeiro').status,'EM_IMPLANTACAO');assert(!isPermittedNav(['FINANCEIRO_DISK'],'/financeiro'));});
+test('Comercial pode abrir produtores e não pode acessar RH',()=>{assert(isPermittedNav(['COMERCIAL'],'/comercial/produtores'));assert(!isPermittedNav(['COMERCIAL'],'/rh'));});
+test('Bloqueia origem parecida e ausente',()=>{assert(originAllowed('https://preview.diskingressos.com.br','https://preview.diskingressos.com.br'));assert(!originAllowed('https://preview.diskingressos.com.br.atacante.net','https://preview.diskingressos.com.br'));assert(!originAllowed(undefined,'https://preview.diskingressos.com.br'));});
+test('GET e HEAD são seguros e POST/PATCH exigem CSRF',()=>{assert(!isMutating('GET'));assert(!isMutating('HEAD'));assert(isMutating('POST'));assert(isMutating('DELETE'));});
+test('Cookie de sessão rejeita tokens malformados e duplicados',()=>{const good='A'.repeat(43);assert.equal(assertCookieToken('x=1; bravo_session='+good),good);assert.equal(assertCookieToken('bravo_session='+good+'; bravo_session='+good),undefined);assert.equal(assertCookieToken('bravo_session=bad; x=1'),undefined);});

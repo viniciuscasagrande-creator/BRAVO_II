@@ -1,0 +1,37 @@
+{
+  "name": "bravo-ii-homologacao",
+  "private": true,
+  "version": "0.7.0",
+  "type": "module",
+  "workspaces": [
+    "apps/api",
+    "apps/backoffice",
+    "packages/domain-p06",
+    "packages/core-policy"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "db:generate": "prisma generate --schema prisma/schema.prisma",
+    "db:migrate:dev": "prisma migrate dev --schema prisma/schema.prisma",
+    "db:migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
+    "db:validate": "prisma validate --schema prisma/schema.prisma",
+    "build:packages": "npm run build -w @bravo-ii/domain-p06 && npm run build -w @bravo-ii/core-policy",
+    "build:api": "npm run build -w @bravo-ii/api",
+    "build:web": "npm run build -w @bravo-ii/backoffice",
+    "build": "npm run build:packages && npm run db:generate && npm run build:api && npm run build:web",
+    "dev:api": "npm run dev -w @bravo-ii/api",
+    "dev:web": "npm run dev -w @bravo-ii/backoffice",
+    "test:offline": "bash scripts/test-offline.sh",
+    "test:smoke": "node scripts/smoke.mjs",
+    "bootstrap:admin": "node scripts/bootstrap-admin.mjs",
+    "doctor": "node scripts/doctor.mjs",
+    "doctor:ready": "node scripts/doctor.mjs --stage=ready"
+  },
+  "devDependencies": {
+    "prisma": "6.16.2",
+    "typescript": "5.9.3",
+    "@types/node": "22.18.6"
+  }
+}
