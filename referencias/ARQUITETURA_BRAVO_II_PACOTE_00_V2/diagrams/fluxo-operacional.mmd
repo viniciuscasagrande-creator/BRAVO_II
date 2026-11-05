@@ -1,0 +1,23 @@
+flowchart LR
+  PJ[Produtor PJ cadastrado] --> PRO[Proposta do Evento]
+  PRO --> TAX[Taxa Disk por evento negociada]
+  TAX --> APR[Aprovação comercial e operacional]
+  APR --> PUB[Publicação site e PDVs]
+  PUB --> INV[Reserva de estoque]
+  INV --> ORD[Pedido cliente PF]
+  ORD --> PAY[Pagamento confirmado]
+  PAY --> TKT[Ingresso 8 dígitos + QR seguro]
+  TKT --> EMAIL[Entrega e-mail]
+  TKT --> PORT[Portaria / Check-in]
+  PAY --> LED[Ledger Financeiro]
+  LED --> SET[Conciliação recebimentos]
+  SET --> PAYOUT[Repasse elegível e aprovado]
+  TKT --> SAC[Atendimento SAC]
+  SAC --> CHANGE[Troca ou cancelamento]
+  SAC --> RFD[Solicitação de estorno]
+  RFD --> FIN[Autorização Financeiro]
+  FIN --> GATE[Provedor de pagamento]
+  GATE --> CONF[Confirmação e conciliação]
+  CONF --> LED
+  APR --> PDT[PDT: somente seus eventos]
+  PDT --> PAYOUT

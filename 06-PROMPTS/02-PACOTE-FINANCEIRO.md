@@ -1,0 +1,7 @@
+# PROMPT — PACOTE 02: FINANCEIRO DISK INTEGRAL
+
+No BRAVO_II existente, leia `02-FINANCEIRO/MAPA-104-FUNCOES.md`, `02-FINANCEIRO/PACOTE-02-ESCOPO-IMPLEMENTACAO.md`, `00-INVENTARIO/catalogo-completo-financeiro-rh.json` e os arquivos da cópia de referência. Integre TODAS as 104 funções financeiras, mantendo cada ID original como `legacyViewId` no registro de migração e preservando o histórico dos requisitos do backup.
+
+Atribua cada função a módulo NestJS/NextJS com página, tabela/consulta real, formulários/ações apropriados, DTO, validações, endpoint, permission guard, teste de integração e auditoria. Não deixar ações falsas, tabelas seed ou botões sem efeito; estados sem dados devem indicar ausência de registros reais. Primeiro migre o domínio finance.ledger, depois recebíveis, política de taxas por evento, gateways/MDR, fluxo repasses/antecipações, tesouraria, conciliação, estorno/chargeback, fechamentos, controladoria, fornecedores, assinaturas, relatórios e governança. Espalhe o trabalho em PRs pequenos, mas NÃO elimine as funções restantes.
+
+É proibido operacionalizar gateways bancários sem credenciais sandbox, confirmação de permissão e aprovação de risco. Repasses e estornos não viram `PAGO/CONCLUIDO` ao clicar aprovar. Recebimentos e obrigações são distintos. A taxa Disk fica no contrato do evento, não no cadastro geral do produtor. Gere relatório 104/104 com status real e pendências.

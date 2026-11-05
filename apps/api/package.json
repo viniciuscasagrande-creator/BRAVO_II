@@ -1,0 +1,36 @@
+{
+  "name": "@bravo-ii/api",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "dev": "pnpm build && node dist/main.js",
+    "db:migrate": "pnpm build && node dist/scripts/run-migrations.js",
+    "db:seed:technical": "pnpm build && node dist/scripts/run-technical-seed.js",
+    "test": "pnpm build && node --test dist/**/*.unit.spec.js",
+    "test:e2e": "pnpm build && node --test dist/**/*.e2e.spec.js"
+  },
+  "dependencies": {
+    "@bravo-ii/config": "workspace:*",
+    "@bravo-ii/contracts": "workspace:*",
+    "@bravo-ii/domain-p06": "workspace:*",
+    "@bravo-ii/telemetry": "workspace:*",
+    "@electric-sql/pglite": "^0.2.15",
+    "@nestjs/common": "^10.4.15",
+    "@nestjs/core": "^10.4.15",
+    "@nestjs/platform-express": "^10.4.15",
+    "pg": "^8.13.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@bravo-ii/testing": "workspace:*",
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.2",
+    "@types/pg": "^8.11.10",
+    "typescript": "^5.7.2"
+  }
+}

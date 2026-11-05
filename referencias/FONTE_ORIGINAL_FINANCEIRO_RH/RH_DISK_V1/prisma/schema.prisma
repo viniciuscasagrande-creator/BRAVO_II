@@ -1,0 +1,529 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ----------------------------------------------------------------------------
+// ENUMS DO ECOSSISTEMA RH DISK (FASES 1 A 10)
+// ----------------------------------------------------------------------------
+
+enum Perfil {
+  ADMINISTRADOR
+  RH
+  GESTOR
+  COLABORADOR
+}
+
+enum TipoBatida {
+  ENTRADA
+  INICIO_INTERVALO
+  FIM_INTERVALO
+  SAIDA
+}
+
+enum StatusBatida {
+  VALIDADA
+  FORA_DA_AREA
+  PENDENTE_ANALISE
+  OFFLINE_SINCRONIZADA
+}
+
+enum StatusAjuste {
+  PENDENTE
+  APROVADO
+  REPROVADO
+}
+
+enum StatusFechamento {
+  ABERTO
+  EM_ANALISE
+  FECHADO
+  REABERTO
+}
+
+enum StatusDispositivo {
+  PENDENTE
+  AUTORIZADO
+  BLOQUEADO
+}
+
+enum StatusFerias {
+  SOLICITADA
+  APROVADA_GESTOR
+  HOMOLOGADA_RH
+  EM_GOZO
+  CONCLUIDA
+  CANCELADA
+}
+
+enum StatusAusencia {
+  PENDENTE
+  HOMOLOGADA
+  RECUSADA
+}
+
+enum TipoAusencia {
+  ATESTADO_MEDICO
+  LICENCA_MATERNIDADE
+  LICENCA_PATERNIDADE
+  LUTO_NOJO
+  CASAMENTO_GALA
+  DOACAO_SANGUE
+  CONVOCACAO_JUDICIAL
+  FOLGA_BANCO
+  OUTROS
+}
+
+enum StatusAdmissao {
+  INICIADA
+  DOCUMENTOS_ENVIADOS
+  EM_ANALISE
+  APROVADA
+  CONTRATADO
+  CANCELADA
+}
+
+enum TipoDocumento {
+  CONTRATO_TRABALHO
+  TERMO_CONFIDENCIALIDADE
+  TERMO_EQUIPAMENTO
+  ASO_ADMISSIONAL
+  ASO_PERIODICO
+  RG_CPF
+  COMPROVANTE_RESIDENCIA
+  CERTIDAO
+  OUTROS
+}
+
+enum StatusDocumento {
+  PENDENTE_ASSINATURA
+  ASSINADO
+  VALIDO
+  VENCIDO
+  REJEITADO
+}
+
+enum TipoBeneficio {
+  VALE_TRANSPORTE
+  VALE_REFEICAO
+  VALE_ALIMENTACAO
+  PLANO_SAUDE
+  PLANO_ODONTO
+  SEGURO_VIDA
+  CONVENIO_FARMACIA
+}
+
+enum StatusBeneficio {
+  ATIVO
+  SUSPENSO
+  CANCELADO
+}
+
+enum StatusFolha {
+  PREVIA
+  FECHADA
+  ENVIADA_TESOURARIA
+  PAGA
+}
+
+enum FuncaoStaffEvento {
+  COORDENADOR_BILHETERIA
+  OPERADOR_CAIXA
+  CONTROLADOR_ACESSO
+  SUPERVISOR_BAR
+  SUPORTE_TI
+  BRIGADISTA
+}
+
+enum StatusDiaria {
+  ESCALADO
+  PRESENTE_VALIDADO
+  APROVADO_PAGAMENTO
+  PAGO_PIX
+  FALTOU
+}
+
+enum TipoEventoESocial {
+  S_1000
+  S_2200
+  S_2206
+  S_2299
+  S_1200
+  S_1210
+}
+
+enum StatusESocial {
+  GERADO
+  VALIDADO
+  TRANSMITIDO
+  REJEITADO
+}
+
+// ----------------------------------------------------------------------------
+// MODELOS: IDENTIDADE, ACESSO & COLABORADOR (FASES 1, 2, 3, 4)
+// ----------------------------------------------------------------------------
+
+model Usuario {
+  id          String       @id @default(cuid())
+  email       String       @unique
+  senhaHash   String
+  perfil      Perfil
+  colaborador Colaborador?
+  criadoEm    DateTime     @default(now())
+}
+
+model Colaborador {
+  id                  String                 @id @default(cuid())
+  usuarioId           String?                @unique
+  usuario             Usuario?               @relation(fields: [usuarioId], references: [id])
+  nome                String
+  cpf                 String                 @unique
+  matricula           String                 @unique
+  cargo               String
+  departamento        String
+  gestorId            String?
+  centroCusto         String?
+  cargaHorariaSemanal Int                    @default(44)
+  tipoContrato        String                 @default("CLT")
+  dataAdmissao        DateTime               @default(now())
+  salarioBase         Float                  @default(0.0)
+  chavePix            String?
+  tipoChavePix        String?
+  ativo               Boolean                @default(true)
+  escalas             Escala[]
+  batidas             BatidaPonto[]
+  ajustes             AjustePonto[]
+  saldos              BancoHoras[]
+  dispositivos        Dispositivo[]
+  ferias              Ferias[]
+  atestados           AtestadoMedico[]
+  ausencias           AusenciaLegal[]
+  documentos          DocumentoGED[]
+  beneficios          BeneficioColaborador[]
+  holerites           Holerite[]
+  diariasEvento       DiariaStaffEvento[]
+  criadoEm            DateTime               @default(now())
+}
+
+model LocalPonto {
+  id         String   @id @default(cuid())
+  nome       String
+  endereco   String?
+  latitude   Float
+  longitude  Float
+  raioMetros Int      @default(150)
+  ativo      Boolean  @default(true)
+  escalas    Escala[]
+}
+
+model Jornada {
+  id                String   @id @default(cuid())
+  nome              String
+  entrada           String
+  inicioIntervalo   String?
+  fimIntervalo      String?
+  saida             String
+  toleranciaMinutos Int      @default(5)
+  cargaMinutos      Int      @default(480)
+  escalas           Escala[]
+}
+
+model Escala {
+  id            String      @id @default(cuid())
+  colaboradorId String
+  colaborador   Colaborador @relation(fields: [colaboradorId], references: [id])
+  jornadaId     String
+  jornada       Jornada     @relation(fields: [jornadaId], references: [id])
+  localId       String
+  local         LocalPonto  @relation(fields: [localId], references: [id])
+  data          DateTime
+  eventoId      String?
+  eventoNome    String?
+  observacao    String?
+
+  @@unique([colaboradorId, data])
+}
+
+model BatidaPonto {
+  id                   String       @id @default(cuid())
+  colaboradorId        String
+  colaborador          Colaborador  @relation(fields: [colaboradorId], references: [id])
+  tipo                 TipoBatida
+  status               StatusBatida
+  instanteServidor     DateTime     @default(now())
+  instanteDispositivo  DateTime?
+  latitude             Float
+  longitude            Float
+  precisaoMetros       Float?
+  distanciaLocalMetros Float?
+  localId              String?
+  eventoId             String?
+  offline              Boolean      @default(false)
+  dispositivoId        String?
+  mockLocationSuspeita Boolean      @default(false)
+  nsr                  Int?
+  comprovanteNsr       String?
+  hashIntegridade      String?
+  criadoEm             DateTime     @default(now())
+}
+
+model AjustePonto {
+  id            String       @id @default(cuid())
+  colaboradorId String
+  colaborador   Colaborador  @relation(fields: [colaboradorId], references: [id])
+  batidaId      String?
+  justificativa String
+  status        StatusAjuste @default(PENDENTE)
+  solicitadoEm  DateTime     @default(now())
+  analisadoEm   DateTime?
+  analisadoPor  String?
+}
+
+model BancoHoras {
+  id            String      @id @default(cuid())
+  colaboradorId String
+  colaborador   Colaborador @relation(fields: [colaboradorId], references: [id])
+  competencia   String      // YYYY-MM
+  minutosSaldo  Int         @default(0)
+  minutosExtras Int         @default(0)
+  minutosDebito Int         @default(0)
+  atualizadoEm  DateTime    @updatedAt
+
+  @@unique([colaboradorId, competencia])
+}
+
+model FechamentoPonto {
+  id          String           @id @default(cuid())
+  competencia String           @unique // YYYY-MM
+  status      StatusFechamento @default(ABERTO)
+  fechadoEm   DateTime?
+  fechadoPor  String?
+  observacao  String?
+  criadoEm    DateTime         @default(now())
+}
+
+model Dispositivo {
+  id            String            @id @default(cuid())
+  colaboradorId String
+  colaborador   Colaborador       @relation(fields: [colaboradorId], references: [id])
+  identificador String            @unique
+  nome          String?
+  plataforma    String?
+  status        StatusDispositivo @default(PENDENTE)
+  ultimoAcesso  DateTime?
+  criadoEm      DateTime          @default(now())
+}
+
+// ----------------------------------------------------------------------------
+// MODELOS FASE 5: FÉRIAS, ATESTADOS E AUSÊNCIAS LEGAIS
+// ----------------------------------------------------------------------------
+
+model Ferias {
+  id                      String       @id @default(cuid())
+  colaboradorId           String
+  colaborador             Colaborador  @relation(fields: [colaboradorId], references: [id])
+  periodoAquisitivoInicio DateTime
+  periodoAquisitivoFim    DateTime
+  dataInicio              DateTime
+  dataFim                 DateTime
+  diasGozados             Int
+  abonoPecuniarioDias     Int          @default(0)
+  adiantamento13          Boolean      @default(false)
+  status                  StatusFerias @default(SOLICITADA)
+  solicitadoEm            DateTime     @default(now())
+  homologadoEm            DateTime?
+  homologadoPor           String?
+}
+
+model AtestadoMedico {
+  id               String         @id @default(cuid())
+  colaboradorId    String
+  colaborador      Colaborador    @relation(fields: [colaboradorId], references: [id])
+  dataEmissao      DateTime
+  diasAfastamento  Int
+  dataRetorno      DateTime
+  cid10            String?
+  nomeMedico       String
+  crmMedico        String
+  ufCrm            String
+  comprovanteUrl   String?
+  status           StatusAusencia @default(PENDENTE)
+  abonarHorasPonto Boolean        @default(true)
+  solicitadoEm     DateTime       @default(now())
+  analisadoPor     String?
+}
+
+model AusenciaLegal {
+  id             String         @id @default(cuid())
+  colaboradorId  String
+  colaborador    Colaborador    @relation(fields: [colaboradorId], references: [id])
+  tipo           TipoAusencia
+  dataInicio     DateTime
+  dataFim        DateTime
+  dias           Int
+  motivo         String
+  comprovanteUrl String?
+  status         StatusAusencia @default(PENDENTE)
+  criadoEm       DateTime       @default(now())
+}
+
+// ----------------------------------------------------------------------------
+// MODELOS FASE 6: ADMISSÃO, ONBOARDING & GED
+// ----------------------------------------------------------------------------
+
+model ProcessoAdmissao {
+  id                  String         @id @default(cuid())
+  candidatoNome       String
+  cpf                 String         @unique
+  email               String
+  telefone            String
+  cargoPretendido     String
+  departamento        String
+  salarioProposto     Float
+  dataPrevisaoInicio  DateTime
+  status              StatusAdmissao @default(INICIADA)
+  checklistDocumentos Json?
+  matriculaGerada     String?
+  iniciadoEm          DateTime       @default(now())
+  concluidoEm         DateTime?
+}
+
+model DocumentoGED {
+  id               String          @id @default(cuid())
+  colaboradorId    String
+  colaborador      Colaborador     @relation(fields: [colaboradorId], references: [id])
+  tipo             TipoDocumento
+  titulo           String
+  arquivoUrl       String
+  hashSHA256       String
+  status           StatusDocumento @default(VALIDO)
+  requerAssinatura Boolean         @default(false)
+  assinadoEm       DateTime?
+  ipAssinatura     String?
+  dataUpload       DateTime        @default(now())
+  dataVencimento   DateTime?
+}
+
+// ----------------------------------------------------------------------------
+// MODELOS FASE 7: BENEFÍCIOS CORPORATIVOS
+// ----------------------------------------------------------------------------
+
+model BeneficioColaborador {
+  id              String          @id @default(cuid())
+  colaboradorId   String
+  colaborador     Colaborador     @relation(fields: [colaboradorId], references: [id])
+  tipo            TipoBeneficio
+  operadora       String
+  valorMensal     Float
+  descontoEmFolha Float
+  status          StatusBeneficio @default(ATIVO)
+  cartaoNumero    String?
+  iniciadoEm      DateTime        @default(now())
+}
+
+model PedidoBeneficio {
+  id                 String        @id @default(cuid())
+  competencia        String        // YYYY-MM
+  tipo               TipoBeneficio
+  totalColaboradores Int
+  valorTotalRecarga  Float
+  descontoTotalFolha Float
+  status             String        @default("COTACAO")
+  dataPedido         DateTime      @default(now())
+}
+
+// ----------------------------------------------------------------------------
+// MODELOS FASE 8: FOLHA DE PAGAMENTO & CNAB / PIX LOTE
+// ----------------------------------------------------------------------------
+
+model FolhaPagamento {
+  id                   String      @id @default(cuid())
+  competencia          String      @unique // YYYY-MM
+  status               StatusFolha @default(PREVIA)
+  totalColaboradores   Int
+  totalProventos       Float
+  totalDescontos       Float
+  totalLiquido         Float
+  totalEncargosEmpresa Float
+  fechadaEm            DateTime?
+  fechadaPor           String?
+  lotePixId            String?
+  holerites            Holerite[]
+  criadoEm             DateTime    @default(now())
+}
+
+model Holerite {
+  id               String         @id @default(cuid())
+  folhaId          String
+  folha            FolhaPagamento @relation(fields: [folhaId], references: [id])
+  colaboradorId    String
+  colaborador      Colaborador    @relation(fields: [colaboradorId], references: [id])
+  competencia      String
+  salarioBase      Float
+  totalVencimentos Float
+  totalDescontos   Float
+  valorLiquido     Float
+  rubricas         Json
+  baseINSS         Float
+  baseIRRF         Float
+  baseFGTS         Float
+  fgtsRecolher     Float
+  criadoEm         DateTime       @default(now())
+}
+
+// ----------------------------------------------------------------------------
+// MODELOS FASE 9: STAFF DE EVENTOS, FREELANCERS & DRE DO EVENTO
+// ----------------------------------------------------------------------------
+
+model DiariaStaffEvento {
+  id               String            @id @default(cuid())
+  eventoId         String
+  eventoNome       String
+  localId          String
+  localNome        String
+  data             DateTime
+  colaboradorId    String?
+  colaborador      Colaborador?      @relation(fields: [colaboradorId], references: [id])
+  nomeProfissional String
+  cpf              String
+  funcao           FuncaoStaffEvento
+  valorDiaria      Float
+  valorTransporte  Float             @default(0.0)
+  valorAlimentacao Float             @default(0.0)
+  valorTotal       Float
+  checkInHora      DateTime?
+  checkOutHora     DateTime?
+  status           StatusDiaria      @default(ESCALADO)
+  chavePix         String
+  aprovadoPor      String?
+  criadoEm         DateTime          @default(now())
+}
+
+// ----------------------------------------------------------------------------
+// MODELOS FASE 10: ESOCIAL, AUDITORIA & GOVERNANÇA
+// ----------------------------------------------------------------------------
+
+model EventoESocial {
+  id             String            @id @default(cuid())
+  tipo           TipoEventoESocial
+  identificador  String            @unique
+  reciboEntrega  String?
+  status         StatusESocial     @default(GERADO)
+  geradoEm       DateTime          @default(now())
+  transmitidoEm  DateTime?
+  payloadXmlJson Json?
+}
+
+model Auditoria {
+  id         String   @id @default(cuid())
+  usuarioId  String?
+  acao       String
+  entidade   String
+  entidadeId String?
+  dados      Json?
+  criadoEm   DateTime @default(now())
+}

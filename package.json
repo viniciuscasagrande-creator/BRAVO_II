@@ -1,0 +1,25 @@
+{
+  "name": "bravo-ii",
+  "version": "0.1.0",
+  "private": true,
+  "description": "BRAVO_II — Novo ERP modular da DiskIngressos (Sucessor do SIGE)",
+  "packageManager": "pnpm@12.6.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "pnpm -r --filter ./packages/* build && pnpm -r --filter ./apps/* build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "test": "pnpm --filter @bravo-ii/domain-p06 test && pnpm --filter @bravo-ii/contracts test && pnpm --filter @bravo-ii/api test",
+    "test:e2e": "pnpm --filter @bravo-ii/api test:e2e",
+    "db:migrate": "pnpm --filter @bravo-ii/api db:migrate",
+    "db:seed:technical": "pnpm --filter @bravo-ii/api db:seed:technical",
+    "dev:api": "pnpm --filter @bravo-ii/api dev",
+    "dev:backoffice": "pnpm --filter @bravo-ii/backoffice dev"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  }
+}

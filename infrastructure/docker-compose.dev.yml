@@ -1,0 +1,30 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: bravo_ii_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bravo_dev
+      POSTGRES_PASSWORD: bravo_dev_local_password
+      POSTGRES_DB: bravo_ii_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - bravo_ii_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bravo_dev -d bravo_ii_dev"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: bravo_ii_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+volumes:
+  bravo_ii_pgdata:

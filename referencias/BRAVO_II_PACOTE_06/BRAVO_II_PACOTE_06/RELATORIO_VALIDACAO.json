@@ -1,0 +1,36 @@
+{
+  "pacote": "BRAVO_II_PACOTE_06",
+  "versao": "06.0.0",
+  "base": "2026-11-05",
+  "fonteSIGE": "INEXISTENTE",
+  "corePacote05": "NAO_DISPONIBILIZADO_NESTA_CONVERSA",
+  "validacao": {
+    "domain_tsc": "PASSOU",
+    "testes_automáticos": 21,
+    "falhas": 0,
+    "typescript_tsx_syntax_imports": "19 ARQUIVOS VERIFICADOS SEM ERROS",
+    "postgres_prisma_migration": "NAO_EXECUTADA",
+    "nestjs_build": "NAO_EXECUTADO",
+    "nextjs_build": "NAO_EXECUTADO",
+    "publicacao_online": "DESABILITADA"
+  },
+  "inventarioAnterior": {
+    "financeiro": 104,
+    "rh": 45,
+    "total": 149
+  },
+  "modulosNovos": [
+    "Comercial",
+    "Produtores",
+    "Eventos"
+  ],
+  "rotasReactEntregues": 8,
+  "regras": [
+    "taxa_por_evento",
+    "Maker Checker",
+    "CNPJ alfanumerico",
+    "4 aprovacoes",
+    "publicacao_pendente_confirmacao"
+  ],
+  "nota": "Evidências limitadas a verificações locais sem acesso ao Core, PostgreSQL ou conector público. Não é produção."
+}

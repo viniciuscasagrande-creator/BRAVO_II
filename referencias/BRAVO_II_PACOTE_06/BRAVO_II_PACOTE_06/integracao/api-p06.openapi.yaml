@@ -1,0 +1,38 @@
+openapi: 3.0.3
+info:
+  title: BRAVO_II - Pacote 06
+  version: 0.6.0
+  description: APIs internas; autenticação de sessão fornecida pelo Core BRAVO_II, nunca permissões via UI.
+servers:
+  - url: /v1
+paths:
+  /comercial/produtores:
+    get: {summary: Listar produtores internos, responses: {'200': {description: OK}, '401': {description: Não autenticado}}}
+    post: {summary: Cadastrar produtora PJ, responses: {'201': {description: Criado}, '422': {description: Dados inválidos}, '403': {description: Sem permissão}}}
+  /comercial/produtores/{id}:
+    get: {summary: Consultar produtor e documentos autorizados, parameters: [{in: path, name: id, required: true, schema: {type: string, format: uuid}}], responses: {'200': {description: OK}}}
+  /comercial/produtores/{id}/documentos:
+    post: {summary: Associar documento previamente enviado ao storage privado, parameters: [{in: path, name: id, required: true, schema: {type: string, format: uuid}}], responses: {'201': {description: Registrado}}}
+  /comercial/produtores/{id}/validar:
+    post: {summary: Validar cadastro com segregação de funções, parameters: [{in: path, name: id, required: true, schema: {type: string, format: uuid}}], responses: {'201': {description: Validado}}}
+  /comercial/eventos/{eventId}/taxas:
+    get: {summary: Histórico confidencial de taxas Disk por evento, parameters: [{in: path, name: eventId, required: true, schema: {type: string, format: uuid}}], responses: {'200': {description: OK}}}
+    post: {summary: Criar nova proposta de taxa para o evento, parameters: [{in: path, name: eventId, required: true, schema: {type: string, format: uuid}}], responses: {'201': {description: Criado}}}
+  /comercial/eventos/{eventId}/taxas/{feeId}/aprovar:
+    post: {summary: Aprovar proposta com outro usuário, parameters: [{in: path, name: eventId, required: true, schema: {type: string, format: uuid}}, {in: path, name: feeId, required: true, schema: {type: string, format: uuid}}], responses: {'201': {description: Aprovado}}}
+  /eventos:
+    get: {summary: Listar eventos operacionais internos, responses: {'200': {description: OK}}}
+    post: {summary: Criar evento em rascunho, responses: {'201': {description: Criado}}}
+  /eventos/{id}:
+    get: {summary: Consultar evento autorizado, parameters: [{in: path, name: id, required: true, schema: {type: string, format: uuid}}], responses: {'200': {description: OK}}}
+    patch: {summary: Alterar somente rascunho/reprovado, parameters: [{in: path, name: id, required: true, schema: {type: string, format: uuid}}], responses: {'200': {description: Atualizado}}}
+  /eventos/{id}/enviar-analise:
+    post: {summary: Encaminhar evento para aprovação, parameters: [{in: path, name: id, required: true, schema: {type: string, format: uuid}}], responses: {'201': {description: Em análise}}}
+  /eventos/{id}/aprovacoes:
+    post: {summary: Aprovação sequencial, parâmetros no corpo - step/decision/reason, parameters: [{in: path, name: id, required: true, schema: {type: string, format: uuid}}], responses: {'201': {description: Decisão registrada}}}
+  /eventos/{id}/pendencias:
+    get: {summary: Consultar impeditivos de publicação, parameters: [{in: path, name: id, required: true, schema: {type: string, format: uuid}}], responses: {'200': {description: Lista de pendências}}}
+  /eventos/{id}/publicacoes/solicitar:
+    post: {summary: Enfileirar integração sem publicar automaticamente, parameters: [{in: path, name: id, required: true, schema: {type: string, format: uuid}}], responses: {'201': {description: Pendente integração}}}
+  /eventos/{id}/ocorrencias:
+    post: {summary: Abrir ocorrência de adiamento/cancelamento sem executar estorno, parameters: [{in: path, name: id, required: true, schema: {type: string, format: uuid}}], responses: {'201': {description: Caso aberto pendente de análise}}}

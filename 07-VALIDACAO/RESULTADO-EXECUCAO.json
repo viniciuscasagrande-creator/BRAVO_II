@@ -1,0 +1,12 @@
+{
+ "data":"2026-11-05",
+ "fonte":"Modulo_Financeiro_V1_BACKUP_GERAL_OFICIAL_20261105.zip",
+ "quantidadeArquivosOrigem":256,
+ "catalogo":{"financeiro":104,"rh":45,"total":149,"gruposFinanceiro":16,"grupoRh":1,"rotasComCaseDispatcher":149},
+ "testesOriginais":{"integridade":14,"renderizacao":59,"elegibilidadeRepasses":11,"contaProdutor":18,"rhDiskPonto":19,"rhDiskV1":30,"total":151,"status":"aprovados_no_ambiente_local"},
+ "novosTestes":{"catalogo":4,"contratoRHFinanceiro":7,"total":11,"status":"aprovados_no_ambiente_local"},
+ "buildOriginal":"concluido_com_sucesso",
+ "checkImportsOriginal":"aprovado",
+ "previsualizacao":{"httpCatalogo":"respondendo","capturaAutomatizada":"nao_validada_por_falha_de_ambiente"},
+ "migracaoBRAVOII":{"rotasCatalogadas":149,"rotasProdutivasImplantadas":0,"bancoNovoConectado":false,"gatewayBancarioAtivado":false,"folhaProdutivaAtivada":false,"status":"PENDENTE"}
+}

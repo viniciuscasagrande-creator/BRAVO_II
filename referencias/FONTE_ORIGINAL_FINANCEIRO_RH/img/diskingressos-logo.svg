@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 230 40" height="32" fill="none">
+  <!-- Modern Disk & Ticket Icon -->
+  <defs>
+    <linearGradient id="diskGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#1d4ed8" />
+    </linearGradient>
+  </defs>
+  <rect x="2" y="5" width="30" height="30" rx="8" fill="url(#diskGrad)" />
+  <circle cx="17" cy="20" r="7" fill="#16191f" />
+  <circle cx="17" cy="20" r="3" fill="#38bdf8" />
+  <!-- Brand Text -->
+  <text x="40" y="27" font-family="'Inter', -apple-system, BlinkMacSystemFont, sans-serif" font-size="20" font-weight="900" fill="#ffffff" letter-spacing="0.5">DISK</text>
+  <text x="94" y="27" font-family="'Inter', -apple-system, BlinkMacSystemFont, sans-serif" font-size="20" font-weight="900" fill="#38bdf8" letter-spacing="0.5">INGRESSOS</text>
+</svg>

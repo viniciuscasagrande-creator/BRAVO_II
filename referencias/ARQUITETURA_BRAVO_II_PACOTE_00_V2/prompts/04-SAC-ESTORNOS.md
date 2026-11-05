@@ -1,0 +1,3 @@
+# Fase 06 — SAC, SLA/ITIL, trocas e estornos
+
+Construa atendimento omnicanal com tickets, classificação, filas, SLA, base de conhecimento e histórico. Vincule casos a cliente/pedido/ingresso/evento com máscara de dados. Crie troca de sessão/assento transacional com ajuste financeiro e nova credencial; nunca alterar ticket sem rastreabilidade. Para estorno: SAC solicita, Financeiro analisa/aprova, worker solicita no **sandbox do gateway**, webhook confirma, ledger reconcilia e só então concluir. Suportar cancelamento de evento com processamento em lote idempotente e estados individuais. Testar rejeição, reprocessamento, callback atrasado, duplicado e tentativa de SAC efetivar estorno. Nenhum estorno bancário real.

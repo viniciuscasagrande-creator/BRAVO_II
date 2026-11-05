@@ -1,0 +1,9 @@
+{
+  "version":"1.0.0",
+  "contracts":[
+    {"name":"commercial.event_fee_approved.v1","visibility":"DISK_INTERNO","emittedBy":"CommercialService.approve","consumedBy":"Financeiro Disk - motor de taxa por evento","payload":{"eventId":"uuid","feeId":"uuid","feeVersion":"integer"},"rule":"Consultar detalhes com autenticação de serviço interna, guardar snapshot por item vendido e nunca enviar ao produtor."},
+    {"name":"EVENT_PUBLICATION_REQUESTED","visibility":"SITE_ADAPTER_ONLY","emittedBy":"EventsService.requestPublication","consumedBy":"Worker de publicação DiskIngressos","payload":{"eventId":"uuid","revision":"integer","destination":"DISKINGRESSOS"},"rule":"Sem integração externa ativa por padrão, status PENDENTE_INTEGRACAO. Publicação confirmada só mediante comprovante da API oficial."},
+    {"name":"event.status_changed.v1","visibility":"DISK_INTERNO","emittedBy":"módulo Eventos (a integrar ao outbox)","consumedBy":"Financeiro Disk, SAC, Marketing, PDT","payload":{"eventId":"uuid","from":"state","to":"state","reason":"string"},"rule":"Cancelamento/adiamento requer caso próprio, regras financeiras e notificações."},
+    {"name":"event.created.v1","visibility":"DISK_INTERNO","emittedBy":"módulo Eventos (a integrar ao outbox)","consumedBy":"Financeiro Disk e RH para centros de custo","payload":{"eventId":"uuid","producerId":"uuid"},"rule":"Nunca gerar saldo fictício ou aprovar repasse ao criar evento."}
+  ]
+}

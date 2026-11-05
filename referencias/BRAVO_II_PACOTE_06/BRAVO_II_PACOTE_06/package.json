@@ -1,0 +1,11 @@
+{
+  "name":"bravo-ii-pacote-06-comercial-eventos",
+  "version":"0.6.0",
+  "private":true,
+  "type":"module",
+  "scripts":{
+    "build:domain":"tsc -p packages/domain/tsconfig.json",
+    "test":"npm run build:domain && node --test packages/domain/tests/*.test.mjs tests/validate-package.mjs",
+    "check":"node --test tests/validate-package.mjs"
+  }
+}

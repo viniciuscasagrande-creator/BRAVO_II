@@ -1,0 +1,1 @@
+{"name":"modulo-repasses-homologacao","private":true,"scripts":{"dev":"concurrently \"npm --prefix backend run dev\" \"npm --prefix frontend run dev\"","install:all":"npm --prefix backend install && npm --prefix frontend install"},"devDependencies":{"concurrently":"^9.0.0"}}

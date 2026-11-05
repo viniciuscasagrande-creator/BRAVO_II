@@ -1,0 +1,1 @@
+{"name":"conta-financeira-api","type":"module","scripts":{"dev":"node --watch src/server.js","start":"node src/server.js"},"dependencies":{"cors":"^2.8.5","express":"^5.1.0"}}

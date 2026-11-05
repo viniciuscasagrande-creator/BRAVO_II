@@ -1,0 +1,3 @@
+# AGENTS.md
+
+Leia `GEMINI.md`, `README.md`, `docs/09-ROADMAP-ACEITE.md` e o prompt de fase antes de trabalhar. Prioridade absoluta: preservar integridade operacional, dados e escopos de acesso do BRAVO_II. Não existe código-fonte do SIGE disponível; construir o BRAVO_II do zero e sem bloqueio por ausência do legado. Leia também `docs/11-CONSTRUCAO-SEM-FONTE-SIGE.md`. Execute apenas a fase solicitada, com alterações rastreáveis, testes e relatório de execução. Não invente testes nem publique sem autorização. Todas as interfaces em pt-BR; nenhuma taxa Disk interna deve aparecer no PDT. O produtor não pode acessar eventos de outros produtores. Nunca executar estornos, repasses ou antecipações reais em desenvolvimento/Preview.

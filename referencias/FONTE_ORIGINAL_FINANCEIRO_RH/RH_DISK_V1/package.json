@@ -1,0 +1,16 @@
+{
+  "name": "rh-disk-v1",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm --workspace apps/web run dev",
+    "dev:api": "npm --workspace apps/api run dev",
+    "seed": "npm --workspace apps/api run seed",
+    "prisma:generate": "npx prisma generate --schema=prisma/schema.prisma",
+    "prisma:migrate": "npx prisma migrate dev --schema=prisma/schema.prisma",
+    "test": "node tests/fluxo-operacional-rh.test.mjs"
+  }
+}

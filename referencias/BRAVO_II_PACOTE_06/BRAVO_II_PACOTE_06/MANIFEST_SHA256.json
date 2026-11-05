@@ -1,0 +1,275 @@
+{
+  "pacote": "BRAVO_II_PACOTE_06",
+  "files": [
+    {
+      "path": "AGENTS.md",
+      "bytes": 449,
+      "sha256": "89cbb1549164ffacd56149fae2efd7e9de1199ca80cf328db4d423b9fd6a495c"
+    },
+    {
+      "path": "GEMINI.md",
+      "bytes": 2466,
+      "sha256": "f89950b8de218f7c448808677edd8f3398ff421f6dd624aacf571e110ab99c93"
+    },
+    {
+      "path": "README.md",
+      "bytes": 3922,
+      "sha256": "86f83a0687907718f17cfa4bd2267a1a0b2b970a9ae9ea27b7a2160441090b22"
+    },
+    {
+      "path": "RELATORIO_VALIDACAO.json",
+      "bytes": 970,
+      "sha256": "c1142fb18e5b05575785161b7b2a81b61e284f051be0926d8c885335aedfe42b"
+    },
+    {
+      "path": "apps/api/INTEGRAR_NO_CORE.md",
+      "bytes": 1709,
+      "sha256": "a2bdd52dd4c89586735e6fa9218a8dfe4077a9a3578f226b2c45001b29687fe7"
+    },
+    {
+      "path": "apps/api/src/modules/pacote06/commercial.service.ts",
+      "bytes": 3202,
+      "sha256": "27028e793a1fd02c4a02f41fedd61347ab9abd1888d0fa6a79d45533c73b9423"
+    },
+    {
+      "path": "apps/api/src/modules/pacote06/controllers.ts",
+      "bytes": 5089,
+      "sha256": "232b053326e21b452056e94050e1551ce3a2150376fcdbb61a85899ee3ded5c9"
+    },
+    {
+      "path": "apps/api/src/modules/pacote06/domain.filter.ts",
+      "bytes": 552,
+      "sha256": "5c444c06ddea3e35f8c1ecb7c452d497ab47a89d7e3be590fb5a923a42d25c93"
+    },
+    {
+      "path": "apps/api/src/modules/pacote06/events.service.ts",
+      "bytes": 19543,
+      "sha256": "872664ace014e1827b6b8e9450e29e25a935076ee01a4e0caab0d655f663e440"
+    },
+    {
+      "path": "apps/api/src/modules/pacote06/module.ts",
+      "bytes": 588,
+      "sha256": "a1ebd53a8b6a5d6086acc0659ca6fd527e29f2084a036866f5a367512c27d702"
+    },
+    {
+      "path": "apps/api/src/modules/pacote06/prisma.ts",
+      "bytes": 506,
+      "sha256": "9b8e0a847c0628e30644a9ab19d3af8eca9b39990a03c677c3cc07594fd18052"
+    },
+    {
+      "path": "apps/api/src/modules/pacote06/producers.service.ts",
+      "bytes": 4448,
+      "sha256": "1be0048a416dacce0d1b3838d544f925499601d556343896559bccfa40666857"
+    },
+    {
+      "path": "apps/api/src/modules/pacote06/security.ts",
+      "bytes": 1424,
+      "sha256": "036a5f472c6f229ee326816decb06a0c6482a4a0df6a9a90c26c57cbd4bc4a28"
+    },
+    {
+      "path": "apps/backoffice/INTEGRAR_NO_LAYOUT.md",
+      "bytes": 1489,
+      "sha256": "9827f2b893d613fc618da1bd7d60aba6d6af73eb8d81f5667ccf32c9d4d31589"
+    },
+    {
+      "path": "apps/backoffice/src/app/(erp)/comercial/eventos/[id]/taxas/page.tsx",
+      "bytes": 3777,
+      "sha256": "fdd93aa3fe4bc1fba22d298d0168aa01883c74effef4e964272c15ecdf5bf266"
+    },
+    {
+      "path": "apps/backoffice/src/app/(erp)/comercial/page.tsx",
+      "bytes": 743,
+      "sha256": "2ebbdf92f5af2d618c44014bce4374ecef64b392e9e2e6d9af4a887aa2b63c19"
+    },
+    {
+      "path": "apps/backoffice/src/app/(erp)/comercial/produtores/[id]/page.tsx",
+      "bytes": 3930,
+      "sha256": "18f0a1388861ed43d6af7a3be50ebc54696d07c372881cb231c63b301bb2b775"
+    },
+    {
+      "path": "apps/backoffice/src/app/(erp)/comercial/produtores/novo/page.tsx",
+      "bytes": 2524,
+      "sha256": "38d683bd1192bf86d47068e59d1358301b19d9c185c962d67057e94f4cafb2ab"
+    },
+    {
+      "path": "apps/backoffice/src/app/(erp)/comercial/produtores/page.tsx",
+      "bytes": 1334,
+      "sha256": "d48c5c3e9aedbcd732198d4fd0b27c72ef0173d36aff651122985668f4014317"
+    },
+    {
+      "path": "apps/backoffice/src/app/(erp)/eventos/[id]/page.tsx",
+      "bytes": 10390,
+      "sha256": "1b2a0a32c293807f6a74dc52da0ae4af750da9386d85e61de4646754081bfcbf"
+    },
+    {
+      "path": "apps/backoffice/src/app/(erp)/eventos/novo/page.tsx",
+      "bytes": 3297,
+      "sha256": "80d434f218970db5ce086a55158ef2e11638b1c94b222235e9de90467f022e34"
+    },
+    {
+      "path": "apps/backoffice/src/app/(erp)/eventos/page.tsx",
+      "bytes": 1325,
+      "sha256": "e1b3a5657713c3423c851c0172cb6255e51892de41572d6b07bd043e209415ea"
+    },
+    {
+      "path": "apps/backoffice/src/components/bravo-p06.css",
+      "bytes": 3298,
+      "sha256": "fec94a84cd78abf30a3e2cd834e26cb8141cc2bb3c507f4a72a5248bb2151454"
+    },
+    {
+      "path": "apps/backoffice/src/components/bravo-p06.tsx",
+      "bytes": 1080,
+      "sha256": "ecc60a8d411b57560b1a2a065a5319079cdb28372793c3ab1378f2fa0fc7e169"
+    },
+    {
+      "path": "apps/backoffice/src/lib/bravo-api.ts",
+      "bytes": 1927,
+      "sha256": "6c06cd20b8689e6426ddf692ced70eacba82251804c5ac21a7c1f94f941d1146"
+    },
+    {
+      "path": "database/migration-hardening.sql",
+      "bytes": 1138,
+      "sha256": "8c84737ee169efe6749b773f799ce1c890a9a58542188369b1b51982c12cf96b"
+    },
+    {
+      "path": "database/schema.p06.prisma",
+      "bytes": 10425,
+      "sha256": "6b34a17610ec5e0099d7394c450aceabddb3447a46185e8bcd2031f11a07a8e4"
+    },
+    {
+      "path": "docs/00-ESCOPO-E-STATUS.md",
+      "bytes": 3424,
+      "sha256": "f94a57229a9166b5ff541ba2a77ff9f7a7e4b4548b6c2eda6233e33b65516e63"
+    },
+    {
+      "path": "docs/01-MENUS-E-TELAS.md",
+      "bytes": 2722,
+      "sha256": "77235b49f9255a45357db2b66a8338a1209915c049c6cc8501ec51278c064ef8"
+    },
+    {
+      "path": "docs/02-JORNADA-OPERACIONAL-E-ESTADOS.md",
+      "bytes": 2694,
+      "sha256": "71c112f3a3fe583e1dff6916740667ed4f6be383885bfb9fba0bad9f4b3728e7"
+    },
+    {
+      "path": "docs/03-CONTRATO-COM-FINANCEIRO-RH-PDT.md",
+      "bytes": 3078,
+      "sha256": "c0150a6bf0460455769f3a4283d3dc8ce829ad789308fabd96f6fe233a8a351c"
+    },
+    {
+      "path": "docs/04-MODELO-DADOS-E-SEGURANCA.md",
+      "bytes": 4093,
+      "sha256": "8a79dba808e850ebfcc2d3851ffe64f9ff22931830c25a583dc740e1e86c0c07"
+    },
+    {
+      "path": "docs/05-PLANO-DE-IMPLANTACAO.md",
+      "bytes": 2966,
+      "sha256": "cb597f7ca8e02ad73e03de7ef3e9de9e5dffef5188bf77ee932688ff1834f50c"
+    },
+    {
+      "path": "docs/06-CHECKLIST-ACEITE.md",
+      "bytes": 2821,
+      "sha256": "5faef559eb7b70f6cd1bad2f6605555aa9aa026e23bf920b412cc522e0fad9c8"
+    },
+    {
+      "path": "docs/07-RISCOS-E-DECISOES-PENDENTES.md",
+      "bytes": 3406,
+      "sha256": "aae652b55c95b9afd849d2708f092869da0e39e2d232735ff607531f0426e660"
+    },
+    {
+      "path": "docs/08-REFERENCIA-VIDEO-SIGE.md",
+      "bytes": 945,
+      "sha256": "29c248eedd8090ae156beefd919bb910850789d582a9ee8bd2c665e841bc2e99"
+    },
+    {
+      "path": "integracao/api-p06.openapi.yaml",
+      "bytes": 3860,
+      "sha256": "45cfd5c9b35c4d0364883995c400d08a6d6a6993da1b94226c183a2bb7d405e3"
+    },
+    {
+      "path": "integracao/catalogo-149-original.json",
+      "bytes": 87884,
+      "sha256": "ef759c31447956ea0aa672a87b97549b6aff0aa4cb09d1a984eef244d574c2e7"
+    },
+    {
+      "path": "integracao/eventos-integracao.json",
+      "bytes": 1451,
+      "sha256": "3567a580db69a0b949a769e33dfbe2ea6b3e21036fdd5c4cfdf796b38247faaf"
+    },
+    {
+      "path": "integracao/matriz-149-original.csv",
+      "bytes": 30544,
+      "sha256": "5f17423ad54b33ee368c0cf42a16e3522ad006433eef0f70d71d33dca985cd7c"
+    },
+    {
+      "path": "integracao/menus-p06.json",
+      "bytes": 4727,
+      "sha256": "ca061beac93cfea363bd1142ccfd3acc5cabb1cd294d69086dae6ffe08f9a2c5"
+    },
+    {
+      "path": "package.json",
+      "bytes": 351,
+      "sha256": "176df96ffbd74e029311e683d77e1966fb3ad04d90f41e56b43c3a1c47f8f9db"
+    },
+    {
+      "path": "packages/domain/dist/index.d.ts",
+      "bytes": 4397,
+      "sha256": "2276af0753d192674171534f77190980db06b44a391d7d059501dae1614cb990"
+    },
+    {
+      "path": "packages/domain/dist/index.js",
+      "bytes": 9738,
+      "sha256": "9b9accf13ae30022ae8fef25d6f28af902112038824609be3c1969e83667422d"
+    },
+    {
+      "path": "packages/domain/package.json",
+      "bytes": 249,
+      "sha256": "47611ac39d51002900f855888942f6d839e959053d9c57fd297d3f169dc02340"
+    },
+    {
+      "path": "packages/domain/src/index.ts",
+      "bytes": 11339,
+      "sha256": "8c6fa6a64b7e2c64f6ce040b565ccea5c29dbc58bf721416892280a9a5a0a113"
+    },
+    {
+      "path": "packages/domain/tests/business-rules.test.mjs",
+      "bytes": 6152,
+      "sha256": "08f128477f86518663951441742365a1eb9f8348ff68fe4ea9cb0b51149cacf6"
+    },
+    {
+      "path": "packages/domain/tsconfig.json",
+      "bytes": 245,
+      "sha256": "24ddd500f77990d2ddba0946a28c67b4e61b169ac00b154099081fcf91d83eb7"
+    },
+    {
+      "path": "prompts/00-PROMPT-MESTRE.md",
+      "bytes": 965,
+      "sha256": "5f714f8181f49b324d8bd9915d63825d7ab065e0c1120a638a821cedbcdcaca2"
+    },
+    {
+      "path": "prompts/01-INTEGRACAO-COM-CORE.md",
+      "bytes": 1949,
+      "sha256": "891cb5ae9e505d18eb44810d7798546c7be15e7d0503ed2c6040eef39666be26"
+    },
+    {
+      "path": "prompts/02-COMERCIAL-PRODUTORES-TAXAS.md",
+      "bytes": 1656,
+      "sha256": "3a4f734f87ef1da5a81594ccb11a747c02757e75dbb3512e2671eb6d4629913f"
+    },
+    {
+      "path": "prompts/03-EVENT-BUILDER-APROVACOES.md",
+      "bytes": 1648,
+      "sha256": "f1b7395534a5e6957a787fe0732f40a36856a6d8af1dae83952dd9a741c1761b"
+    },
+    {
+      "path": "prompts/04-PUBLICACAO-INTEGRACAO-E-ACEITE.md",
+      "bytes": 1290,
+      "sha256": "eebe41d84f6e1d15e36a29ce0c28b02b0643acd2ff914aab489df45375c95729"
+    },
+    {
+      "path": "tests/validate-package.mjs",
+      "bytes": 2796,
+      "sha256": "04e9d64b971579fe4594991e5ca82410e7449c33e79b440e801cfdfefe18cfc8"
+    }
+  ]
+}

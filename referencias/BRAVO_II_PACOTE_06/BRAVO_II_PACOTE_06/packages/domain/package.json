@@ -1,0 +1,1 @@
+{"name":"@bravo-ii/domain-p06","version":"0.6.0","private":true,"type":"module","exports":"./dist/index.js","scripts":{"build":"tsc -p tsconfig.json","test":"npm run build && node --test tests/*.test.mjs"},"devDependencies":{"typescript":"^5.8.3"}}

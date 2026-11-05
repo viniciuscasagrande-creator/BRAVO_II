@@ -1,0 +1,637 @@
+// ============================================================================
+// DISK INGRESSOS - CORE FINANCEIRO ENTERPRISE (ERP / CRM)
+// Prisma Schema - Modelagem de Dados Relacional
+// ============================================================================
+
+datasource db {
+  provider = "sqlite" // SQLite para facilidade de execução local no VS Code (ou postgresql para produção)
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// ----------------------------------------------------------------------------
+// ENUMS DE GOVERNANÇA E FLUXO FINANCEIRO
+// ----------------------------------------------------------------------------
+
+enum PerfilUsuario {
+  PRODUTOR
+  FINANCEIRO
+  ADMINISTRADOR
+}
+
+enum TipoSolicitacao {
+  REPASSE
+  ANTECIPACAO
+  BORDERO
+}
+
+enum StatusSolicitacao {
+  RASCUNHO
+  ENVIADO
+  AGUARDANDO_ANALISE
+  EM_ANALISE
+  APROVADO
+  REJEITADO
+  AGUARDANDO_ASSINATURA_PRODUTOR
+  AGUARDANDO_ASSINATURA_FINANCEIRO
+  ASSINADO
+  PROGRAMADO
+  PAGO
+  CONCLUIDO
+}
+
+enum StatusOperacao {
+  ATIVO
+  BLOQUEADO
+  ENCERRADO
+}
+
+enum TipoLancamentoLedger {
+  CREDITO
+  DEBITO
+}
+
+enum MetodoPagamento {
+  PIX
+  CARTAO_CREDITO
+  CARTAO_DEBITO
+  BOLETO
+}
+
+// ----------------------------------------------------------------------------
+// MODELOS DE USUÁRIOS E PRODUTORES
+// ----------------------------------------------------------------------------
+
+model Usuario {
+  id           String        @id @default(uuid())
+  nome         String
+  email        String        @unique
+  senhaHash    String
+  perfil       PerfilUsuario
+  cargo        String
+  telefone     String?
+  ativo        Boolean       @default(true)
+  
+  // Vínculo quando o perfil for PRODUTOR (Isolamento de Tenant)
+  produtorId   String?
+  produtor     Produtor?     @relation(fields: [produtorId], references: [id])
+  
+  solicitacoesCriadas SolicitacaoFinanceira[] @relation("Solicitante")
+  analisesRealizadas  SolicitacaoFinanceira[] @relation("Analista")
+  assinaturas         AssinaturaDigital[]
+  logsAuditoria       AuditLog[]
+
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Produtor {
+  id              String          @id @default(uuid())
+  razaoSocial     String
+  nomeFantasia    String
+  cnpj            String          @unique
+  email           String
+  telefone        String
+  gerenteConta    String
+  rating          String          @default("Tier A - Homologado")
+  status          StatusOperacao  @default(ATIVO)
+  scoreRisco      Int             @default(95)
+  bloqueioAtivo   Boolean         @default(false)
+  motivoBloqueio  String?
+  
+  // Regras Comerciais Contratuais
+  taxaDiskPercent         Decimal   @default(10.0)
+  taxaProcessamentoMdr    Decimal   @default(2.9)
+  taxaAntecipacaoMensal   Decimal   @default(2.0)
+  regraLiquidacaoDias     String  @default("D+2 após o evento")
+
+  // Relacionamentos
+  usuarios        Usuario[]
+  contasBancarias ContaBancaria[]
+  eventos         Evento[]
+  solicitacoes    SolicitacaoFinanceira[]
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+}
+
+model ContaBancaria {
+  id            String    @id @default(uuid())
+  produtorId    String
+  produtor      Produtor  @relation(fields: [produtorId], references: [id])
+  bancoNome     String
+  bancoCodigo   String
+  agencia       String
+  numeroConta   String
+  tipoConta     String    @default("Conta Corrente PJ")
+  chavePix      String?
+  titular       String
+  cnpjTitular   String
+  padrao        Boolean   @default(false)
+  validadaBacen Boolean   @default(true)
+  validadaEm    DateTime?
+
+  solicitacoes  SolicitacaoFinanceira[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// ----------------------------------------------------------------------------
+// MODELOS DE EVENTOS E BILHETERIA
+// ----------------------------------------------------------------------------
+
+model Evento {
+  id                String          @id @default(uuid())
+  produtorId        String
+  produtor          Produtor        @relation(fields: [produtorId], references: [id])
+  nome              String
+  categoria         String
+  dataEvento        DateTime
+  local             String
+  cidade            String          @default("Curitiba/PR")
+  capacidadeTotal   Int
+  ingressosVendidos Int             @default(0)
+  status            StatusOperacao  @default(ATIVO)
+
+  // Saldos e Posição Financeira em Tempo Real
+  saldo             SaldoEvento?
+  vendas            Venda[]
+  recebiveis        Recebivel[]
+  solicitacoes      SolicitacaoFinanceira[]
+  lancamentosLedger LedgerEntry[]
+
+  // Integração RH Disk & Equipes de Evento
+  geofences           LocalGeofence[]
+  escalasColaboradores EscalaColaborador[]
+  custosMaoDeObra     CustoMaoDeObraEvento[]
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+}
+
+model SaldoEvento {
+  id                    String    @id @default(uuid())
+  eventoId              String    @unique
+  evento                Evento    @relation(fields: [eventoId], references: [id])
+  
+  // Fechamento exato conforme regras de negócio
+  vendasBrutas          Decimal     @default(0.0)
+  cancelamentos         Decimal     @default(0.0)
+  taxasDisk             Decimal     @default(0.0)
+  chargebacks           Decimal     @default(0.0)
+  liquidoApurado        Decimal     @default(0.0)
+  repassadoAcumulado    Decimal     @default(0.0)
+  recebiveisFuturos     Decimal     @default(0.0) // D+X
+  bloqueadoReserva      Decimal     @default(0.0)
+  disponivelImediato    Decimal     @default(0.0)
+
+  updatedAt             DateTime  @updatedAt
+}
+
+model Venda {
+  id              String          @id @default(uuid())
+  eventoId        String
+  evento          Evento          @relation(fields: [eventoId], references: [id])
+  codigoPedido    String          @unique
+  compradorNome   String
+  compradorCpf    String
+  quantidade      Int
+  valorBruto      Decimal
+  taxaDisk        Decimal
+  taxaGateway     Decimal
+  valorLiquido    Decimal
+  metodo          MetodoPagamento
+  gateway         String          @default("Cielo")
+  status          String          @default("Aprovado")
+  liquidado       Boolean         @default(false)
+  dataVenda       DateTime        @default(now())
+}
+
+model Recebivel {
+  id              String    @id @default(uuid())
+  eventoId        String
+  evento          Evento    @relation(fields: [eventoId], references: [id])
+  adquirente      String    // Cielo, Rede, Stone, PagBank
+  valorBruto      Decimal
+  taxaMdr         Decimal
+  taxaSpreadDisk  Decimal     @default(1.22) // 1.22% de spread comercial Disk
+  valorLiquido    Decimal
+  dataVencimento  DateTime
+  antecipado      Boolean   @default(false)
+  status          String    @default("A Vencer")
+}
+
+// ----------------------------------------------------------------------------
+// NÚCLEO DO MOTOR DE WORKFLOW E OPERAÇÕES FINANCEIRAS
+// ----------------------------------------------------------------------------
+
+model SolicitacaoFinanceira {
+  id              String            @id @default(uuid())
+  codigo          String            @unique // Ex: REP-000129, ANT-000104, BOR-000042
+  tipo            TipoSolicitacao
+  status          StatusSolicitacao @default(AGUARDANDO_ANALISE)
+  
+  // Hierarquia: Produtor -> Evento -> Operação -> Valor
+  produtorId      String
+  produtor        Produtor          @relation(fields: [produtorId], references: [id])
+  eventoId        String?
+  evento          Evento?           @relation(fields: [eventoId], references: [id])
+  
+  // Valores da Operação
+  valorSolicitado Decimal
+  taxaOperacao    Decimal             @default(0.0)
+  valorLiquido    Decimal
+  
+  // Conta bancária de destino
+  contaBancariaId String?
+  contaBancaria   ContaBancaria?    @relation(fields: [contaBancariaId], references: [id])
+  
+  // Trilha de Decisão do Financeiro Disk
+  solicitadoPorId String
+  solicitadoPor   Usuario           @relation("Solicitante", fields: [solicitadoPorId], references: [id])
+  solicitadoEm    DateTime          @default(now())
+  
+  analisadoPorId  String?
+  analisadoPor    Usuario?          @relation("Analista", fields: [analisadoPorId], references: [id])
+  analisadoEm     DateTime?
+  decisao         String?           // "APROVADO" ou "REJEITADO"
+  motivoRejeicao  String?           // Categoria oficial
+  justificativaRejeicao String?     // Observação detalhada obrigatória
+  
+  // Esteira de Formalização e Assinaturas Digitais Sequenciais
+  documentoId     String?
+  termoDocumento  String?           // URL ou conteúdo do termo gerado
+  
+  assinaturas     AssinaturaDigital[]
+  logsAuditoria   AuditLog[]
+  lancamentosLedger LedgerEntry[]
+
+  // Liquidação
+  pagoEm          DateTime?
+  codigoAutenticacao String?        // Autenticação Bancária / Hash PIX
+  concluidoEm     DateTime?
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+model AssinaturaDigital {
+  id                String                @id @default(uuid())
+  solicitacaoId     String
+  solicitacao       SolicitacaoFinanceira @relation(fields: [solicitacaoId], references: [id])
+  usuarioId         String
+  usuario           Usuario               @relation(fields: [usuarioId], references: [id])
+  
+  // Papel na esteira: PRODUTOR (deve ser o 1º) ou FINANCEIRO (SEMPRE O ÚLTIMO)
+  papelSignatario   PerfilUsuario
+  ordemAssinatura   Int                   // 1: Produtor, 2: Financeiro Disk
+  
+  assinadoEm        DateTime              @default(now())
+  ipOrigem          String
+  certificado       String                // ICP-Brasil, Token, ou Certificado e-CNPJ
+  hashAssinatura    String
+
+  createdAt         DateTime              @default(now())
+}
+
+// ----------------------------------------------------------------------------
+// LEDGER CONTÁBIL (PARTIDAS DOBRADAS) & AUDITORIA IMUTÁVEL
+// ----------------------------------------------------------------------------
+
+model LedgerEntry {
+  id              String                @id @default(uuid())
+  solicitacaoId   String?
+  solicitacao     SolicitacaoFinanceira? @relation(fields: [solicitacaoId], references: [id])
+  eventoId        String?
+  evento          Evento?               @relation(fields: [eventoId], references: [id])
+  
+  dataLancamento  DateTime              @default(now())
+  descricao       String
+  contaDebito     String                // Ex: "Passivo Produtor: Produtora ABC"
+  contaCredito    String                // Ex: "Banco Itaú - Conta Movimento Disk"
+  valor           Decimal
+  documentoRef    String
+  conciliado      Boolean               @default(false)
+  dataConciliacao DateTime?
+}
+
+model AuditLog {
+  id              String                @id @default(uuid())
+  solicitacaoId   String?
+  solicitacao     SolicitacaoFinanceira? @relation(fields: [solicitacaoId], references: [id])
+  usuarioId       String?
+  usuario         Usuario?              @relation(fields: [usuarioId], references: [id])
+  
+  acao            String                // "CRIOU_SOLICITACAO", "ANALISOU", "APROVOU", "ASSINOU_PRODUTOR", etc.
+  detalhes        String
+  ip              String?
+  criadoEm        DateTime              @default(now())
+}
+
+model GatewayConfig {
+  id              String    @id @default(uuid())
+  nome            String    // Cielo, Rede, Stone, PagBank
+  mdrDebito       Decimal     @default(1.18)
+  mdrCreditoVista Decimal     @default(2.28)
+  mdrParcelado    Decimal     @default(3.88)
+  spreadDisk      Decimal     @default(1.22) // 1.22% retido para o Disk
+  prazoLiquidacao String    @default("D+1 útil")
+  status          String    @default("Operacional 100%")
+  chaveApi        String?
+}
+
+// ----------------------------------------------------------------------------
+// MÓDULO CORPORATIVO DISK INTERNO: RECURSOS HUMANOS (RH DISK) & DISK PONTO
+// ----------------------------------------------------------------------------
+
+enum TipoContratoColaborador {
+  CLT
+  PJ
+  FREELANCER_EVENTO
+  ESTAGIO
+}
+
+enum StatusColaborador {
+  ATIVO
+  FERIAS
+  AFASTADO
+  DESLIGADO
+}
+
+enum TipoLocalGeofence {
+  SEDE
+  FILIAL
+  ARENA_EVENTO
+  LOCAL_EXTERNO
+}
+
+enum RegimeEscala {
+  SEMANAL_5X2
+  SEMANAL_6X1
+  ESCALA_12X36
+  EVENTO_PONTUAL
+}
+
+enum TipoRegistroPonto {
+  ENTRADA
+  INTERVALO_INICIO
+  INTERVALO_FIM
+  SAIDA
+}
+
+enum ModoCapturaPonto {
+  APP_ONLINE
+  APP_OFFLINE_SYNC
+  WEB_ADMIN
+}
+
+enum StatusAjustePonto {
+  PENDENTE
+  APROVADO
+  REJEITADO
+}
+
+enum StatusPagamentoMaoDeObra {
+  PREVISTO
+  AUTORIZADO_RH
+  ENVIADO_TESOURARIA
+  PAGO_PIX
+}
+
+model Departamento {
+  id            String         @id @default(uuid())
+  nome          String
+  sigla         String
+  centroCusto   String         // Ex: "CC-1010 Diretoria", "CC-2040 Operações Eventos"
+  ativo         Boolean        @default(true)
+  cargos        Cargo[]
+  colaboradores Colaborador[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Cargo {
+  id                    String                   @id @default(uuid())
+  titulo                String
+  cbo                   String                   // Classificação Brasileira de Ocupações
+  departamentoId        String
+  departamento          Departamento             @relation(fields: [departamentoId], references: [id])
+  nivel                 String                   @default("Pleno") // Júnior, Pleno, Sênior, Especialista, Coordenador
+  salarioBase           Decimal                  @default(0.0)
+  tipoContratoDefault   TipoContratoColaborador  @default(CLT)
+  ativo                 Boolean                  @default(true)
+  colaboradores         Colaborador[]
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+}
+
+model Colaborador {
+  id                  String                   @id @default(uuid())
+  matricula           String                   @unique // Ex: "DISK-00142"
+  nome                String
+  cpf                 String                   @unique
+  rg                  String?
+  email               String                   @unique
+  telefone            String
+  dataNascimento      DateTime?
+  fotoUrl             String?
+  tipoContrato        TipoContratoColaborador  @default(CLT)
+  status              StatusColaborador        @default(ATIVO)
+  dataAdmissao        DateTime                 @default(now())
+  dataDesligamento    DateTime?
+  
+  cargoId             String
+  cargo               Cargo                    @relation(fields: [cargoId], references: [id])
+  departamentoId      String
+  departamento        Departamento             @relation(fields: [departamentoId], references: [id])
+  
+  salario             Decimal                  @default(0.0)
+  valorDiariaEvento   Decimal                  @default(0.0) // Utilizado quando FREELANCER_EVENTO
+  
+  // Dados Bancários para Pagamentos e Tesouraria Disk
+  banco               String?                  // Ex: "033 - Santander", "260 - Nu Pagamentos"
+  agencia             String?
+  conta               String?
+  tipoChavePix        String?                  // CPF, EMAIL, TELEFONE, ALEATORIA
+  chavePix            String?
+  
+  // Local padrão autorizado (Geofence)
+  geofencePadraoId    String?
+  geofencePadrao      LocalGeofence?           @relation(fields: [geofencePadraoId], references: [id])
+
+  registrosPonto      RegistroPonto[]
+  ajustesPonto        SolicitacaoAjustePonto[]
+  escalas             EscalaColaborador[]
+  bancosHoras         BancoHoras[]
+  custosEventos       CustoMaoDeObraEvento[]
+  auditorias          RHAuditLog[]             @relation("ColaboradorAfetado")
+
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+}
+
+model LocalGeofence {
+  id              String             @id @default(uuid())
+  nome            String             // Ex: "Sede DiskIngressos Curitiba", "Arena da Baixada (Athletico)"
+  tipo            TipoLocalGeofence  @default(SEDE)
+  latitude        Float              // Ex: -25.4284
+  longitude       Float              // Ex: -49.2733
+  raioMetros      Int                @default(150) // 150m para sede, 300m para arena de evento
+  endereco        String
+  cidade          String             @default("Curitiba")
+  uf              String             @default("PR")
+  ativo           Boolean            @default(true)
+  
+  eventoId        String?
+  evento          Evento?            @relation(fields: [eventoId], references: [id])
+
+  colaboradores   Colaborador[]
+  registrosPonto  RegistroPonto[]
+
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+}
+
+model EscalaTrabalho {
+  id                      String              @id @default(uuid())
+  nome                    String              // Ex: "Comercial 44h (Seg-Sex)", "Operação Show Noturno"
+  regime                  RegimeEscala        @default(SEMANAL_5X2)
+  cargaHorariaSemanal     Int                 @default(44)
+  toleranciaMinutos       Int                 @default(10)
+  horarioEntrada          String              @default("08:00")
+  horarioIntervaloInicio  String              @default("12:00")
+  horarioIntervaloFim     String              @default("13:00")
+  horarioSaida            String              @default("17:48")
+  ativo                   Boolean             @default(true)
+
+  escalasColaboradores    EscalaColaborador[]
+
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+}
+
+model EscalaColaborador {
+  id              String          @id @default(uuid())
+  colaboradorId   String
+  colaborador     Colaborador     @relation(fields: [colaboradorId], references: [id])
+  escalaId        String
+  escala          EscalaTrabalho  @relation(fields: [escalaId], references: [id])
+  dataInicio      DateTime
+  dataFim         DateTime?
+  
+  eventoId        String?
+  evento          Evento?         @relation(fields: [eventoId], references: [id])
+
+  createdAt       DateTime        @default(now())
+}
+
+model RegistroPonto {
+  id                  String             @id @default(uuid())
+  nsr                 Int                @unique // Número Sequencial de Registro (Portaria 671 MTE)
+  colaboradorId       String
+  colaborador         Colaborador        @relation(fields: [colaboradorId], references: [id])
+  tipo                TipoRegistroPonto
+  dataHoraMarcacao    DateTime           // Data/Hora exata capturada no dispositivo
+  dataHoraServidor    DateTime           @default(now())
+  
+  // Dados de Geolocalização (Capturados EXCLUSIVAMENTE no instante do clique)
+  latitude            Float?
+  longitude           Float?
+  precisaoMetros      Float?
+  geofenceId          String?
+  geofence            LocalGeofence?     @relation(fields: [geofenceId], references: [id])
+  dentroGeofence      Boolean            @default(true)
+  distanciaGeofence   Float?             // Distância em metros calculada via Haversine
+  
+  // Garantia de Integridade e Portaria 671 MTE
+  modoCaptura         ModoCapturaPonto   @default(APP_ONLINE)
+  hashIntegridade     String             // SHA-256 (NSR + Colaborador + DataHora + Lat + Lng)
+  comprovanteNsr      String             // Código de autenticação visual do comprovante
+  ipOrigem            String?
+  dispositivoInfo     String?            // Modelo Android, versão do OS, IMEI virtualizado
+  
+  // Sincronização Offline
+  uuidDispositivo     String?            @unique // ID local idempotente gerado pelo APK
+  sincronizado        Boolean            @default(true)
+  sincronizadoEm      DateTime?
+
+  createdAt           DateTime           @default(now())
+}
+
+model SolicitacaoAjustePonto {
+  id                  String             @id @default(uuid())
+  colaboradorId       String
+  colaborador         Colaborador        @relation(fields: [colaboradorId], references: [id])
+  dataPonto           DateTime
+  tipoAjuste          TipoRegistroPonto
+  horarioCorreto      String             // "08:00"
+  motivo              String             // "ESQUECIMENTO", "PROBLEMA_TECNICO", "SERVICO_EXTERNO", "ATESTADO"
+  justificativa       String
+  comprovanteUrl      String?
+  status              StatusAjustePonto  @default(PENDENTE)
+  
+  analisadoPorId      String?
+  analisadoEm         DateTime?
+  parecerRH           String?
+
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+}
+
+model BancoHoras {
+  id                    String        @id @default(uuid())
+  colaboradorId         String
+  colaborador           Colaborador   @relation(fields: [colaboradorId], references: [id])
+  mesAno                String        // "2026-10"
+  saldoMinutosAnterior  Int           @default(0)
+  creditosMinutos       Int           @default(0) // Horas extras trabalhadas
+  debitosMinutos        Int           @default(0) // Atrasos, saídas antecipadas, faltas
+  saldoMinutosAtual     Int           @default(0)
+  fechado               Boolean       @default(false)
+
+  updatedAt             DateTime      @updatedAt
+}
+
+model CustoMaoDeObraEvento {
+  id                    String                    @id @default(uuid())
+  eventoId              String
+  evento                Evento                    @relation(fields: [eventoId], references: [id])
+  colaboradorId         String
+  colaborador           Colaborador               @relation(fields: [colaboradorId], references: [id])
+  cargoFuncao           String                    // "Coordenador de Bilheteria", "Operador de Caixa", "Fiscal"
+  tipoContratacao       TipoContratoColaborador
+  
+  // Apropriação Financeira de Pessoal
+  valorDiaria           Decimal                   @default(0.0)
+  horasTrabalhadas      Decimal                   @default(0.0)
+  valorHorasExtras      Decimal                   @default(0.0)
+  auxilioAlimentacao    Decimal                   @default(0.0)
+  auxilioTransporte     Decimal                   @default(0.0)
+  valorTotal            Decimal                   @default(0.0)
+  
+  // Integração com Tesouraria e DRE do Evento
+  statusPagamento       StatusPagamentoMaoDeObra  @default(PREVISTO)
+  chavePixDestino       String?
+  lotePagamentoId       String?
+  pagoEm                DateTime?
+
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+}
+
+model RHAuditLog {
+  id                    String        @id @default(uuid())
+  usuarioId             String?
+  colaboradorAfetadoId  String?
+  colaboradorAfetado    Colaborador?  @relation("ColaboradorAfetado", fields: [colaboradorAfetadoId], references: [id])
+  acao                  String        // "CADASTRO_COLABORADOR", "ALTERACAO_SALARIAL", "REGISTRO_PONTO", "AJUSTE_PONTO_APROVADO", etc.
+  entidade              String        // "Colaborador", "RegistroPonto", "Folha", "Geofence"
+  detalhes              String
+  ip                    String?
+  createdAt             DateTime      @default(now())
+}
+
