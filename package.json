@@ -32,7 +32,7 @@
     "build:web": "pnpm --filter @bravo-ii/backoffice build",
     "build:vercel:api": "pnpm run build:packages && pnpm run db:generate && pnpm run build:api",
     "build:vercel:web": "pnpm run build:packages && pnpm run build:web",
-    "build": "pnpm -r --filter \"./packages/*\" build && pnpm -r --filter \"./apps/*\" build",
+    "build": "pnpm -r --filter \"./packages/*\" build && pnpm -r --filter \"./apps/*\" build && node scripts/prepare-vercel-dist.mjs",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
     "test": "pnpm --filter @bravo-ii/core-policy test && pnpm --filter @bravo-ii/domain-p06 test && pnpm --filter @bravo-ii/domain-p08 test && pnpm --filter @bravo-ii/domain-p09 test && pnpm --filter @bravo-ii/domain-p10 test && pnpm --filter @bravo-ii/domain-ia test && node --test tests/*.test.mjs && pnpm --filter @bravo-ii/contracts test && pnpm --filter @bravo-ii/api test",
