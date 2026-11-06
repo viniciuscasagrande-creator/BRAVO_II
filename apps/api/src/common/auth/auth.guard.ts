@@ -68,9 +68,9 @@ export class AuthGuard implements CanActivate {
       });
     }
 
-    // Quando autenticado via cookie HttpOnly (bravo_session), exige Origin válido (se APP_ORIGIN configurado) e X-CSRF-Token em métodos mutáveis
+    // Quando autenticado via cookie HttpOnly (bravo_session), exige Origin válido (APP_ORIGIN obrigatório) e X-CSRF-Token em métodos mutáveis
     if (usingCookieAuth && isMutating(req.method)) {
-      if (configuredOrigin && !originAllowed(originHeader, configuredOrigin)) {
+      if (!configuredOrigin || !originAllowed(originHeader, configuredOrigin)) {
         throw new ForbiddenException({
           code: 'INVALID_ORIGIN',
           message: 'Origem não autorizada.',

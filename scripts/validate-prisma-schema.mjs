@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 /**
- * Valida estruturalmente prisma/schema.prisma e verifica se DATABASE_URL aponta
- * exclusivamente para banco de homologação (bravo_ii_hml), sem strings de produção.
+ * Valida estruturalmente prisma/schema.prisma, seus 55 modelos e mapeamentos @@map,
+ * e verifica se DATABASE_URL aponta exclusivamente para banco de homologação (bravo_ii_hml),
+ * sem strings de produção.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -31,18 +32,31 @@ if (datasources !== 1) {
 
 const requiredModels = [
   'BravoProducer',
+  'BravoProducerDocument',
   'BravoEvent',
+  'BravoEventProducer',
   'BravoEventSession',
+  'BravoEventArea',
+  'BravoEventSeat',
+  'BravoTicketCategory',
   'BravoPriceLot',
+  'BravoEventChannel',
+  'BravoEventMedia',
   'BravoEventFee',
+  'BravoEventApproval',
+  'BravoPublication',
   'BravoOutbox',
   'BravoAudit',
+  'BravoCommercialProposal',
+  'BravoCommercialContract',
+  'BravoEventDocument',
   'BravoEventChangeCase',
   'BravoIdentityUser',
   'BravoIdentitySession',
   'BravoCustomer',
   'BravoSaleOrder',
   'BravoIssuedTicket',
+  'BravoTicketSequence',
   'BravoPaymentConfirmation',
   'BravoCheckoutAttempt',
   'BravoPdvTerminal',
@@ -64,6 +78,14 @@ const requiredModels = [
   'BravoRefundApproval',
   'BravoRefundAttempt',
   'BravoEventRefundBatch',
+  'BravoAiQuotaWindow',
+  'BravoFunctionCatalog',
+  'BravoFinanceCostCenter',
+  'BravoRhEmployee',
+  'BravoRhGeofence',
+  'BravoRhTimePunch',
+  'BravoRhPaymentBatch',
+  'BravoFinanceLedgerEntry',
 ];
 
 const missingModels = requiredModels.filter(
@@ -71,6 +93,14 @@ const missingModels = requiredModels.filter(
 );
 if (missingModels.length > 0) {
   console.error('ERRO: Modelos ausentes ou duplicados em prisma/schema.prisma:', missingModels.join(', '));
+  process.exit(1);
+}
+
+const mappedTablesCount = (schema.match(/@@map\("/g) || []).length;
+if (mappedTablesCount !== requiredModels.length) {
+  console.error(
+    `ERRO: Todos os ${requiredModels.length} modelos devem possuir @@map("<snake_case>"), encontrado(s): ${mappedTablesCount}`
+  );
   process.exit(1);
 }
 
@@ -92,7 +122,9 @@ console.log(
       sha256,
       datasources,
       modelsValidated: requiredModels.length,
+      mappedTablesValidated: mappedTablesCount,
       p10ModelsValidated: 17,
+      financeRhModelsValidated: 7,
       databaseTarget: new URL(dbUrl).pathname.replace(/^\//, ''),
     },
     null,

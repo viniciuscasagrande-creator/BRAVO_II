@@ -15,13 +15,13 @@ A integração do pacote **BRAVO_II — Vercel + Neon + Google Gemini (`BRAVO_II
 
 | Componente / Etapa | Status Real | Evidência Verificada |
 | :--- | :--- | :--- |
-| **Monorepo + `prisma/schema.prisma` único** | **FEITO** | `1` único `datasource db` (`url = env("DATABASE_URL")`, `directUrl = env("DIRECT_URL")`), 34 modelos Prisma validados (`BravoAiQuotaWindow` incluído). |
-| **Preservação Financeiro Disk (104) + RH (45)** | **FEITO** | `reference/matriz-149-original.csv` e `reference/catalogo-149-original.json` preservados byte a byte; menus `/financeiro` e `/rh` mantidos como `EM_IMPLANTACAO`. |
-| **Neon PostgreSQL `bravo_ii_hml` provisionado e migrado** | **FEITO** | Projeto `floral-sunset-85900211` (`aws-sa-east-1`), branch `homologacao` (`br-red-boat-b6985yct`), migrations `0001`..`0010_pacote12_vercel_neon_gemini_ia.up.sql` aplicadas via `DIRECT_URL`. |
-| **BFF Next.js (`/v1/[...path]/route.ts`) + Guardião `X-Bravo-Proxy-Key`** | **FEITO** | Validação de `Origin`, limite de payload (`1 MB`), `X-Bravo-Proxy-Key` (mín. 32 chars, `timingSafeEqual`), `x-vercel-protection-bypass` opcional e bloqueio `VERCEL_ENV !== 'preview'`. |
+| **Monorepo + `prisma/schema.prisma` único** | **FEITO** | `1` único `datasource db` (`prisma.config.ts` Prisma 7), 55 modelos Prisma conciliados com `@@map("<snake_case>")` (incluindo os 7 modelos do catálogo 149 Financeiro/RH e `BravoAiQuotaWindow`). |
+| **Preservação Financeiro Disk (104) + RH (45)** | **FEITO** | `reference/matriz-149-original.csv` e `reference/catalogo-149-original.json` preservados byte a byte com `.gitattributes` (`-text`); menus `/financeiro` e `/rh` mantidos como `EM_IMPLANTACAO`. |
+| **Neon PostgreSQL `bravo_ii_hml` provisionado e migrado** | **FEITO** | Projeto `floral-sunset-85900211` (`aws-sa-east-1`), branch `homologacao` (`br-red-boat-b6985yct`), migrations `0001`..`0010_pacote12_vercel_neon_gemini_ia.up.sql` aplicadas explicitamente via `DIRECT_URL` (`pnpm run db:migrate:preview`), sem DDL automático na subida da API e sem fallback silencioso para PGlite fora de teste. |
+| **BFF Next.js (`/v1/[...path]/route.ts`) + Guardião `X-Bravo-Proxy-Key`** | **FEITO** | Validação obrigatória de `Origin` (`APP_ORIGIN`), limite de payload (`1 MB`), `X-Bravo-Proxy-Key` (mín. 32 chars, `timingSafeEqual`), `x-vercel-protection-bypass` opcional e bloqueio `VERCEL_ENV !== 'preview'`. |
 | **Módulo Assistente Gemini (`@bravo-ii/domain-ia` + `BravoIaModule` + `/ia`)** | **FEITO** | Somente leitura (`ASSISTENTE_SOMENTE_LEITURA`, `dadosReais: false`), RBAC por área (`GERAL`, `COMERCIAL`, `EVENTOS`, `SAC`, `FINANCEIRO`, `RH`), bloqueio de `PRODUTOR_PDT`, filtro LGPD/PII, cota no PostgreSQL (`4/min` e `25/dia`) e auditoria sem PII. |
 | **Travas de Segurança Financeira e Operacional** | **FEITO** | `BRAVO_ENV=HOMOLOGACAO`, `ENABLE_REAL_PAYMENTS=false`, `ENABLE_REAL_REFUNDS=false`, `ENABLE_EXTERNAL_PUBLICATION=false`, `ENABLE_PDV_OPERATIONS=false`, `ENABLE_TICKET_REPLACEMENT=false`, `ACCESS_GATE_INTEGRATED=false`, `BRAVO_GEMINI_ENABLED=false`. |
-| **Configuração dos 2 Projetos Vercel (`vercel.json` + preflight)** | **FEITO** | `apps/api/vercel.json` e `apps/backoffice/vercel.json` validados por `pnpm run test:vercel` (7/7) e `pnpm run deploy:preflight` (`VALIDADA`). |
+| **Configuração dos 2 Projetos Vercel (`vercel.json` + preflight)** | **FEITO** | `apps/api/vercel.json` e `apps/backoffice/vercel.json` padronizados com `pnpm install --frozen-lockfile`, `pnpm-lock.yaml` como documento YAML único e validados por `pnpm run test:vercel` (7/7) e `pnpm run deploy:preflight` (`VALIDADA`). |
 | **Publicação externa na conta Vercel da equipe** | **PENDENTE (AÇÃO DO OPERADOR)** | Requer importação do repositório Git privado na conta Vercel da DiskIngressos (`bravo-ii-api` e `bravo-ii-web`) em modo **Preview**, conforme `docs/12-PASSO-A-PASSO-VERCEL-NEON.md`. |
 
 ---
@@ -41,7 +41,7 @@ A integração do pacote **BRAVO_II — Vercel + Neon + Google Gemini (`BRAVO_II
    - Execução de `scripts/inspect-integrations.mjs`:
    - **Resultado:** `Banco HML previsto: nome /bravo_ii_hml | SSL: verify-full` | `Gemini: desabilitado — nenhuma chamada externa.`
 5. **`pnpm run db:validate` e `pnpm run db:generate`**
-   - **Resultado:** `status: "OK"`, `datasources: 1`, `modelsValidated: 34`, `databaseTarget: "bravo_ii_hml"`.
+   - **Resultado:** `status: "OK"`, `datasources: 1`, `modelsValidated: 55`, `mappedTablesValidated: 55`, `databaseTarget: "bravo_ii_hml"`.
 6. **`pnpm run db:migrate:preview`**
    - Aplicação das migrations no Neon PostgreSQL `bravo_ii_hml` via `DIRECT_URL`:
    - **Resultado:** `status: "ok"`, `appliedMigrations`: `0001_core_foundation.up.sql` até `0010_pacote12_vercel_neon_gemini_ia.up.sql` (`10` migrations aplicadas).

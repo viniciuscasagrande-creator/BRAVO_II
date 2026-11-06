@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "cd ../.. && npm run build:vercel:web",
-  "installCommand": "cd ../.. && npm install",
+  "buildCommand": "cd ../.. && pnpm run build:vercel:web",
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
   "functions": {
     "src/app/v1/[...path]/route.ts": {
       "maxDuration": 30

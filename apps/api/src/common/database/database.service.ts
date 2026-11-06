@@ -79,7 +79,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     }
 
     this.initialized = true;
-    if (process.env.VERCEL !== '1') {
+    if (forceMemory) {
       await this.runMigrations();
     }
   }
@@ -234,6 +234,20 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   async getAppliedMigrations(): Promise<string[]> {
     const res = await this.query<{ version: string }>('SELECT version FROM schema_migrations ORDER BY version ASC');
     return res.rows.map((r) => r.version);
+  }
+
+  async assertSchemaUpToDate(): Promise<void> {
+    const migrationsDir = this.resolveMigrationsDir();
+    const expectedFiles = fs
+      .readdirSync(migrationsDir)
+      .filter((f) => f.endsWith('.up.sql'))
+      .sort();
+    const applied = await this.getAppliedMigrations();
+    const appliedSet = new Set(applied);
+    const pending = expectedFiles.filter((f) => !appliedSet.has(f));
+    if (pending.length > 0) {
+      throw new Error(`Banco de dados possui migrations pendentes: ${pending.join(', ')}. Execute pnpm run db:migrate.`);
+    }
   }
 
   async onModuleDestroy(): Promise<void> {

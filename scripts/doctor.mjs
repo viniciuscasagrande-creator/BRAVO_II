@@ -6,10 +6,69 @@ import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
 const require = createRequire(import.meta.url);
-const { validateHomologationEnv } = require('../packages/core-policy/dist/index.js');
-
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const has = (p) => fs.existsSync(path.join(root, p));
+
+function fallbackValidateHomologationEnv(env) {
+  const errors = [];
+  if (env.BRAVO_ENV !== 'HOMOLOGACAO') errors.push('BRAVO_ENV precisa ser HOMOLOGACAO');
+  for (const flag of ['ENABLE_EXTERNAL_PUBLICATION', 'ENABLE_REAL_PAYMENTS', 'ENABLE_REAL_REFUNDS']) {
+    if (env[flag] !== 'false') errors.push(`${flag} deve ser false`);
+  }
+  const pepper = env.CPF_HASH_PEPPER || '';
+  if (pepper.length < 32 || /SUBSTITUA|EXEMPLO|PLACEHOLDER/i.test(pepper)) {
+    errors.push('CPF_HASH_PEPPER deve conter 32+ caracteres aleatórios reais e não pode ser valor de exemplo');
+  }
+  let db;
+  try {
+    db = new URL(env.DATABASE_URL || '');
+  } catch {
+    errors.push('DATABASE_URL inválida');
+  }
+  if (db) {
+    if (!['postgresql:', 'postgres:'].includes(db.protocol)) errors.push('DATABASE_URL deve usar PostgreSQL');
+    if (!/(hml|homolog|preview)/i.test(decodeURIComponent(db.pathname))) {
+      errors.push('Banco deve ter identificador exclusivo hml/homolog/preview no nome');
+    }
+  }
+  let appOrigin;
+  try {
+    appOrigin = new URL(env.APP_ORIGIN || '');
+  } catch {
+    errors.push('APP_ORIGIN inválida');
+  }
+  if (appOrigin) {
+    if (
+      !['http:', 'https:'].includes(appOrigin.protocol) ||
+      appOrigin.username ||
+      appOrigin.password ||
+      appOrigin.pathname !== '/' ||
+      appOrigin.search ||
+      appOrigin.hash
+    ) {
+      errors.push('APP_ORIGIN deve ser uma origem HTTP(S) sem caminho/credenciais');
+    }
+    if (['diskingressos.com.br', 'www.diskingressos.com.br'].includes(appOrigin.hostname.toLowerCase())) {
+      errors.push('Proibido usar domínio público de vendas como origem de homologação');
+    }
+  }
+  if (env.NODE_ENV === 'production') {
+    if (env.COOKIE_SECURE !== 'true') errors.push('Preview exige COOKIE_SECURE=true');
+    if (appOrigin?.protocol !== 'https:') errors.push('Preview exige APP_ORIGIN https');
+  }
+  const port = Number(env.PORT || 4100);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) errors.push('PORT inválida');
+  return errors;
+}
+
+let validateHomologationEnv = fallbackValidateHomologationEnv;
+const compiledPolicyPath = path.join(root, 'packages/core-policy/dist/index.js');
+if (fs.existsSync(compiledPolicyPath)) {
+  try {
+    ({ validateHomologationEnv } = require(compiledPolicyPath));
+  } catch {}
+}
+
 if (has('.env') && typeof process.loadEnvFile === 'function') {
   process.loadEnvFile(path.join(root, '.env'));
 }

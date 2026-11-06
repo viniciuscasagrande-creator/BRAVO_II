@@ -4,8 +4,9 @@ import { DatabaseService } from '../common/database/database.service';
 async function main() {
   const db = new DatabaseService();
   await db.ensureInitialized();
+  const newlyApplied = await db.runMigrations();
   const applied = await db.getAppliedMigrations();
-  console.log(JSON.stringify({ status: 'ok', appliedMigrations: applied }, null, 2));
+  console.log(JSON.stringify({ status: 'ok', newlyApplied, appliedMigrations: applied }, null, 2));
   await db.onModuleDestroy();
 }
 
