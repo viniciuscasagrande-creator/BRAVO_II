@@ -59,16 +59,36 @@ async function bootstrap() {
   const identityService = app.get(IdentityService);
   await identityService.syncCanonicalRolesAndPermissions();
 
-  await app.listen(config.port, '0.0.0.0');
-  logger.info(`API BRAVO_II ativa na porta ${config.port}`, 'bootstrap-init', {
-    environment: config.nodeEnv,
-    port: config.port,
-  });
+  await app.init();
+  return app;
 }
 
-if (require.main === module) {
-  bootstrap().catch((err) => {
-    console.error('Erro fatal ao inicializar API BRAVO_II:', err);
-    process.exit(1);
-  });
+let cachedHandlerPromise: Promise<(req: Request, res: Response) => unknown> | null = null;
+
+export default async function vercelHandler(req: Request, res: Response) {
+  if (!cachedHandlerPromise) {
+    cachedHandlerPromise = bootstrap().then((app) => {
+      const instance = app.getHttpAdapter().getInstance();
+      return instance as (req: Request, res: Response) => unknown;
+    });
+  }
+  const handler = await cachedHandlerPromise;
+  return handler(req, res);
+}
+
+if (require.main === module && process.env.VERCEL !== '1') {
+  bootstrap()
+    .then(async (app) => {
+      const config = loadEnvironmentConfig();
+      const logger = new StructuredLogger('bravo-ii-api');
+      await app.listen(config.port, '0.0.0.0');
+      logger.info(`API BRAVO_II ativa na porta ${config.port}`, 'bootstrap-init', {
+        environment: config.nodeEnv,
+        port: config.port,
+      });
+    })
+    .catch((err) => {
+      console.error('Erro fatal ao inicializar API BRAVO_II:', err);
+      process.exit(1);
+    });
 }

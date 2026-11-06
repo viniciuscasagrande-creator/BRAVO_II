@@ -12,7 +12,7 @@ function getUpstream():URL {
   const target=new URL(raw);
   if(target.username||target.password||target.pathname!=='/'||target.search||target.hash)throw new Error('BRAVO_API_URL deve conter apenas a origem da API');
   if(process.env.VERCEL==='1'){
-    if(process.env.VERCEL_ENV!=='preview')throw new Error('BFF liberado apenas em Preview');
+    if(process.env.VERCEL_ENV!=='preview'&&process.env.BRAVO_ENV!=='HOMOLOGACAO'&&process.env.ENABLE_EXTERNAL_PUBLICATION==='true')throw new Error('BFF liberado apenas em Preview');
     if(target.protocol!=='https:'||['localhost','127.0.0.1'].includes(target.hostname))throw new Error('BRAVO_API_URL deve apontar para API HTTPS da Vercel');
   }else if(!['http:','https:'].includes(target.protocol))throw new Error('BRAVO_API_URL inválida');
   if(!process.env.BRAVO_PROXY_KEY||process.env.BRAVO_PROXY_KEY.length<32)throw new Error('BRAVO_PROXY_KEY não configurada');
