@@ -3,6 +3,7 @@
   "version": "0.12.0-neon-gemini-hml",
   "private": true,
   "description": "BRAVO_II — Novo ERP modular da DiskIngressos (Sucessor do SIGE)",
+  "packageManager": "pnpm@12.6.0",
   "workspaces": [
     "apps/api",
     "apps/backoffice",
