@@ -24,6 +24,14 @@ async function main() {
 
   // Contas técnicas locais para validação de sessão e RBAC em Preview local (sem criar eventos, pedidos ou saldos falsos)
   await identity.ensureOperatorAccount({
+    id: '00000000-0000-4000-8000-000000000100',
+    email: 'admin.local@diskingressos.com.br',
+    fullName: 'Administrador Geral BRAVO_II (Ambiente Local)',
+    plainPassword: 'BravoLocal#Admin2026',
+    role: 'ADMIN_BRAVO',
+  });
+
+  await identity.ensureOperatorAccount({
     id: '00000000-0000-4000-8000-000000000101',
     email: 'financeiro.local@diskingressos.com.br',
     fullName: 'Operador Financeiro Disk (Ambiente Local)',
