@@ -9,5 +9,6 @@ coverage/
 .env
 .env.local
 .env.*.local
+referencias/
 npm-debug.log*
 pnpm-debug.log*

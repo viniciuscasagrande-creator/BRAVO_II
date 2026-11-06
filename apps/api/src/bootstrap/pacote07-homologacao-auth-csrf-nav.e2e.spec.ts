@@ -262,21 +262,60 @@ describe('BRAVO_II — Pacote 07 E2E: Homologação PostgreSQL, Autenticação C
       'ingressos',
       'checkout',
       'pdv',
+      'sac',
+      'sac-chamados',
+      'sac-sla',
+      'sac-itil',
+      'sac-conhecimento',
+      'pos-venda',
+      'cancelamentos',
+      'estornos',
+      'aprovar-estornos',
       'financeiro',
+      'ia',
       'rh',
     ]);
 
     const comercialMenu = await getMenuIdsFor('comercial.p07@diskingressos.test', 'BravoP07#ComercialPassword2026');
-    assert.deepEqual(comercialMenu, ['home', 'produtores', 'eventos', 'taxas']);
+    assert.deepEqual(comercialMenu, ['home', 'produtores', 'eventos', 'taxas', 'ia']);
 
     const operacoesMenu = await getMenuIdsFor('operacoes.p07@diskingressos.test', 'BravoP07#OperacoesPassword2026');
-    assert.deepEqual(operacoesMenu, ['home', 'produtores', 'eventos', 'clientes', 'pedidos', 'ingressos', 'checkout', 'pdv']);
+    assert.deepEqual(operacoesMenu, [
+      'home',
+      'produtores',
+      'eventos',
+      'clientes',
+      'pedidos',
+      'ingressos',
+      'checkout',
+      'pdv',
+      'sac',
+      'sac-chamados',
+      'sac-sla',
+      'sac-itil',
+      'sac-conhecimento',
+      'pos-venda',
+      'cancelamentos',
+      'estornos',
+      'ia',
+    ]);
 
     const financeiroMenu = await getMenuIdsFor('financeiro.p07@diskingressos.test', 'BravoP07#FinanceiroPassword2026');
-    assert.deepEqual(financeiroMenu, ['home', 'produtores', 'eventos', 'taxas', 'pedidos', 'checkout', 'financeiro']);
+    assert.deepEqual(financeiroMenu, [
+      'home',
+      'produtores',
+      'eventos',
+      'taxas',
+      'pedidos',
+      'checkout',
+      'estornos',
+      'aprovar-estornos',
+      'financeiro',
+      'ia',
+    ]);
 
     const rhMenu = await getMenuIdsFor('rh.p07@diskingressos.test', 'BravoP07#RhPassword2026');
-    assert.deepEqual(rhMenu, ['home', 'rh']);
+    assert.deepEqual(rhMenu, ['home', 'ia', 'rh']);
 
     const produtorMenu = await getMenuIdsFor('produtor.p07@pdt.diskingressos.test', 'BravoP07#ProdutorPassword2026');
     assert.deepEqual(produtorMenu, []);

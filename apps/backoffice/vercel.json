@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "cd ../.. && npm run build:vercel:web",
+  "installCommand": "cd ../.. && npm install",
+  "functions": {
+    "src/app/v1/[...path]/route.ts": {
+      "maxDuration": 30
+    }
+  }
+}

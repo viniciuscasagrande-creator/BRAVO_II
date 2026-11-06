@@ -1,0 +1,3 @@
+-- Migration Prisma conciliada com 0009_pacote10_sac_pos_venda_estornos.up.sql
+-- SAC, Pós-Venda, Cancelamentos e Estornos (Pacote 10)
+-- Consulte database/migrations/0009_pacote10_sac_pos_venda_estornos.up.sql para a execução canônica do Core.

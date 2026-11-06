@@ -34,7 +34,17 @@ export const MENU: readonly MenuItem[] = [
   {id:'ingressos',label:'Consulta de Ingressos',href:'/ingressos',roles:['ADMIN','OPERACOES','SAC','AUDITOR'],status:'ATIVO',group:'Vendas e SAC'},
   {id:'checkout',label:'Checkout · Homologação',href:'/checkout',roles:['ADMIN','OPERACOES','FINANCEIRO_DISK','AUDITOR'],status:'ATIVO',group:'Vendas e SAC'},
   {id:'pdv',label:'PDV · Configuração',href:'/pdv',roles:['ADMIN','OPERACOES','PDV'],status:'ATIVO',group:'Vendas e SAC'},
+  {id:'sac',label:'Painel SAC',href:'/sac',roles:['ADMIN','SAC','OPERACOES','AUDITOR'],status:'ATIVO',group:'Atendimento SAC'},
+  {id:'sac-chamados',label:'Central de Chamados',href:'/sac/chamados',roles:['ADMIN','SAC','OPERACOES','AUDITOR'],status:'ATIVO',group:'Atendimento SAC'},
+  {id:'sac-sla',label:'SLA, equipes e filas',href:'/sac/gestao',roles:['ADMIN','SAC','OPERACOES','AUDITOR'],status:'ATIVO',group:'Atendimento SAC'},
+  {id:'sac-itil',label:'Incidentes e Problemas ITIL',href:'/sac/itil',roles:['ADMIN','SAC','OPERACOES','AUDITOR'],status:'ATIVO',group:'Atendimento SAC'},
+  {id:'sac-conhecimento',label:'Base de Conhecimento',href:'/sac/conhecimento',roles:['ADMIN','SAC','OPERACOES','AUDITOR'],status:'ATIVO',group:'Atendimento SAC'},
+  {id:'pos-venda',label:'Alterações de Pedidos',href:'/pos-venda/trocas',roles:['ADMIN','SAC','OPERACOES','AUDITOR'],status:'ATIVO',group:'Pós-Venda'},
+  {id:'cancelamentos',label:'Cancelamentos',href:'/pos-venda/cancelamentos',roles:['ADMIN','SAC','OPERACOES','AUDITOR'],status:'ATIVO',group:'Pós-Venda'},
+  {id:'estornos',label:'Solicitações de Estorno',href:'/estornos',roles:['ADMIN','SAC','OPERACOES','FINANCEIRO_DISK','AUDITOR'],status:'ATIVO',group:'Pós-Venda'},
+  {id:'aprovar-estornos',label:'Aprovações de Estorno',href:'/financeiro/estornos',roles:['FINANCEIRO_DISK','AUDITOR','ADMIN'],status:'ATIVO',group:'Financeiro'},
   {id:'financeiro',label:'Financeiro Disk — 104 funções',href:'/financeiro',roles:['ADMIN','FINANCEIRO_DISK','AUDITOR'],status:'EM_IMPLANTACAO',group:'Financeiro'},
+  {id:'ia',label:'Assistente Gemini · Homologação',href:'/ia',roles:['ADMIN','COMERCIAL','OPERACOES','SAC','FINANCEIRO_DISK','RH','AUDITOR','CADASTRO','PUBLICACAO'],status:'ATIVO',group:'Inteligência'},
   {id:'rh',label:'RH e Departamento Pessoal — 45 funções',href:'/rh',roles:['ADMIN','RH','AUDITOR'],status:'EM_IMPLANTACAO',group:'Pessoas'},
 ];
 

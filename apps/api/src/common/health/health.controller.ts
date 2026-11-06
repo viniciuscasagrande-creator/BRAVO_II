@@ -23,6 +23,8 @@ export class HealthController {
       migrations,
       realFinancialGatewaysBlocked:
         !config.allowRealPaymentGateway && !config.allowRealRefundExecution && !config.allowRealPayoutExecution,
+      directDatabaseUrlConfigured: Boolean(config.directUrl),
+      googleApiConfigured: config.googleApiKeyConfigured,
       correlationId,
       timestamp: new Date().toISOString(),
     };
@@ -39,6 +41,7 @@ export class HealthController {
       ambiente: 'HOMOLOGACAO',
       publicacaoExterna: false,
       pagamentosReais: !blocked,
+      googleApiConfigurada: config.googleApiKeyConfigured,
     };
   }
 

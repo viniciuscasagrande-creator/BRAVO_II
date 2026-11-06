@@ -66,6 +66,9 @@ if (api && origin && api.origin === origin.origin) {
 if (process.env.ENABLE_PDV_OPERATIONS === 'true') {
   errors.push('Ativação PDV exige homologação formal e não é permitida neste pacote');
 }
+if (process.env.ENABLE_TICKET_REPLACEMENT === 'true' || process.env.ACCESS_GATE_INTEGRATED === 'true') {
+  errors.push('Troca física de ingressos exige portaria homologada e deve permanecer false');
+}
 if (process.env.ENABLE_PAGBANK_SANDBOX === 'true' && !process.env.PAGBANK_SANDBOX_TOKEN) {
   errors.push('Sandbox PagBank ativado sem token');
 }

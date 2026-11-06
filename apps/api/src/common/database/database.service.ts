@@ -29,13 +29,29 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       return;
     }
 
+    if (!process.env.DATABASE_URL && process.env.NODE_ENV !== 'test') {
+      const envCandidates = [
+        path.resolve(process.cwd(), '.env'),
+        path.resolve(process.cwd(), '../../.env'),
+        path.resolve(__dirname, '../../../../../.env'),
+      ];
+      for (const candidate of envCandidates) {
+        if (fs.existsSync(candidate) && typeof process.loadEnvFile === 'function') {
+          try {
+            process.loadEnvFile(candidate);
+          } catch {}
+          break;
+        }
+      }
+    }
+
     const config = loadEnvironmentConfig();
     const forceMemory = config.nodeEnv === 'test' || config.pgliteDataDir === 'memory://';
 
     if (config.databaseUrl && !forceMemory) {
       const candidatePool = new Pool({
         connectionString: config.databaseUrl,
-        connectionTimeoutMillis: 1500,
+        connectionTimeoutMillis: 10000,
       });
       try {
         await candidatePool.query('SELECT 1');

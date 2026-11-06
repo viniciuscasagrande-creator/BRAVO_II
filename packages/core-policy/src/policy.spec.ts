@@ -123,7 +123,12 @@ test('Configuração de homologação recusa banco operacional e flags financeir
 
 test('SAC não acessa financeiro e perfil PDV vê somente a tela de configuração', () => {
   assert(isPermittedNav(['SAC'], '/clientes'));
+  assert(isPermittedNav(['SAC'], '/sac'));
+  assert(isPermittedNav(['SAC'], '/pos-venda/trocas'));
+  assert(isPermittedNav(['SAC'], '/estornos'));
   assert(!isPermittedNav(['SAC'], '/financeiro'));
+  assert(!isPermittedNav(['SAC'], '/financeiro/estornos'));
+  assert(isPermittedNav(['FINANCEIRO_DISK'], '/financeiro/estornos'));
   assert(isPermittedNav(['PDV'], '/pdv'));
   assert(!isPermittedNav(['PDV'], '/checkout'));
 });

@@ -1,6 +1,8 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import type { NextFunction, Request, Response } from 'express';
 import { DatabaseModule } from '../common/database/database.module';
 import { HealthController } from '../common/health/health.controller';
+import { isValidProxyKey, proxyGuardRequired } from '../core/security/proxy-guard';
 import { GovernanceModule } from '../modules/governance/governance.module';
 import { IdentityModule } from '../modules/identity/identity.module';
 import { ProducersModule } from '../modules/producers/producers.module';
@@ -25,6 +27,8 @@ import { ReportingModule } from '../modules/reporting/reporting.module';
 import { Pacote06Module } from '../modules/pacote06/pacote06.module';
 import { BravoPacote08Module } from '../modules/pacote08/module';
 import { BravoPacote09Module } from '../modules/pacote09/module';
+import { BravoPacote10Module } from '../modules/pacote10/module';
+import { BravoIaModule } from '../modules/ia/ia.module';
 
 @Module({
   imports: [
@@ -53,7 +57,27 @@ import { BravoPacote09Module } from '../modules/pacote09/module';
     Pacote06Module,
     BravoPacote08Module,
     BravoPacote09Module,
+    BravoPacote10Module,
+    BravoIaModule,
   ],
   controllers: [HealthController],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply((req: Request, res: Response, next: NextFunction) => {
+        if (
+          proxyGuardRequired(process.env) &&
+          !isValidProxyKey(req.header('x-bravo-proxy-key'), process.env.BRAVO_PROXY_KEY)
+        ) {
+          res.setHeader('Cache-Control', 'no-store');
+          res.status(403).json({ statusCode: 403, message: 'Acesso ao backend restrito' });
+          return;
+        }
+        res.setHeader('Cache-Control', 'no-store');
+        res.setHeader('X-Content-Type-Options', 'nosniff');
+        next();
+      })
+      .forRoutes('*');
+  }
+}
