@@ -28,6 +28,7 @@ model BravoProducer {
   proposals          BravoCommercialProposal[]
   contracts          BravoCommercialContract[]
   @@index([status])
+  @@map("producers")
 }
 
 model BravoProducerDocument {
@@ -41,6 +42,7 @@ model BravoProducerDocument {
   createdAt    DateTime @default(now())
   producer     BravoProducer @relation(fields:[producerId],references:[id])
   @@index([producerId,documentType])
+  @@map("producer_documents")
 }
 
 model BravoEvent {
@@ -79,6 +81,7 @@ model BravoEvent {
   contracts      BravoCommercialContract[]
   documents      BravoEventDocument[]
   @@index([status,startsAt])
+  @@map("events")
 }
 
 model BravoEventProducer {
@@ -91,6 +94,7 @@ model BravoEventProducer {
   producer      BravoProducer @relation(fields:[producerId],references:[id],onDelete:Restrict)
   @@unique([eventId,producerId])
   @@index([producerId,role])
+  @@map("event_producers")
 }
 
 model BravoEventSession {
@@ -105,6 +109,7 @@ model BravoEventSession {
   lots        BravoPriceLot[]
   saleOrders  BravoSaleOrder[]
   @@index([eventId,startsAt])
+  @@map("event_sessions")
 }
 
 model BravoEventArea {
@@ -118,6 +123,7 @@ model BravoEventArea {
   seats       BravoEventSeat[]
   lots        BravoPriceLot[]
   @@index([eventId])
+  @@map("event_sectors")
 }
 
 model BravoEventSeat {
@@ -128,6 +134,7 @@ model BravoEventSeat {
   status   String  @default("DISPONIVEL")
   area     BravoEventArea @relation(fields:[areaId],references:[id])
   @@unique([areaId,row,number])
+  @@map("event_seats")
 }
 
 model BravoTicketCategory {
@@ -139,6 +146,7 @@ model BravoTicketCategory {
   event        BravoEvent @relation(fields:[eventId],references:[id])
   lots         BravoPriceLot[]
   @@unique([eventId,name])
+  @@map("event_ticket_categories")
 }
 
 model BravoPriceLot {
@@ -161,6 +169,7 @@ model BravoPriceLot {
   category       BravoTicketCategory @relation(fields:[categoryId],references:[id])
   area           BravoEventArea? @relation(fields:[areaId],references:[id])
   @@index([eventId,sessionId,status])
+  @@map("event_price_lots")
 }
 
 model BravoEventChannel {
@@ -170,6 +179,7 @@ model BravoEventChannel {
   enabled    Boolean @default(false)
   event      BravoEvent @relation(fields:[eventId],references:[id])
   @@unique([eventId,channel])
+  @@map("event_channels")
 }
 
 model BravoEventMedia {
@@ -180,6 +190,7 @@ model BravoEventMedia {
   publicReady Boolean @default(false)
   event       BravoEvent @relation(fields:[eventId],references:[id])
   @@index([eventId])
+  @@map("event_media_assets")
 }
 
 model BravoEventFee {
@@ -199,6 +210,7 @@ model BravoEventFee {
   event                 BravoEvent @relation(fields:[eventId],references:[id])
   @@unique([eventId,version])
   @@index([eventId,status,effectiveFrom])
+  @@map("event_fee_configs")
 }
 
 model BravoEventApproval {
@@ -212,6 +224,7 @@ model BravoEventApproval {
   decidedAt   DateTime @default(now())
   event       BravoEvent @relation(fields:[eventId],references:[id])
   @@unique([eventId,revision,step])
+  @@map("event_approvals")
 }
 
 model BravoPublication {
@@ -226,6 +239,7 @@ model BravoPublication {
   confirmedAt         DateTime?
   event               BravoEvent @relation(fields:[eventId],references:[id])
   @@unique([eventId,revision])
+  @@map("p06_event_publications")
 }
 
 model BravoOutbox {
@@ -238,6 +252,7 @@ model BravoOutbox {
   createdAt       DateTime  @default(now())
   processedAt     DateTime?
   @@index([status,createdAt])
+  @@map("outbox_events")
 }
 
 model BravoAudit {
@@ -253,6 +268,7 @@ model BravoAudit {
   createdAt   DateTime @default(now())
   @@index([resource,resourceId,createdAt])
   @@index([actorId,createdAt])
+  @@map("audit_records")
 }
 
 model BravoCommercialProposal {
@@ -268,6 +284,7 @@ model BravoCommercialProposal {
   producer    BravoProducer @relation(fields:[producerId],references:[id])
   event       BravoEvent? @relation(fields:[eventId],references:[id])
   @@index([producerId,status])
+  @@map("commercial_proposals")
 }
 
 model BravoCommercialContract {
@@ -283,6 +300,7 @@ model BravoCommercialContract {
   producer    BravoProducer @relation(fields:[producerId],references:[id])
   event       BravoEvent? @relation(fields:[eventId],references:[id])
   @@index([producerId,status])
+  @@map("commercial_contracts")
 }
 
 model BravoEventDocument {
@@ -296,6 +314,7 @@ model BravoEventDocument {
   createdAt    DateTime @default(now())
   event        BravoEvent @relation(fields:[eventId],references:[id])
   @@index([eventId])
+  @@map("p06_event_documents")
 }
 
 model BravoEventChangeCase {
@@ -311,6 +330,7 @@ model BravoEventChangeCase {
   financeReviewStatus String?
   event        BravoEvent @relation(fields:[eventId],references:[id])
   @@index([eventId,status])
+  @@map("p06_event_change_cases")
 }
 
 // 07 — Core único: identidade, sessão e bloqueio de força bruta no login.
@@ -326,6 +346,7 @@ model BravoIdentityUser {
   createdAt             DateTime            @default(now())
   updatedAt             DateTime            @updatedAt
   sessions              BravoIdentitySession[]
+  @@map("users")
 }
 
 model BravoIdentitySession {
@@ -338,6 +359,7 @@ model BravoIdentitySession {
   user       BravoIdentityUser @relation(fields:[userId],references:[id],onDelete:Cascade)
   @@index([userId,expiresAt])
   @@index([expiresAt])
+  @@map("auth_sessions")
 }
 
 // PACOTE 08 — VENDAS E INGRESSOS, isolados de execução financeira.
@@ -358,6 +380,7 @@ model BravoCustomer {
   orders         BravoSaleOrder[]
   supportCases   BravoSupportCase[]
   @@index([email])
+  @@map("customers")
 }
 
 model BravoSaleOrder {
@@ -396,6 +419,7 @@ model BravoSaleOrder {
   @@index([status,expiresAt])
   @@index([customerId,createdAt])
   @@index([eventId,createdAt])
+  @@map("p08_sale_orders")
 }
 
 model BravoIssuedTicket {
@@ -413,11 +437,13 @@ model BravoIssuedTicket {
   replacedFrom BravoTicketReplacement[] @relation("ReplacementNew")
   @@index([orderId])
   @@index([eventId,sessionId,status])
+  @@map("p08_issued_tickets")
 }
 
 model BravoTicketSequence {
   id         Int @id
   lastNumber Int @default(0)
+  @@map("p08_ticket_sequence")
 }
 
 // Recibo de liquidação verificado POR FUTURO ADAPTADOR DE ADQUIRENTE.
@@ -432,6 +458,7 @@ model BravoPaymentConfirmation {
   recordedAt   DateTime @default(now())
   order        BravoSaleOrder @relation(fields:[orderId],references:[id],onDelete:Restrict)
   @@unique([provider,providerRef])
+  @@map("p08_payment_confirmations")
 }
 
 // PACOTE 09 — Não há confirmação bancária nem cartão em claro neste módulo.
@@ -454,6 +481,7 @@ model BravoCheckoutAttempt {
   @@unique([orderId]) // um checkout por pedido nesta fase; evita cobrança duplicada
   @@index([orderId,createdAt])
   @@index([status,createdAt])
+  @@map("p09_checkout_attempts")
 }
 
 model BravoPdvTerminal {
@@ -468,6 +496,7 @@ model BravoPdvTerminal {
   shifts       BravoPdvShift[]
   orders       BravoSaleOrder[]
   @@index([status])
+  @@map("p09_pdv_terminals")
 }
 
 model BravoPdvShift {
@@ -481,6 +510,7 @@ model BravoPdvShift {
   orders       BravoSaleOrder[]
   @@index([terminalId,status])
   @@index([operatorId,status])
+  @@map("p09_pdv_shifts")
 }
 
 
@@ -493,6 +523,7 @@ model BravoSupportTeam {
   createdAt DateTime @default(now())
   queues BravoSupportQueue[]
   members BravoSupportTeamMember[]
+  @@map("p10_support_teams")
 }
 model BravoSupportTeamMember {
   id String @id @default(uuid()) @db.Uuid
@@ -502,6 +533,7 @@ model BravoSupportTeamMember {
   team BravoSupportTeam @relation(fields:[teamId],references:[id],onDelete:Restrict)
   @@unique([teamId,userId])
   @@index([userId])
+  @@map("p10_support_team_members")
 }
 model BravoSupportQueue {
   id String @id @default(uuid()) @db.Uuid
@@ -510,6 +542,7 @@ model BravoSupportQueue {
   active Boolean @default(true)
   team BravoSupportTeam? @relation(fields:[teamId],references:[id],onDelete:Restrict)
   cases BravoSupportCase[]
+  @@map("p10_support_queues")
 }
 model BravoSlaPolicy {
   id String @id @default(uuid()) @db.Uuid
@@ -522,6 +555,7 @@ model BravoSlaPolicy {
   createdAt DateTime @default(now())
   cases BravoSupportCase[]
   @@unique([category,priority,version])
+  @@map("p10_sla_policies")
 }
 model BravoSupportCase {
   id String @id @default(uuid()) @db.Uuid
@@ -557,6 +591,7 @@ model BravoSupportCase {
   @@index([assignedTo,status])
   @@index([orderId])
   @@index([resolutionDueAt,status])
+  @@map("p10_support_cases")
 }
 model BravoSupportInteraction {
   id String @id @default(uuid()) @db.Uuid
@@ -567,6 +602,7 @@ model BravoSupportInteraction {
   createdAt DateTime @default(now())
   case BravoSupportCase @relation(fields:[caseId],references:[id],onDelete:Restrict)
   @@index([caseId,createdAt])
+  @@map("p10_support_interactions")
 }
 model BravoSupportIncident {
   id String @id @default(uuid()) @db.Uuid
@@ -580,6 +616,7 @@ model BravoSupportIncident {
   case BravoSupportCase @relation(fields:[caseId],references:[id],onDelete:Restrict)
   problem BravoSupportProblem? @relation(fields:[problemId],references:[id],onDelete:Restrict)
   @@index([isMajor,status])
+  @@map("p10_support_incidents")
 }
 model BravoSupportProblem {
   id String @id @default(uuid()) @db.Uuid
@@ -590,6 +627,7 @@ model BravoSupportProblem {
   createdBy String
   createdAt DateTime @default(now())
   incidents BravoSupportIncident[]
+  @@map("p10_support_problems")
 }
 model BravoKnowledgeArticle {
   id String @id @default(uuid()) @db.Uuid
@@ -601,6 +639,7 @@ model BravoKnowledgeArticle {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   @@index([status,category])
+  @@map("p10_knowledge_articles")
 }
 model BravoSupportSatisfaction {
   id String @id @default(uuid()) @db.Uuid
@@ -609,6 +648,7 @@ model BravoSupportSatisfaction {
   comment String? @db.VarChar(1000)
   createdAt DateTime @default(now())
   case BravoSupportCase @relation(fields:[caseId],references:[id],onDelete:Restrict)
+  @@map("p10_support_satisfaction")
 }
 model BravoOrderChangeRequest {
   id String @id @default(uuid()) @db.Uuid
@@ -630,6 +670,7 @@ model BravoOrderChangeRequest {
   replacement BravoTicketReplacement?
   @@index([orderId,status])
   @@index([ticketId,status])
+  @@map("p10_order_change_requests")
 }
 model BravoTicketReplacement {
   id String @id @default(uuid()) @db.Uuid
@@ -641,6 +682,7 @@ model BravoTicketReplacement {
   change BravoOrderChangeRequest @relation(fields:[changeId],references:[id],onDelete:Restrict)
   oldTicket BravoIssuedTicket @relation("ReplacedOriginal",fields:[oldTicketId],references:[id],onDelete:Restrict)
   newTicket BravoIssuedTicket @relation("ReplacementNew",fields:[newTicketId],references:[id],onDelete:Restrict)
+  @@map("p10_ticket_replacements")
 }
 model BravoCancellationRequest {
   id String @id @default(uuid()) @db.Uuid
@@ -659,6 +701,7 @@ model BravoCancellationRequest {
   refunds BravoRefundRequest[]
   @@index([orderId,status])
   @@index([eventId,status])
+  @@map("p10_cancellation_requests")
 }
 model BravoRefundRequest {
   id String @id @default(uuid()) @db.Uuid
@@ -681,6 +724,7 @@ model BravoRefundRequest {
   attempts BravoRefundAttempt[]
   @@index([orderId,status])
   @@index([status,createdAt])
+  @@map("p10_refund_requests")
 }
 model BravoRefundApproval {
   id String @id @default(uuid()) @db.Uuid
@@ -693,6 +737,7 @@ model BravoRefundApproval {
   refund BravoRefundRequest @relation(fields:[refundId],references:[id],onDelete:Restrict)
   @@unique([refundId,step])
   @@index([actorId,createdAt])
+  @@map("p10_refund_approvals")
 }
 model BravoRefundAttempt {
   id String @id @default(uuid()) @db.Uuid
@@ -706,6 +751,7 @@ model BravoRefundAttempt {
   confirmedAt DateTime?
   refund BravoRefundRequest @relation(fields:[refundId],references:[id],onDelete:Restrict)
   @@index([refundId,status])
+  @@map("p10_refund_attempts")
 }
 model BravoEventRefundBatch {
   id String @id @default(uuid()) @db.Uuid
@@ -717,6 +763,7 @@ model BravoEventRefundBatch {
   createdBy String
   createdAt DateTime @default(now())
   @@index([eventId,createdAt])
+  @@map("p10_event_refund_batches")
 }
 
 // PACOTE NEON + GEMINI — contagem persistente, sem perguntas/respostas e sem dados pessoais.
@@ -727,4 +774,116 @@ model BravoAiQuotaWindow {
   requests Int     @default(0)
   @@id([actorId,bucket,start])
   @@index([start])
+  @@map("p12_ai_quota_windows")
+}
+
+
+// MIGRATION 0004 — Catálogo preservado das 149 funções (104 Financeiro Disk + 45 RH & DP) e Ponte RH -> Financeiro
+model BravoFunctionCatalog {
+  numero             Int      @id
+  area               String   @db.VarChar(24)
+  grupo              String   @db.VarChar(120)
+  grupoRh            String?  @map("grupo_rh") @db.VarChar(120)
+  etiqueta           String   @db.VarChar(180)
+  idOrigem           String   @map("id_origem") @db.VarChar(120)
+  filterArg          String?  @map("filter_arg") @db.VarChar(120)
+  rota               String   @unique @db.VarChar(255)
+  statusOrigem       String   @default("ROTA_NO_DISPATCHER_LEGADO") @map("status_origem") @db.VarChar(64)
+  estadoMigracao     String   @default("PENDENTE") @map("estado_migracao") @db.VarChar(48)
+  targetModuleCode   String   @map("target_module_code") @db.VarChar(64)
+  requiredPermission String   @map("required_permission") @db.VarChar(64)
+  preservar          Boolean  @default(true)
+  updatedAt          DateTime @default(now()) @map("updated_at")
+  @@map("catalog_149_functions")
+}
+
+model BravoFinanceCostCenter {
+  id         String   @id @default(uuid()) @db.Uuid
+  code       String   @unique @db.VarChar(64)
+  name       String   @db.VarChar(180)
+  centerType String   @map("center_type") @db.VarChar(32)
+  eventId    String?  @map("event_id") @db.Uuid
+  status     String   @default("ACTIVE") @db.VarChar(24)
+  createdAt  DateTime @default(now()) @map("created_at")
+  @@map("finance_cost_centers")
+}
+
+model BravoRhEmployee {
+  id              String   @id @default(uuid()) @db.Uuid
+  matricula       String   @unique @db.VarChar(48)
+  cpfHash         String   @unique @map("cpf_hash") @db.VarChar(128)
+  cpfMasked       String   @map("cpf_masked") @db.VarChar(24)
+  fullName        String   @map("full_name") @db.VarChar(255)
+  email           String   @db.VarChar(255)
+  contractType    String   @map("contract_type") @db.VarChar(32)
+  departmentName  String   @map("department_name") @db.VarChar(120)
+  roleTitle       String   @map("role_title") @db.VarChar(120)
+  baseSalaryCents BigInt   @map("base_salary_cents")
+  status          String   @default("ACTIVE") @db.VarChar(24)
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @map("updated_at")
+  @@map("rh_employees")
+}
+
+model BravoRhGeofence {
+  id           String   @id @default(uuid()) @db.Uuid
+  code         String   @unique @db.VarChar(64)
+  name         String   @db.VarChar(180)
+  latitude     Decimal  @db.Decimal(10, 7)
+  longitude    Decimal  @db.Decimal(10, 7)
+  radiusMeters Int      @map("radius_meters")
+  eventId      String?  @map("event_id") @db.Uuid
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at")
+  @@map("rh_geofences")
+}
+
+model BravoRhTimePunch {
+  id               String   @id @default(uuid()) @db.Uuid
+  nsr              BigInt   @unique @default(autoincrement())
+  employeeId       String   @map("employee_id") @db.Uuid
+  geofenceId       String?  @map("geofence_id") @db.Uuid
+  punchType        String   @map("punch_type") @db.VarChar(24)
+  latitude         Decimal  @db.Decimal(10, 7)
+  longitude        Decimal  @db.Decimal(10, 7)
+  distanceMeters   Int      @map("distance_meters")
+  validationStatus String   @map("validation_status") @db.VarChar(32)
+  idempotencyKey   String   @unique @map("idempotency_key") @db.VarChar(128)
+  authenticityHash String   @map("authenticity_hash") @db.VarChar(128)
+  recordedAt       DateTime @default(now()) @map("recorded_at")
+  @@map("rh_time_punches")
+}
+
+model BravoRhPaymentBatch {
+  id               String   @id @default(uuid()) @db.Uuid
+  companyCode      String   @default("DISKINGRESSOS") @map("company_code") @db.VarChar(64)
+  batchCode        String   @unique @map("batch_code") @db.VarChar(80)
+  batchType        String   @map("batch_type") @db.VarChar(32)
+  competencia      String   @db.Char(7)
+  costCenterId     String   @map("cost_center_id") @db.Uuid
+  eventId          String?  @map("event_id") @db.Uuid
+  headcount        Int
+  totalAmountCents BigInt   @map("total_amount_cents")
+  totalizationHash String   @map("totalization_hash") @db.VarChar(128)
+  idempotencyKey   String   @unique @map("idempotency_key") @db.VarChar(160)
+  status           String   @default("AGUARDANDO_FINANCEIRO") @db.VarChar(48)
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @default(now()) @map("updated_at")
+  @@map("rh_payment_batches")
+}
+
+model BravoFinanceLedgerEntry {
+  id              String   @id @default(uuid()) @db.Uuid
+  entryNumber     String   @unique @map("entry_number") @db.VarChar(64)
+  eventId         String?  @map("event_id") @db.Uuid
+  producerId      String?  @map("producer_id") @db.Uuid
+  rhBatchId       String?  @map("rh_batch_id") @db.Uuid
+  entryType       String   @map("entry_type") @db.VarChar(48)
+  debitAccount    String   @map("debit_account") @db.VarChar(80)
+  creditAccount   String   @map("credit_account") @db.VarChar(80)
+  amountCents     BigInt   @map("amount_cents")
+  descriptionPtBr String   @map("description_pt_br") @db.Text
+  idempotencyKey  String   @unique @map("idempotency_key") @db.VarChar(160)
+  occurredAt      DateTime @default(now()) @map("occurred_at")
+  @@map("finance_ledger_entries")
 }

@@ -1,4 +1,0 @@
-SOURCE ORIGINAL: Os 256 arquivos de FONTE_ORIGINAL_FINANCEIRO_RH são imutáveis nesta entrega.
-Backup ZIP original preservado: BACKUP_ORIGINAL_IMUTAVEL.zip.
-ARQUITETURA_BRAVO_II_PACOTE_00_V2 é o planejamento anterior sem SIGE, preservado apenas como referência.
-Em divergência, as regras mais recentes dos pacotes 01 a 04 (Taxa Disk por evento, RH junto, fonte imutável, segurança P0) têm prioridade.

@@ -1,1 +1,0 @@
-export default function Rh(){return <section className="bravo-panel"><h1>RH e Departamento Pessoal</h1><p>As 45 funções de RH estão preservadas no inventário de referência. Este módulo ainda NÃO está conectado nem operacional neste pacote.</p></section>;}

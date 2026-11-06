@@ -1,0 +1,12 @@
+* text=auto eol=lf
+*.sh text eol=lf
+*.mjs text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
+*.csv text eol=lf
+*.sql text eol=lf
+*.prisma text eol=lf
+*.md text eol=lf
+reference/matriz-149-original.csv -text
+reference/catalogo-149-original.json -text

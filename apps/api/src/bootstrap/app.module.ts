@@ -65,7 +65,11 @@ import { BravoIaModule } from '../modules/ia/ia.module';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
-      .apply((req: Request, res: Response, next: NextFunction) => {
+      .apply((req: Request & { __bravoProxyChecked?: boolean }, res: Response, next: NextFunction) => {
+        if (req.__bravoProxyChecked) {
+          next();
+          return;
+        }
         if (
           proxyGuardRequired(process.env) &&
           !isValidProxyKey(req.header('x-bravo-proxy-key'), process.env.BRAVO_PROXY_KEY)
@@ -74,6 +78,7 @@ export class AppModule implements NestModule {
           res.status(403).json({ statusCode: 403, message: 'Acesso ao backend restrito' });
           return;
         }
+        req.__bravoProxyChecked = true;
         res.setHeader('Cache-Control', 'no-store');
         res.setHeader('X-Content-Type-Options', 'nosniff');
         next();

@@ -7,6 +7,9 @@
   "workspaces": [
     "apps/api",
     "apps/backoffice",
+    "apps/pdt-adapter",
+    "apps/pdv",
+    "apps/workers",
     "packages/config",
     "packages/contracts",
     "packages/core-policy",
@@ -15,8 +18,10 @@
     "packages/domain-p09",
     "packages/domain-p10",
     "packages/domain-ia",
+    "packages/sdk",
     "packages/telemetry",
-    "packages/testing"
+    "packages/testing",
+    "packages/ui"
   ],
   "engines": {
     "node": ">=20.0.0"

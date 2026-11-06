@@ -46,7 +46,11 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     }
 
     const config = loadEnvironmentConfig();
-    const forceMemory = config.nodeEnv === 'test' || config.pgliteDataDir === 'memory://';
+    const isTestRuntime =
+      config.nodeEnv === 'test' ||
+      config.pgliteDataDir === 'memory://' ||
+      Boolean(process.env.NODE_TEST_CONTEXT);
+    const forceMemory = isTestRuntime && process.env.VERCEL !== '1';
 
     if (config.databaseUrl && !forceMemory) {
       const candidatePool = new Pool({
@@ -56,24 +60,28 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       try {
         await candidatePool.query('SELECT 1');
         this.pgPool = candidatePool;
-      } catch {
+      } catch (err) {
         await candidatePool.end().catch(() => {});
         this.pgPool = null;
+        throw new Error(
+          `Falha ao conectar ao PostgreSQL configurado em DATABASE_URL (fallback silencioso para PGlite bloqueado): ${(err as Error).message}`
+        );
       }
     }
 
     if (!this.pgPool) {
-      if (forceMemory) {
-        this.pglite = new PGlite();
-      } else {
-        const resolvedDir = path.resolve(process.cwd(), config.pgliteDataDir);
-        fs.mkdirSync(resolvedDir, { recursive: true });
-        this.pglite = new PGlite(resolvedDir);
+      if (!forceMemory) {
+        throw new Error(
+          'DATABASE_URL obrigatória fora do ambiente de testes (fallback silencioso para PGlite bloqueado).'
+        );
       }
+      this.pglite = new PGlite();
     }
 
     this.initialized = true;
-    await this.runMigrations();
+    if (process.env.VERCEL !== '1') {
+      await this.runMigrations();
+    }
   }
 
   async query<T = Record<string, unknown>>(
