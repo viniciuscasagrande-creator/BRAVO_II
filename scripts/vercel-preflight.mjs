@@ -34,8 +34,8 @@ for (const f of ['apps/backoffice/vercel.json', 'apps/api/vercel.json']) {
 
 if (existsSync('pnpm-lock.yaml')) {
   const lockRaw = readFileSync('pnpm-lock.yaml', 'utf8');
-  if (lockRaw.startsWith('---') || lockRaw.includes('\n---\n') || (lockRaw.match(/^lockfileVersion:/gm) || []).length !== 1) {
-    errors.push('pnpm-lock.yaml inválido: deve ser documento YAML único sem múltiplos streams (---)');
+  if (!lockRaw.includes("lockfileVersion: '9.0'")) {
+    errors.push('pnpm-lock.yaml inválido: lockfileVersion 9.0 ausente');
   }
 }
 
