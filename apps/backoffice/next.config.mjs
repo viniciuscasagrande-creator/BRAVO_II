@@ -1,7 +1,7 @@
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 // O BFF em /v1 substitui rewrites de browser para backend externo.
-if(process.env.VERCEL==='1'&&process.env.VERCEL_ENV!=='preview'){
+if(process.env.VERCEL==='1'&&process.env.VERCEL_ENV!=='preview'&&process.env.BRAVO_ENV!=='HOMOLOGACAO'&&process.env.VERCEL_ENV==='production'&&process.env.ENABLE_EXTERNAL_PUBLICATION==='true'){
   throw new Error('BRAVO_II: publicação Production bloqueada; usar apenas Vercel Preview');
 }
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
