@@ -3,7 +3,7 @@ import { CommercialService } from './commercial.service';
 import { AuthGuard, type AuthenticatedRequest, RequirePermission } from '../../common/auth/auth.guard';
 import { ensureCorrelationId } from '@bravo-ii/telemetry';
 
-@Controller('api/v1/events/:eventId')
+@Controller(['api/v1/events/:eventId', 'v1/events/:eventId'])
 @UseGuards(AuthGuard)
 export class CommercialController {
   constructor(private readonly commercialService: CommercialService) {}

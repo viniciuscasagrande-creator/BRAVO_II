@@ -57,7 +57,7 @@ export default function EventosPage() {
   const [channelCode, setChannelCode] = useState('SITE-OFICIAL');
   const [channelName, setChannelName] = useState('Site www.diskingressos.com.br');
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+  const apiUrl = '';
   const canWriteEvent = hasPermission('event:write');
   const canApproveEvent = hasPermission('event:approve');
   const canPublishEvent = hasPermission('event:publish');
@@ -265,9 +265,8 @@ export default function EventosPage() {
     <div>
       <PageHeader
         title="Central de Eventos e Event Builder por Etapas"
-        subtitle="Fluxo guiado sem modais em cascata: Dados Gerais, Sessões, Mapa/Setores, Modalidades/Lotes, Canais/PDVs e Máquina de Estados de Aprovação e Publicação."
-        moduleCode="EVT / INV"
-        packageBadge="Pacote 03 + Pacote 06 — Event Builder, 4 Aprovações e Publicação Ativos"
+        subtitle="Fluxo estruturado por etapas: Dados Gerais, Sessões, Mapa e Setores, Modalidades e Lotes, Canais de Venda e Alçadas de Aprovação e Publicação."
+        moduleCode="EVENTOS E INVENTÁRIO"
       />
 
       <div
@@ -285,15 +284,15 @@ export default function EventosPage() {
         }}
       >
         <div style={{ fontSize: '13px', color: '#1e3a8a', fontWeight: 600 }}>
-          Pacote 06 Integrado — Event Builder em 10 Etapas, Aprovação Sequencial em 4 Etapas (Cadastral → Comercial → Operacional → Publicação) e Solicitação Idempotente
+          Fluxo de Implantação de Eventos — Aprovação Sequencial (Cadastral → Comercial → Operacional → Publicação)
         </div>
         <div style={{ display: 'flex', gap: '8px' }}>
           <a href="/eventos/novo" className="b6-btn">
-            + Novo Evento (Wizard Pacote 06)
+            + Novo Evento (Assistente Guiado)
           </a>
           {selectedEventId ? (
             <a href={`/eventos/${selectedEventId}`} className="b6-btn b6-btn-secondary">
-              Abrir Event Builder Pacote 06 deste Evento
+              Abrir Painel Detalhado deste Evento
             </a>
           ) : null}
         </div>

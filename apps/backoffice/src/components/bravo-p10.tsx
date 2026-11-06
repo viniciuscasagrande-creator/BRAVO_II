@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import {ReactNode} from 'react';
 import './bravo-p10.css';
-export function P10Head({title,description,notice}:{title:string;description:string;notice?:string}){return <div className="p10-head"><div><span className="p10-eyebrow">BRAVO_II / Operação integrada</span><h1>{title}</h1><p>{description}</p></div><div className="p10-label">HOMOLOGAÇÃO</div>{notice&&<div className="p10-banner">{notice}</div>}</div>}
+export function P10Head({title,description,notice}:{title:string;description:string;notice?:string}){return <div className="p10-head"><div><span className="p10-eyebrow">BRAVO_II · Atendimento e Pós-Venda</span><h1>{title}</h1><p>{description}</p></div><div className="p10-label">OPERAÇÃO CONTROLADA</div>{notice&&<div className="p10-banner">{notice}</div>}</div>}
 export function P10Panel({title,children}:{title:string;children:ReactNode}){return <section className="p10-panel"><h2>{title}</h2>{children}</section>}
 export function P10Alert({error,success}:{error?:string;success?:string}){return <>{error&&<div className="p10-alert error" role="alert">{error}</div>}{success&&<div className="p10-alert success" role="status">{success}</div>}</>}
 export function P10Empty({message='Nenhum registro neste banco de homologação.'}:{message?:string}){return <p className="p10-empty">{message}</p>}

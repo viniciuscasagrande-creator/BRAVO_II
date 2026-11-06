@@ -17,7 +17,7 @@ export default function IngressosPortariaPage() {
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [checkinResult, setCheckinResult] = useState<CheckinValidationResultDto | null>(null);
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+  const apiUrl = '';
 
   const loadTickets = useCallback(
     async (publicCodeFilter?: string) => {
@@ -46,25 +46,10 @@ export default function IngressosPortariaPage() {
 
   if (!hasPermission('ticket:read') && !hasPermission('checkin:validate')) {
     return (
-      <section
-        role="alert"
-        style={{
-          padding: '28px',
-          borderRadius: '10px',
-          backgroundColor: '#fef2f2',
-          border: '1px solid #fecaca',
-          color: '#991b1b',
-        }}
-      >
-        <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', marginBottom: '6px' }}>
-          HTTP 403 — Barreira de Autorização RBAC/ABAC
-        </div>
-        <h1 style={{ margin: '0 0 8px 0', fontSize: '20px' }}>Acesso Negado a Ingressos e Portaria</h1>
-        <p style={{ margin: 0, fontSize: '14px' }}>
-          O perfil ativo (<strong>{actor.roles.join(', ')}</strong>) não possui a permissão{' '}
-          <code>ticket:read</code> ou <code>checkin:validate</code>.
-        </p>
-      </section>
+      <HonestEmptyState
+        title="Acesso Restrito a Ingressos e Portaria"
+        description={`Sua credencial atual (${actor.roles.join(', ')}) não inclui permissão para consultar ingressos ou operar coletores de portaria.`}
+      />
     );
   }
 

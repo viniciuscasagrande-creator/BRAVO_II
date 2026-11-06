@@ -3,7 +3,7 @@ import { CustomersService } from './customers.service';
 import { AuthGuard, type AuthenticatedRequest } from '../../common/auth/auth.guard';
 import { ensureCorrelationId } from '@bravo-ii/telemetry';
 
-@Controller('api/v1/customers')
+@Controller(['api/v1/customers', 'v1/customers'])
 @UseGuards(AuthGuard)
 export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}

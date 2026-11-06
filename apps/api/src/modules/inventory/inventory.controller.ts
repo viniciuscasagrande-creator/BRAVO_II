@@ -3,7 +3,7 @@ import { InventoryService } from './inventory.service';
 import { AuthGuard, type AuthenticatedRequest, RequirePermission } from '../../common/auth/auth.guard';
 import { ensureCorrelationId } from '@bravo-ii/telemetry';
 
-@Controller('api/v1')
+@Controller(['api/v1', 'v1'])
 @UseGuards(AuthGuard)
 export class InventoryController {
   constructor(private readonly inventoryService: InventoryService) {}

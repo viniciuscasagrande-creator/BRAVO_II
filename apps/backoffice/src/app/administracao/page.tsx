@@ -15,8 +15,7 @@ export default function AdministracaoGovernancaPage() {
       setAuditRecords([]);
       return;
     }
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-    const client = new BravoApiClient({ baseUrl: apiUrl, sessionToken });
+    const client = new BravoApiClient({ sessionToken });
     client
       .listAuditRecords()
       .then((res) => setAuditRecords(res.items))
@@ -25,34 +24,19 @@ export default function AdministracaoGovernancaPage() {
 
   if (!hasPermission('audit:read')) {
     return (
-      <section
-        role="alert"
-        style={{
-          padding: '28px',
-          borderRadius: '10px',
-          backgroundColor: '#fef2f2',
-          border: '1px solid #fecaca',
-          color: '#991b1b',
-        }}
-      >
-        <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', marginBottom: '6px' }}>
-          HTTP 403 — Barreira de Autorização RBAC/ABAC
-        </div>
-        <h1 style={{ margin: '0 0 8px 0', fontSize: '20px' }}>Acesso Restrito à Trilha de Auditoria</h1>
-        <p style={{ margin: 0, fontSize: '14px' }}>
-          O perfil atual (<strong>{actor.roles.join(', ')}</strong>) não possui a permissão <code>audit:read</code>.
-        </p>
-      </section>
+      <HonestEmptyState
+        title="Acesso Restrito à Governança e Trilha de Auditoria"
+        description={`Sua credencial atual (${actor.roles.join(', ')}) não possui permissão de consulta de auditoria.`}
+      />
     );
   }
 
   return (
     <div>
       <PageHeader
-        title="Administração, Governança e Trilha de Auditoria Imutável"
-        subtitle="Registro estruturado e imutável (protegido por trigger PostgreSQL contra UPDATE/DELETE) de acessos, aprovações e bloqueios de permissão."
-        moduleCode="IAM / AUD"
-        packageBadge="Pacote 01 — Auditoria Imutável Ativa"
+        title="Administração, Governança e Trilha de Auditoria"
+        subtitle="Registro estruturado e imutável de acessos, aprovações operacionais e eventos de segurança."
+        moduleCode="GOVERNANÇA E AUDITORIA"
       />
 
       {auditRecords.length === 0 ? (

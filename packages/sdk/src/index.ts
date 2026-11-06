@@ -69,19 +69,29 @@ import type {
 } from '@bravo-ii/contracts';
 
 export interface BravoApiClientOptions {
-  baseUrl: string;
+  baseUrl?: string;
   sessionToken?: string;
+  csrfToken?: string;
 }
 
 export class BravoApiClient {
-  constructor(private readonly options: BravoApiClientOptions) {}
+  private readonly baseUrl: string;
+
+  constructor(private readonly options: BravoApiClientOptions = {}) {
+    this.baseUrl = (options.baseUrl ?? '').replace(/\/+$/, '');
+  }
 
   private buildHeaders(correlationId?: string): Record<string, string> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     };
-    if (this.options.sessionToken) {
-      headers['Authorization'] = `Bearer ${this.options.sessionToken}`;
+    const tok = this.options.sessionToken;
+    if (this.options.csrfToken) {
+      headers['X-CSRF-Token'] = this.options.csrfToken;
+    } else if (tok && tok.startsWith('csrf:')) {
+      headers['X-CSRF-Token'] = tok.slice('csrf:'.length);
+    } else if (tok && tok !== 'cookie-session') {
+      headers['Authorization'] = `Bearer ${tok}`;
     }
     if (correlationId) {
       headers['X-Correlation-Id'] = correlationId;
@@ -89,18 +99,28 @@ export class BravoApiClient {
     return headers;
   }
 
+  private normalizePath(path: string): string {
+    if (!this.baseUrl) {
+      if (path === '/health') return '/v1/health';
+      if (path.startsWith('/api/v1/')) return `/v1/${path.slice('/api/v1/'.length)}`;
+    }
+    return path;
+  }
+
   private async requestJson<T>(path: string, init?: RequestInit): Promise<T> {
-    const res = await fetch(`${this.options.baseUrl}${path}`, {
+    const targetPath = this.normalizePath(path);
+    const res = await fetch(`${this.baseUrl}${targetPath}`, {
       ...init,
+      credentials: this.baseUrl ? undefined : 'same-origin',
       headers: {
         ...this.buildHeaders(),
         ...(init?.headers ?? {}),
       },
       cache: 'no-store',
     });
-    const body = await res.json();
+    const body = await res.json().catch(() => ({}));
     if (!res.ok) {
-      throw new Error(body?.error?.message ?? `Erro na API (HTTP ${res.status})`);
+      throw new Error(body?.error?.message ?? body?.message ?? `Erro na API (HTTP ${res.status})`);
     }
     return body as T;
   }

@@ -3,7 +3,7 @@ import { EventsService } from './events.service';
 import { AuthGuard, type AuthenticatedRequest, RequirePermission } from '../../common/auth/auth.guard';
 import { ensureCorrelationId } from '@bravo-ii/telemetry';
 
-@Controller('api/v1/events')
+@Controller(['api/v1/events', 'v1/events'])
 @UseGuards(AuthGuard)
 export class EventsController {
   constructor(private readonly eventsService: EventsService) {}

@@ -22,7 +22,7 @@ import {
 import { ensureCorrelationId } from '@bravo-ii/telemetry';
 import { FinanceService } from './finance.service';
 
-@Controller('api/v1')
+@Controller(['api/v1', 'v1'])
 @UseGuards(AuthGuard)
 export class FinanceController {
   constructor(private readonly financeService: FinanceService) {}

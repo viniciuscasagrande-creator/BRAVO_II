@@ -4,7 +4,7 @@ import { AuthGuard, type AuthenticatedRequest } from '../../common/auth/auth.gua
 import { ensureCorrelationId } from '@bravo-ii/telemetry';
 import type { Request } from 'express';
 
-@Controller('api/v1')
+@Controller(['api/v1', 'v1'])
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 

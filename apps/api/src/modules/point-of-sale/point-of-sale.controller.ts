@@ -3,7 +3,7 @@ import { PointOfSaleService } from './point-of-sale.service';
 import { AuthGuard, type AuthenticatedRequest, RequirePermission } from '../../common/auth/auth.guard';
 import { ensureCorrelationId } from '@bravo-ii/telemetry';
 
-@Controller('api/v1/pos')
+@Controller(['api/v1/pos', 'v1/pos'])
 @UseGuards(AuthGuard)
 export class PointOfSaleController {
   constructor(private readonly posService: PointOfSaleService) {}

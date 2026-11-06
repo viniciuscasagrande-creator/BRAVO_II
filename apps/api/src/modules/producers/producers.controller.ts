@@ -3,7 +3,7 @@ import { ProducersService } from './producers.service';
 import { AuthGuard, type AuthenticatedRequest, RequirePermission } from '../../common/auth/auth.guard';
 import { ensureCorrelationId } from '@bravo-ii/telemetry';
 
-@Controller('api/v1/producers')
+@Controller(['api/v1/producers', 'v1/producers'])
 @UseGuards(AuthGuard)
 export class ProducersController {
   constructor(private readonly producersService: ProducersService) {}

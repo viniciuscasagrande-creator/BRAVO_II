@@ -3,7 +3,7 @@ import { GateControlService } from './gate-control.service';
 import { AuthGuard, type AuthenticatedRequest, RequirePermission } from '../../common/auth/auth.guard';
 import { ensureCorrelationId } from '@bravo-ii/telemetry';
 
-@Controller('api/v1/checkins')
+@Controller(['api/v1/checkins', 'v1/checkins'])
 @UseGuards(AuthGuard)
 export class GateControlController {
   constructor(private readonly gateControlService: GateControlService) {}

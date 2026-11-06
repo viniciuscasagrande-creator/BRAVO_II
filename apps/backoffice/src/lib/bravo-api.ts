@@ -42,16 +42,9 @@ async function parseError(res: Response): Promise<never> {
 }
 
 export async function currentSession(): Promise<SessionInfo> {
-  const token =
-    typeof window !== 'undefined' ? window.localStorage.getItem('bravo_ii_session_token') : null;
-  const headers: Record<string, string> = {};
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
   const response = await fetch('/v1/auth/me', {
     credentials: 'same-origin',
     cache: 'no-store',
-    headers,
   });
   if (!response.ok) return parseError(response);
   return response.json() as Promise<SessionInfo>;
@@ -61,11 +54,6 @@ export async function request<T>(path: string, options: RequestInit = {}): Promi
   const method = (options.method || 'GET').toUpperCase();
   const mutating = !['GET', 'HEAD', 'OPTIONS'].includes(method);
   const headers = new Headers(options.headers);
-  const token =
-    typeof window !== 'undefined' ? window.localStorage.getItem('bravo_ii_session_token') : null;
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
-  }
   if (mutating) {
     const session = await currentSession().catch(() => ({ csrfToken: '' }));
     if (session.csrfToken) {

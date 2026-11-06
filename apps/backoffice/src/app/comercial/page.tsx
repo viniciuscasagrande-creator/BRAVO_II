@@ -1,9 +1,12 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import {
-  HonestEmptyState,
-  PageHeader,
+  ActionPanel,
+  KpiCard,
+  OperationalEmptyState,
+  WorkspaceHeader,
   formatCurrencyPtBrFromCents,
   formatDateTimePtBr,
 } from '@bravo-ii/ui';
@@ -11,8 +14,11 @@ import { useBravoSession } from '../../context/session-context';
 import { BravoApiClient } from '@bravo-ii/sdk';
 import type { EventSummaryViewDto, ProducerDetailDto } from '@bravo-ii/contracts';
 
+type ComercialTabKey = 'produtores' | 'novo-pj' | 'documentos' | 'taxas';
+
 export default function ComercialPage() {
-  const { actor, sessionToken, hasPermission } = useBravoSession();
+  const { actor, sessionToken, isAuthenticated, hasPermission } = useBravoSession();
+  const [activeTab, setActiveTab] = useState<ComercialTabKey>('produtores');
   const [producers, setProducers] = useState<ProducerDetailDto[]>([]);
   const [events, setEvents] = useState<EventSummaryViewDto[]>([]);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -27,7 +33,9 @@ export default function ComercialPage() {
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [contactPhone, setContactPhone] = useState('');
-  const [docType, setDocType] = useState<'CONTRATO_SOCIAL' | 'CARTAO_CNPJ' | 'DOCUMENTO_REPRESENTANTE' | 'COMPROVANTE_BANCARIO'>('CONTRATO_SOCIAL');
+  const [docType, setDocType] = useState<
+    'CONTRATO_SOCIAL' | 'CARTAO_CNPJ' | 'DOCUMENTO_REPRESENTANTE' | 'COMPROVANTE_BANCARIO'
+  >('CONTRATO_SOCIAL');
   const [docReference, setDocReference] = useState('');
   const [contractNumber, setContractNumber] = useState('');
   const [contractTitle, setContractTitle] = useState('');
@@ -40,15 +48,22 @@ export default function ComercialPage() {
   const [payer, setPayer] = useState<'CUSTOMER' | 'PRODUCER' | 'SPLIT'>('CUSTOMER');
   const [approvalRef, setApprovalRef] = useState('COM-2026-APROVADO');
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const aba = params.get('aba');
+    if (aba === 'taxas') setActiveTab('taxas');
+    else if (aba === 'documentos') setActiveTab('documentos');
+    else if (aba === 'novo-pj') setActiveTab('novo-pj');
+  }, []);
 
   const loadData = useCallback(async () => {
-    if (!sessionToken || !hasPermission('commercial:read')) {
+    if (!isAuthenticated || !hasPermission('commercial:read')) {
       setProducers([]);
       setEvents([]);
       return;
     }
-    const client = new BravoApiClient({ baseUrl: apiUrl, sessionToken });
+    const client = new BravoApiClient({ sessionToken: sessionToken ?? undefined });
     try {
       const [prodRes, evtRes] = await Promise.all([
         client.listProducers(),
@@ -66,33 +81,25 @@ export default function ComercialPage() {
       setProducers([]);
       setEvents([]);
     }
-  }, [sessionToken, apiUrl, hasPermission, selectedProducerId, selectedEventId]);
+  }, [isAuthenticated, sessionToken, hasPermission, selectedProducerId, selectedEventId]);
 
   useEffect(() => {
-    loadData();
+    void loadData();
   }, [loadData]);
 
   if (!hasPermission('commercial:read')) {
     return (
-      <section
-        role="alert"
-        style={{
-          padding: '28px',
-          borderRadius: '10px',
-          backgroundColor: '#fef2f2',
-          border: '1px solid #fecaca',
-          color: '#991b1b',
-        }}
-      >
-        <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', marginBottom: '6px' }}>
-          HTTP 403 — Barreira de Autorização RBAC/ABAC
-        </div>
-        <h1 style={{ margin: '0 0 8px 0', fontSize: '20px' }}>Acesso Negado ao Módulo Comercial</h1>
-        <p style={{ margin: 0, fontSize: '14px' }}>
-          O perfil ativo (<strong>{actor.roles.join(', ')}</strong>) não possui a permissão{' '}
-          <code>commercial:read</code>. A Taxa Disk contratual interna e os contratos B2B são restritos.
-        </p>
-      </section>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <WorkspaceHeader
+          eyebrow="Gestão Comercial B2B"
+          title="Central Comercial e Contratos"
+          subtitle="Cadastro de produtores PJ, verificação documental e negociação de Taxa Disk por evento."
+        />
+        <OperationalEmptyState
+          title="Acesso Restrito ao Departamento Comercial"
+          description={`Sua credencial atual (${actor.roles.join(', ')}) não inclui permissão para consultar contratos B2B e parâmetros comerciais internos.`}
+        />
+      </div>
     );
   }
 
@@ -102,29 +109,36 @@ export default function ComercialPage() {
 
   const handleCreateProducer = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!sessionToken) {
-      setFeedback({ type: 'error', message: 'Autentique-se na API em /login para gravar registros no PostgreSQL.' });
+    if (!isAuthenticated) {
+      setFeedback({ type: 'error', message: 'Inicie sua sessão em /login para gravar registros.' });
       return;
     }
     try {
-      const client = new BravoApiClient({ baseUrl: apiUrl, sessionToken });
+      const client = new BravoApiClient({ sessionToken: sessionToken ?? undefined });
       const created = await client.createProducer({ cnpj, legalName, tradeName });
       setCnpj('');
       setLegalName('');
       setTradeName('');
       setSelectedProducerId(created.id);
-      setFeedback({ type: 'success', message: `Produtor PJ ${created.tradeName} (${created.cnpj}) criado com sucesso.` });
+      setFeedback({
+        type: 'success',
+        message: `Produtor PJ ${created.tradeName} (${created.cnpj}) cadastrado com sucesso.`,
+      });
       await loadData();
+      setActiveTab('produtores');
     } catch (err) {
-      setFeedback({ type: 'error', message: err instanceof Error ? err.message : 'Falha ao cadastrar produtor.' });
+      setFeedback({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Falha ao cadastrar produtor.',
+      });
     }
   };
 
   const handleAddContactAndVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!sessionToken || !selectedProducerId) return;
+    if (!isAuthenticated || !selectedProducerId) return;
     try {
-      const client = new BravoApiClient({ baseUrl: apiUrl, sessionToken });
+      const client = new BravoApiClient({ sessionToken: sessionToken ?? undefined });
       if (contactName && contactEmail && contactPhone) {
         await client.addProducerContact(selectedProducerId, {
           fullName: contactName,
@@ -156,19 +170,22 @@ export default function ComercialPage() {
       setContractTitle('');
       setFeedback({
         type: 'success',
-        message: 'Responsável, documentação e contrato registrados; Produtor PJ marcado como VERIFIED.',
+        message: 'Responsável, documentação e contrato registrados; Produtor PJ homologado.',
       });
       await loadData();
     } catch (err) {
-      setFeedback({ type: 'error', message: err instanceof Error ? err.message : 'Erro ao atualizar produtor.' });
+      setFeedback({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Erro ao atualizar documentação do produtor.',
+      });
     }
   };
 
   const handleProposeAndApproveFee = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!sessionToken || !selectedEventId) return;
+    if (!isAuthenticated || !selectedEventId) return;
     try {
-      const client = new BravoApiClient({ baseUrl: apiUrl, sessionToken });
+      const client = new BravoApiClient({ sessionToken: sessionToken ?? undefined });
       const proposed = await client.proposeEventFeeAgreement(selectedEventId, {
         calculationType,
         percentageRate: calculationType === 'PERCENTAGE' ? Number(percentageRate) : null,
@@ -183,95 +200,206 @@ export default function ComercialPage() {
         });
         setFeedback({
           type: 'success',
-          message: `Taxa Disk por Evento (v${proposed.agreementVersion}) proposta e aprovada com sucesso (${approvalRef}). Versões anteriores deste evento foram marcadas como SUPERSEDED prospectivamente.`,
+          message: `Taxa Disk por Evento (v${proposed.agreementVersion}) proposta e aprovada (${approvalRef}).`,
         });
       } else {
         setFeedback({
           type: 'success',
-          message: `Taxa Disk por Evento (v${proposed.agreementVersion}) proposta em rascunho (DRAFT). Aguardando aprovação.`,
+          message: `Taxa Disk por Evento (v${proposed.agreementVersion}) proposta para aprovação.`,
         });
       }
       await loadData();
     } catch (err) {
-      setFeedback({ type: 'error', message: err instanceof Error ? err.message : 'Erro ao registrar Taxa Disk.' });
+      setFeedback({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Erro ao registrar Taxa Disk.',
+      });
     }
   };
 
   return (
-    <div>
-      <PageHeader
-        title="Comercial, Produtores PJ e Taxa Disk por Evento"
-        subtitle="Cadastro completo de produtor PJ (responsáveis, documentação e contratos) e motor de negociação, versionamento prospectivo e aprovação de Taxa Disk por evento."
-        moduleCode="CRM-B2B / ORG / FEE"
-        packageBadge="Pacote 02 + Pacote 06 — Ativo e Persistido no PostgreSQL"
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <WorkspaceHeader
+        eyebrow="Relacionamento B2B e Contratos"
+        title="Central Comercial"
+        subtitle="Gestão de empresas produtoras, validação de representantes e contratos, e parametrização individual da Taxa Disk por evento."
+        statusBadge={`${producers.length} Produtor(es) · ${events.length} Evento(s)`}
+        actions={
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <Link
+              href="/comercial/produtores"
+              style={{
+                padding: '9px 14px',
+                borderRadius: '8px',
+                border: '1px solid #cbd5e1',
+                backgroundColor: '#ffffff',
+                color: '#0f172a',
+                textDecoration: 'none',
+                fontSize: '13px',
+                fontWeight: 600,
+              }}
+            >
+              Diretório Completo de Produtores
+            </Link>
+            <Link
+              href="/comercial/produtores/novo"
+              style={{
+                padding: '9px 14px',
+                borderRadius: '8px',
+                backgroundColor: '#1d4ed8',
+                color: '#ffffff',
+                textDecoration: 'none',
+                fontSize: '13px',
+                fontWeight: 600,
+              }}
+            >
+              + Cadastrar Produtor PJ
+            </Link>
+          </div>
+        }
       />
 
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '10px',
-          marginBottom: '20px',
-          padding: '12px 16px',
-          borderRadius: '10px',
-          backgroundColor: '#eff6ff',
-          border: '1px solid #bfdbfe',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-        }}
-      >
-        <div style={{ fontSize: '13px', color: '#1e3a8a', fontWeight: 600 }}>
-          Pacote 06 Integrado — Central de Produtores PJ (CNPJ Numérico e Alfanumérico 2026) &amp; Taxa Disk por Evento (Basis Points / Centavos)
-        </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <a href="/comercial/produtores" className="b6-btn b6-btn-secondary">
-            Central de Produtores (Pacote 06)
-          </a>
-          <a href="/comercial/produtores/novo" className="b6-btn">
-            + Novo Produtor PJ
-          </a>
-        </div>
-      </div>
-
-      {feedback ? (
+      {feedback && (
         <div
           style={{
-            marginBottom: '20px',
             padding: '14px 16px',
             borderRadius: '8px',
             backgroundColor: feedback.type === 'success' ? '#f0fdf4' : '#fef2f2',
             border: `1px solid ${feedback.type === 'success' ? '#bbf7d0' : '#fecaca'}`,
             color: feedback.type === 'success' ? '#166534' : '#991b1b',
             fontSize: '13px',
+            fontWeight: 600,
           }}
         >
           {feedback.message}
         </div>
-      ) : null}
+      )}
 
-      {/* Painel de Formulários Guiados (Habilitado conforme permissão RBAC) */}
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-          gap: '20px',
-          marginBottom: '28px',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))',
+          gap: '16px',
         }}
       >
-        {/* 1. Cadastro de Produtor PJ */}
-        <form
-          onSubmit={handleCreateProducer}
-          style={{
-            padding: '20px',
-            borderRadius: '10px',
-            backgroundColor: '#ffffff',
-            border: '1px solid #e2e8f0',
-          }}
+        <KpiCard
+          label="Produtores Cadastrados"
+          value={producers.length}
+          helperText="Empresas produtoras na base"
+          tone="accent"
+        />
+        <KpiCard
+          label="Produtores Verificados"
+          value={producers.filter((p) => p.verificationStatus === 'VERIFIED').length}
+          helperText="Aptos para publicação de eventos"
+          tone="positive"
+        />
+        <KpiCard
+          label="Eventos no Escopo"
+          value={events.length}
+          helperText="Vinculados à carteira comercial"
+          tone="neutral"
+        />
+        <KpiCard
+          label="Eventos com Taxa Aprovada"
+          value={events.filter((e) => Boolean(e.internalDiskFeeAgreement)).length}
+          helperText="Taxa negociada individualmente por evento"
+          tone="positive"
+        />
+      </div>
+
+      {/* Navegação Interna em Abas */}
+      <div className="bravo-tabs" role="tablist">
+        <button
+          type="button"
+          className={`bravo-tab-btn${activeTab === 'produtores' ? ' is-active' : ''}`}
+          onClick={() => setActiveTab('produtores')}
         >
-          <h2 style={{ margin: '0 0 12px 0', fontSize: '16px', color: '#0f172a' }}>
-            1. Cadastrar Novo Produtor (PJ)
-          </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          Carteira de Produtores ({producers.length})
+        </button>
+        <button
+          type="button"
+          className={`bravo-tab-btn${activeTab === 'novo-pj' ? ' is-active' : ''}`}
+          onClick={() => setActiveTab('novo-pj')}
+        >
+          Cadastro Rápido PJ
+        </button>
+        <button
+          type="button"
+          className={`bravo-tab-btn${activeTab === 'documentos' ? ' is-active' : ''}`}
+          onClick={() => setActiveTab('documentos')}
+        >
+          Representantes, Documentos e Contratos
+        </button>
+        <button
+          type="button"
+          className={`bravo-tab-btn${activeTab === 'taxas' ? ' is-active' : ''}`}
+          onClick={() => setActiveTab('taxas')}
+        >
+          Taxa Disk por Evento ({events.length})
+        </button>
+      </div>
+
+      {activeTab === 'produtores' && (
+        <ActionPanel
+          title="Produtores PJ Cadastrados"
+          subtitle="Relação de empresas produtoras, status de homologação documental e vínculos contratuais."
+        >
+          {producers.length === 0 ? (
+            <OperationalEmptyState
+              title="Nenhum Produtor PJ Cadastrado"
+              description="Utilize a aba 'Cadastro Rápido PJ' ou o botão '+ Cadastrar Produtor PJ' para registrar empresas produtoras."
+            />
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {producers.map((prod) => (
+                <article
+                  key={prod.id}
+                  style={{
+                    padding: '16px 18px',
+                    borderRadius: '10px',
+                    backgroundColor: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <strong style={{ fontSize: '15px', color: '#0f172a' }}>
+                        {prod.tradeName} — {prod.legalName}
+                      </strong>
+                      <div style={{ fontSize: '12px', color: '#475569', marginTop: '4px' }}>
+                        CNPJ: <code>{prod.cnpj}</code> · Cadastrado em: {formatDateTimePtBr(prod.createdAt)}
+                      </div>
+                    </div>
+                    <span className={`p06-badge ${prod.verificationStatus === 'VERIFIED' ? 'ok' : 'warn'}`}>
+                      {prod.verificationStatus}
+                    </span>
+                  </div>
+
+                  <div style={{ marginTop: '10px', fontSize: '12px', color: '#334155' }}>
+                    <strong>Representantes ({prod.contacts.length}):</strong>{' '}
+                    {prod.contacts.map((c) => `${c.fullName} (${c.roleType})`).join(', ') || 'Nenhum'} ·{' '}
+                    <strong>Documentos ({prod.documents.length}):</strong>{' '}
+                    {prod.documents.map((d) => `${d.documentType} [${d.verificationStatus}]`).join(', ') || 'Nenhum'} ·{' '}
+                    <strong>Contratos ({prod.contracts.length}):</strong>{' '}
+                    {prod.contracts.map((ct) => `${ct.contractNumber} (${ct.status})`).join(', ') || 'Nenhum'}
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </ActionPanel>
+      )}
+
+      {activeTab === 'novo-pj' && (
+        <ActionPanel
+          title="Cadastrar Novo Produtor (Pessoa Jurídica)"
+          subtitle="O cadastro identifica a empresa produtora sem fixar taxa única global — cada evento terá sua própria regra comercial."
+        >
+          <form
+            onSubmit={(e) => void handleCreateProducer(e)}
+            style={{ maxWidth: '540px', display: 'flex', flexDirection: 'column', gap: '12px' }}
+          >
             <input
               type="text"
               placeholder="CNPJ (ex.: 12.345.678/0001-90)"
@@ -279,7 +407,7 @@ export default function ComercialPage() {
               onChange={(e) => setCnpj(e.target.value)}
               disabled={!canWriteCommercial}
               required
-              style={{ padding: '9px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+              style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
             />
             <input
               type="text"
@@ -288,7 +416,7 @@ export default function ComercialPage() {
               onChange={(e) => setLegalName(e.target.value)}
               disabled={!canWriteCommercial}
               required
-              style={{ padding: '9px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+              style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
             />
             <input
               type="text"
@@ -297,51 +425,42 @@ export default function ComercialPage() {
               onChange={(e) => setTradeName(e.target.value)}
               disabled={!canWriteCommercial}
               required
-              style={{ padding: '9px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+              style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
             />
             <button
               type="submit"
               disabled={!canWriteCommercial}
-              title={
-                canWriteCommercial
-                  ? 'Gravar Produtor PJ no PostgreSQL'
-                  : 'Requer permissão commercial:write (Perfil Comercial Disk)'
-              }
               style={{
-                padding: '10px',
-                borderRadius: '6px',
+                padding: '11px',
+                borderRadius: '8px',
                 border: 'none',
                 backgroundColor: canWriteCommercial ? '#1d4ed8' : '#94a3b8',
                 color: '#ffffff',
-                fontWeight: 600,
+                fontWeight: 700,
                 fontSize: '13px',
                 cursor: canWriteCommercial ? 'pointer' : 'not-allowed',
               }}
             >
-              Cadastrar Produtor PJ
+              Salvar Produtor PJ
             </button>
-          </div>
-        </form>
+          </form>
+        </ActionPanel>
+      )}
 
-        {/* 2. Responsáveis, Documentação, Contrato e Homologação PJ */}
-        <form
-          onSubmit={handleAddContactAndVerify}
-          style={{
-            padding: '20px',
-            borderRadius: '10px',
-            backgroundColor: '#ffffff',
-            border: '1px solid #e2e8f0',
-          }}
+      {activeTab === 'documentos' && (
+        <ActionPanel
+          title="Representante Legal, Documentação e Contrato"
+          subtitle="Registre o representante, anexe a referência documental e formalize o contrato ativo para liberar o produtor."
         >
-          <h2 style={{ margin: '0 0 12px 0', fontSize: '16px', color: '#0f172a' }}>
-            2. Responsável, Documento, Contrato e Verificação
-          </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+          <form
+            onSubmit={(e) => void handleAddContactAndVerify(e)}
+            style={{ maxWidth: '640px', display: 'flex', flexDirection: 'column', gap: '12px' }}
+          >
             <select
               value={selectedProducerId}
               onChange={(e) => setSelectedProducerId(e.target.value)}
               disabled={!canWriteCommercial || producers.length === 0}
-              style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+              style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
             >
               <option value="">Selecione um Produtor PJ...</option>
               {producers.map((p) => (
@@ -352,20 +471,20 @@ export default function ComercialPage() {
             </select>
             <input
               type="text"
-              placeholder="Nome do Representante Legal"
+              placeholder="Nome Completo do Representante Legal"
               value={contactName}
               onChange={(e) => setContactName(e.target.value)}
               disabled={!canWriteCommercial}
-              style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+              style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
             />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <input
                 type="email"
                 placeholder="E-mail do Representante"
                 value={contactEmail}
                 onChange={(e) => setContactEmail(e.target.value)}
                 disabled={!canWriteCommercial}
-                style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
               />
               <input
                 type="text"
@@ -373,38 +492,38 @@ export default function ComercialPage() {
                 value={contactPhone}
                 onChange={(e) => setContactPhone(e.target.value)}
                 disabled={!canWriteCommercial}
-                style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
               />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <select
                 value={docType}
                 onChange={(e) => setDocType(e.target.value as typeof docType)}
                 disabled={!canWriteCommercial}
-                style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
               >
                 <option value="CONTRATO_SOCIAL">Contrato Social</option>
                 <option value="CARTAO_CNPJ">Cartão CNPJ</option>
-                <option value="DOCUMENTO_REPRESENTANTE">Doc. Representante</option>
+                <option value="DOCUMENTO_REPRESENTANTE">Documento do Representante</option>
                 <option value="COMPROVANTE_BANCARIO">Comprovante Bancário</option>
               </select>
               <input
                 type="text"
-                placeholder="Ref. Documento (ex.: DOC-2026-01)"
+                placeholder="Referência do Documento (ex.: DOC-2026-01)"
                 value={docReference}
                 onChange={(e) => setDocReference(e.target.value)}
                 disabled={!canWriteCommercial}
-                style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
               />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <input
                 type="text"
-                placeholder="Nº Contrato (ex.: CTR-2026-01)"
+                placeholder="Número do Contrato (ex.: CTR-2026-01)"
                 value={contractNumber}
                 onChange={(e) => setContractNumber(e.target.value)}
                 disabled={!canWriteCommercial}
-                style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
               />
               <input
                 type="text"
@@ -412,240 +531,180 @@ export default function ComercialPage() {
                 value={contractTitle}
                 onChange={(e) => setContractTitle(e.target.value)}
                 disabled={!canWriteCommercial}
-                style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
               />
             </div>
             <button
               type="submit"
               disabled={!canWriteCommercial || !selectedProducerId}
               style={{
-                padding: '10px',
-                borderRadius: '6px',
+                padding: '11px',
+                borderRadius: '8px',
                 border: 'none',
                 backgroundColor: canWriteCommercial && selectedProducerId ? '#0f766e' : '#94a3b8',
                 color: '#ffffff',
-                fontWeight: 600,
+                fontWeight: 700,
                 fontSize: '13px',
                 cursor: canWriteCommercial && selectedProducerId ? 'pointer' : 'not-allowed',
               }}
             >
-              Salvar Vínculos e Verificar Produtor PJ
+              Registrar Vínculos e Homologar Produtor PJ
             </button>
-          </div>
-        </form>
-
-        {/* 3. Negociação e Versionamento da Taxa Disk por Evento */}
-        <form
-          onSubmit={handleProposeAndApproveFee}
-          style={{
-            padding: '20px',
-            borderRadius: '10px',
-            backgroundColor: '#ffffff',
-            border: '1px solid #e2e8f0',
-          }}
-        >
-          <h2 style={{ margin: '0 0 12px 0', fontSize: '16px', color: '#0f172a' }}>
-            3. Taxa Disk por Evento (INTERNAL_DISK)
-          </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <select
-              value={selectedEventId}
-              onChange={(e) => setSelectedEventId(e.target.value)}
-              disabled={!canProposeFee || events.length === 0}
-              style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-            >
-              <option value="">Selecione um Evento...</option>
-              {events.map((evt) => (
-                <option key={evt.id} value={evt.id}>
-                  {evt.code} — {evt.title}
-                </option>
-              ))}
-            </select>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <select
-                value={calculationType}
-                onChange={(e) => setCalculationType(e.target.value as 'PERCENTAGE' | 'FIXED')}
-                disabled={!canProposeFee}
-                style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-              >
-                <option value="PERCENTAGE">Percentual (%)</option>
-                <option value="FIXED">Valor Fixo (Centavos)</option>
-              </select>
-
-              {calculationType === 'PERCENTAGE' ? (
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="100"
-                  placeholder="Taxa % (ex.: 12.5)"
-                  value={percentageRate}
-                  onChange={(e) => setPercentageRate(e.target.value)}
-                  disabled={!canProposeFee}
-                  style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                />
-              ) : (
-                <input
-                  type="number"
-                  step="1"
-                  min="0"
-                  placeholder="Centavos (ex.: 1500 = R$ 15,00)"
-                  value={fixedAmountCents}
-                  onChange={(e) => setFixedAmountCents(e.target.value)}
-                  disabled={!canProposeFee}
-                  style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-                />
-              )}
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-              <select
-                value={payer}
-                onChange={(e) => setPayer(e.target.value as typeof payer)}
-                disabled={!canProposeFee}
-                style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-              >
-                <option value="CUSTOMER">Suportada pelo Comprador</option>
-                <option value="PRODUCER">Retida do Produtor</option>
-                <option value="SPLIT">Compartilhada (Split)</option>
-              </select>
-              <input
-                type="text"
-                placeholder="Ref. Aprovação (ex.: COM-2026-01)"
-                value={approvalRef}
-                onChange={(e) => setApprovalRef(e.target.value)}
-                disabled={!canProposeFee}
-                style={{ padding: '8px', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '13px' }}
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={!canProposeFee || !selectedEventId}
-              style={{
-                padding: '10px',
-                borderRadius: '6px',
-                border: 'none',
-                backgroundColor: canProposeFee && selectedEventId ? '#1d4ed8' : '#94a3b8',
-                color: '#ffffff',
-                fontWeight: 600,
-                fontSize: '13px',
-                cursor: canProposeFee && selectedEventId ? 'pointer' : 'not-allowed',
-              }}
-            >
-              Propor e Aprovar Nova Versão da Taxa Disk no Evento
-            </button>
-          </div>
-        </form>
-      </div>
-
-      {/* Listagem Real de Produtores PJ */}
-      <h2 style={{ fontSize: '18px', color: '#0f172a', marginBottom: '12px' }}>
-        Produtores PJ Cadastrados no Banco PostgreSQL ({producers.length})
-      </h2>
-
-      {producers.length === 0 ? (
-        <HonestEmptyState
-          title="Nenhum produtor PJ cadastrado no momento"
-          description="Utilize o formulário acima (autenticado em /login com o perfil Comercial Disk) para cadastrar empresas produtoras, responsáveis legais, documentos e contratos."
-          governanceNote="O cadastro do produtor PJ identifica a empresa e suas relações contratuais, mas nunca define uma taxa única global para todos os seus eventos."
-        />
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {producers.map((prod) => (
-            <article
-              key={prod.id}
-              style={{
-                padding: '18px',
-                borderRadius: '10px',
-                backgroundColor: '#ffffff',
-                border: '1px solid #e2e8f0',
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <strong style={{ fontSize: '16px', color: '#0f172a' }}>
-                    {prod.tradeName} — {prod.legalName}
-                  </strong>
-                  <div style={{ fontSize: '13px', color: '#475569', marginTop: '4px' }}>
-                    CNPJ: <code>{prod.cnpj}</code> · Origem: {prod.sourceSystem} · Criado em:{' '}
-                    {formatDateTimePtBr(prod.createdAt)}
-                  </div>
-                </div>
-                <span
-                  style={{
-                    fontSize: '12px',
-                    fontWeight: 700,
-                    padding: '4px 10px',
-                    borderRadius: '6px',
-                    backgroundColor: prod.verificationStatus === 'VERIFIED' ? '#dcfce7' : '#fef9c3',
-                    color: prod.verificationStatus === 'VERIFIED' ? '#166534' : '#854d0e',
-                  }}
-                >
-                  {prod.verificationStatus}
-                </span>
-              </div>
-
-              <div style={{ marginTop: '10px', fontSize: '13px', color: '#334155' }}>
-                <strong>Contatos ({prod.contacts.length}):</strong>{' '}
-                {prod.contacts.map((c) => `${c.fullName} (${c.roleType})`).join(', ') || 'Nenhum'} ·{' '}
-                <strong>Documentos ({prod.documents.length}):</strong>{' '}
-                {prod.documents.map((d) => `${d.documentType} [${d.verificationStatus}]`).join(', ') || 'Nenhum'} ·{' '}
-                <strong>Contratos ({prod.contracts.length}):</strong>{' '}
-                {prod.contracts.map((ct) => `${ct.contractNumber} (${ct.status})`).join(', ') || 'Nenhum'}
-              </div>
-            </article>
-          ))}
-        </div>
+          </form>
+        </ActionPanel>
       )}
 
-      {/* Resumo de Condições Comerciais por Evento */}
-      {events.length > 0 ? (
-        <div style={{ marginTop: '28px' }}>
-          <h2 style={{ fontSize: '18px', color: '#0f172a', marginBottom: '12px' }}>
-            Condições Comerciais (Taxa Disk) por Evento ({events.length})
-          </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {events.map((evt) => (
-              <div
-                key={evt.id}
+      {activeTab === 'taxas' && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: '20px' }}>
+          <ActionPanel
+            title="Parametrizar Taxa Disk por Evento"
+            subtitle="Negociação exclusiva por evento (percentual ou valor fixo em centavos) com versionamento prospectivo."
+          >
+            <form
+              onSubmit={(e) => void handleProposeAndApproveFee(e)}
+              style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}
+            >
+              <select
+                value={selectedEventId}
+                onChange={(e) => setSelectedEventId(e.target.value)}
+                disabled={!canProposeFee || events.length === 0}
+                style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+              >
+                <option value="">Selecione um Evento...</option>
+                {events.map((evt) => (
+                  <option key={evt.id} value={evt.id}>
+                    {evt.code} — {evt.title}
+                  </option>
+                ))}
+              </select>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <select
+                  value={calculationType}
+                  onChange={(e) => setCalculationType(e.target.value as 'PERCENTAGE' | 'FIXED')}
+                  disabled={!canProposeFee}
+                  style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                >
+                  <option value="PERCENTAGE">Percentual (%)</option>
+                  <option value="FIXED">Valor Fixo (Centavos)</option>
+                </select>
+
+                {calculationType === 'PERCENTAGE' ? (
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="100"
+                    placeholder="Taxa % (ex.: 12.5)"
+                    value={percentageRate}
+                    onChange={(e) => setPercentageRate(e.target.value)}
+                    disabled={!canProposeFee}
+                    style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                  />
+                ) : (
+                  <input
+                    type="number"
+                    step="1"
+                    min="0"
+                    placeholder="Centavos (ex.: 1500 = R$ 15,00)"
+                    value={fixedAmountCents}
+                    onChange={(e) => setFixedAmountCents(e.target.value)}
+                    disabled={!canProposeFee}
+                    style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                  />
+                )}
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <select
+                  value={payer}
+                  onChange={(e) => setPayer(e.target.value as typeof payer)}
+                  disabled={!canProposeFee}
+                  style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                >
+                  <option value="CUSTOMER">Suportada pelo Comprador</option>
+                  <option value="PRODUCER">Retida do Produtor</option>
+                  <option value="SPLIT">Compartilhada (Split)</option>
+                </select>
+                <input
+                  type="text"
+                  placeholder="Referência de Aprovação (ex.: COM-2026-01)"
+                  value={approvalRef}
+                  onChange={(e) => setApprovalRef(e.target.value)}
+                  disabled={!canProposeFee}
+                  style={{ padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px' }}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={!canProposeFee || !selectedEventId}
                 style={{
-                  padding: '14px 18px',
+                  padding: '11px',
                   borderRadius: '8px',
-                  backgroundColor: '#ffffff',
-                  border: '1px solid #e2e8f0',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
+                  border: 'none',
+                  backgroundColor: canProposeFee && selectedEventId ? '#1d4ed8' : '#94a3b8',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: '13px',
+                  cursor: canProposeFee && selectedEventId ? 'pointer' : 'not-allowed',
                 }}
               >
-                <div>
-                  <strong>
-                    {evt.code} — {evt.title}
-                  </strong>
-                  <div style={{ fontSize: '12px', color: '#64748b' }}>
-                    Produtor(es): {evt.producers.map((p) => p.tradeName).join(', ')}
-                  </div>
-                </div>
-                <div style={{ fontSize: '13px', fontWeight: 600 }}>
-                  {evt.internalDiskFeeAgreement ? (
-                    <span>
-                      v{evt.internalDiskFeeAgreement.agreementVersion} ·{' '}
-                      {evt.internalDiskFeeAgreement.calculationType === 'PERCENTAGE'
-                        ? `${evt.internalDiskFeeAgreement.percentageRate}%`
-                        : formatCurrencyPtBrFromCents(evt.internalDiskFeeAgreement.fixedAmountCents ?? 0)}{' '}
-                      ({evt.internalDiskFeeAgreement.status})
-                    </span>
-                  ) : (
-                    <span style={{ color: '#b45309' }}>Sem Taxa Disk configurada</span>
-                  )}
-                </div>
+                Registrar e Aprovar Taxa no Evento
+              </button>
+            </form>
+          </ActionPanel>
+
+          <ActionPanel
+            title="Regras Vigentes por Evento"
+            subtitle="Histórico de regras contratuais ativas nos eventos cadastrados."
+          >
+            {events.length === 0 ? (
+              <div style={{ fontSize: '13px', color: '#64748b' }}>
+                Nenhum evento cadastrado para exibir regras de Taxa Disk.
               </div>
-            ))}
-          </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {events.map((evt) => (
+                  <div
+                    key={evt.id}
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      backgroundColor: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <div>
+                      <strong>
+                        {evt.code} — {evt.title}
+                      </strong>
+                      <div style={{ fontSize: '12px', color: '#64748b' }}>
+                        Produtor(es): {evt.producers.map((p) => p.tradeName).join(', ')}
+                      </div>
+                    </div>
+                    <div style={{ fontSize: '13px', fontWeight: 700 }}>
+                      {evt.internalDiskFeeAgreement ? (
+                        <span className="p06-badge ok">
+                          v{evt.internalDiskFeeAgreement.agreementVersion} ·{' '}
+                          {evt.internalDiskFeeAgreement.calculationType === 'PERCENTAGE'
+                            ? `${evt.internalDiskFeeAgreement.percentageRate}%`
+                            : formatCurrencyPtBrFromCents(evt.internalDiskFeeAgreement.fixedAmountCents ?? 0)}
+                        </span>
+                      ) : (
+                        <span className="p06-badge warn">Pendente</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </ActionPanel>
         </div>
-      ) : null}
+      )}
     </div>
   );
 }

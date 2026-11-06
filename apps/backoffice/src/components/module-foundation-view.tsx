@@ -30,26 +30,10 @@ export function ModuleFoundationView({
 
   if (!hasPermission(requiredPermission)) {
     return (
-      <section
-        role="alert"
-        style={{
-          padding: '28px',
-          borderRadius: '10px',
-          backgroundColor: '#fef2f2',
-          border: '1px solid #fecaca',
-          color: '#991b1b',
-        }}
-      >
-        <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', marginBottom: '6px' }}>
-          HTTP 403 — Barreira de Autorização RBAC/ABAC
-        </div>
-        <h1 style={{ margin: '0 0 8px 0', fontSize: '20px' }}>Acesso Negado para o Perfil Atual</h1>
-        <p style={{ margin: 0, fontSize: '14px', lineHeight: 1.6 }}>
-          O perfil ativo (<strong>{actor.roles.join(', ')}</strong>) não possui a permissão canônica{' '}
-          <code>{requiredPermission}</code> exigida pelo módulo <strong>{title}</strong>. Tentativas de acesso não
-          autorizadas em rotas da API são bloqueadas e gravadas na trilha de auditoria imutável.
-        </p>
-      </section>
+      <HonestEmptyState
+        title={`Acesso Restrito a ${title}`}
+        description={`Sua credencial atual (${actor.roles.join(', ')}) não possui permissão para acessar esta área operacional.`}
+      />
     );
   }
 
@@ -60,7 +44,6 @@ export function ModuleFoundationView({
       <HonestEmptyState
         title={emptyStateTitle}
         description={emptyStateDescription}
-        governanceNote="Nenhum botão fictício ou indicador simulado é exibido. Os fluxos transacionais deste domínio serão ativados conforme o cronograma de pacotes do docs/09-ROADMAP-ACEITE.md."
       />
 
       <section

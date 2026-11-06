@@ -45,7 +45,7 @@ export default function CuponsCortesiasPage() {
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [selectedPriceLotId, setSelectedPriceLotId] = useState('');
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+  const apiUrl = '';
 
   const loadData = useCallback(async () => {
     if (!sessionToken || !hasPermission('coupon:read')) {
@@ -109,25 +109,10 @@ export default function CuponsCortesiasPage() {
 
   if (!hasPermission('coupon:read')) {
     return (
-      <section
-        role="alert"
-        style={{
-          padding: '28px',
-          borderRadius: '10px',
-          backgroundColor: '#fef2f2',
-          border: '1px solid #fecaca',
-          color: '#991b1b',
-        }}
-      >
-        <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', marginBottom: '6px' }}>
-          HTTP 403 — Barreira de Autorização RBAC/ABAC
-        </div>
-        <h1 style={{ margin: '0 0 8px 0', fontSize: '20px' }}>Acesso Negado a Cupons e Cortesias</h1>
-        <p style={{ margin: 0, fontSize: '14px' }}>
-          O perfil ativo (<strong>{actor.roles.join(', ')}</strong>) não possui a permissão{' '}
-          <code>coupon:read</code>.
-        </p>
-      </section>
+      <HonestEmptyState
+        title="Acesso Restrito a Cupons e Cortesias"
+        description={`Sua credencial atual (${actor.roles.join(', ')}) não inclui permissão para gerenciar campanhas promocionais e quotas de cortesia.`}
+      />
     );
   }
 

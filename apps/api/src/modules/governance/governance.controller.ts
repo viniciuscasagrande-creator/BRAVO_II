@@ -4,7 +4,7 @@ import { AuditService } from './audit.service';
 import { AuthGuard, RequirePermission } from '../../common/auth/auth.guard';
 import { ensureCorrelationId } from '@bravo-ii/telemetry';
 
-@Controller('api/v1/audit-records')
+@Controller(['api/v1/audit-records', 'v1/audit-records'])
 @UseGuards(AuthGuard)
 export class GovernanceController {
   constructor(private readonly auditService: AuditService) {}

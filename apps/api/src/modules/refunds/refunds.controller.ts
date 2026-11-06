@@ -3,7 +3,7 @@ import { RefundsService } from './refunds.service';
 import { AuthGuard, type AuthenticatedRequest, RequirePermission } from '../../common/auth/auth.guard';
 import { ensureCorrelationId } from '@bravo-ii/telemetry';
 
-@Controller('api/v1/refunds')
+@Controller(['api/v1/refunds', 'v1/refunds'])
 @UseGuards(AuthGuard)
 export class RefundsController {
   constructor(private readonly refundsService: RefundsService) {}

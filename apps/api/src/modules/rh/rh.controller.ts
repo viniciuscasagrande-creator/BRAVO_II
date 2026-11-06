@@ -13,7 +13,7 @@ import {
 import { ensureCorrelationId } from '@bravo-ii/telemetry';
 import { RhService } from './rh.service';
 
-@Controller('api/v1/rh')
+@Controller(['api/v1/rh', 'v1/rh'])
 @UseGuards(AuthGuard)
 export class RhController {
   constructor(private readonly rhService: RhService) {}

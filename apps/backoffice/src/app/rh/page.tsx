@@ -16,7 +16,7 @@ import type {
 import { HonestEmptyState, PageHeader } from '@bravo-ii/ui';
 import { useBravoSession } from '../../context/session-context';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:4000';
+const API_BASE_URL = '';
 
 export default function RhDiskPage() {
   const { actor, sessionToken, hasPermission } = useBravoSession();
@@ -256,10 +256,9 @@ export default function RhDiskPage() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
       <PageHeader
-        title="Recursos Humanos (RH Disk) — 45 Opções em 8 Subgrupos + Disk Ponto + Ponte Financeiro"
-        moduleCode="RH / DP / DISK PONTO"
-        packageBadge="Pacote Mestre RH & DP (Ativo)"
-        subtitle="Catálogo integral preservado (opções #105 a #149), Cadastro Canônico de Colaboradores (LGPD), Disk Ponto com Cerca Virtual Haversine (Portaria 671) e Submissão de Lotes ao Financeiro."
+        title="Central de Recursos Humanos e Departamento Pessoal"
+        moduleCode="RECURSOS HUMANOS E DP"
+        subtitle="Gestão de colaboradores (LGPD), controle de jornada Disk Ponto com geolocalização (Portaria 671), submissão de lotes ao Financeiro Disk e escopo das 45 rotinas do departamento."
       />
 
       {!sessionToken && (

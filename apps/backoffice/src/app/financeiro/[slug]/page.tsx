@@ -5,19 +5,17 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { BravoApiClient } from '@bravo-ii/sdk';
 import type { CatalogFunctionItemDto } from '@bravo-ii/contracts';
-import { HonestEmptyState, PageHeader } from '@bravo-ii/ui';
+import { ActionPanel, ErrorState, OperationalEmptyState, WorkspaceHeader } from '@bravo-ii/ui';
 import { useBravoSession } from '../../../context/session-context';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://127.0.0.1:4000';
 
 export default function FinanceiroCatalogFunctionPage() {
   const params = useParams<{ slug: string }>();
   const slug = params?.slug ?? '';
-  const { actor, sessionToken, hasPermission } = useBravoSession();
+  const { actor, sessionToken, isAuthenticated, hasPermission } = useBravoSession();
   const canReadFinance = hasPermission('finance:read');
 
   const client = useMemo(
-    () => new BravoApiClient({ baseUrl: API_BASE_URL, sessionToken: sessionToken ?? undefined }),
+    () => new BravoApiClient({ sessionToken: sessionToken ?? undefined }),
     [sessionToken]
   );
 
@@ -25,115 +23,134 @@ export default function FinanceiroCatalogFunctionPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!canReadFinance || !sessionToken || !slug) return;
+    if (!canReadFinance || !isAuthenticated || !slug) return;
     void client
       .getCatalogFunction(slug)
       .then((res) => setItem(res))
       .catch((err) => setError(err instanceof Error ? err.message : 'Erro ao consultar função catalogada.'));
-  }, [canReadFinance, sessionToken, slug, client]);
+  }, [canReadFinance, isAuthenticated, slug, client]);
 
   if (!canReadFinance) {
     return (
-      <HonestEmptyState
-        title="Acesso Negado à Rota Interna do Financeiro Disk"
-        description={`O perfil ${actor.roles.join(', ')} não possui permissão para acessar /financeiro/${slug}.`}
-        governanceNote="Proteção RBAC ativa em todas as 104 rotas do Financeiro Disk."
+      <OperationalEmptyState
+        title="Acesso Restrito ao Financeiro Disk"
+        description={`Sua credencial atual (${actor.roles.join(', ')}) não possui permissão para acessar esta subárea financeira.`}
       />
     );
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <PageHeader
-        title={item ? `#${String(item.numero).padStart(3, '0')} — ${item.itemTitulo}` : `Função Financeira: ${slug}`}
-        moduleCode={item ? `${item.dominio} / ${item.modulo}` : 'FINANCEIRO'}
-        packageBadge={item ? `Status: ${item.statusMigracao}` : 'Catálogo 149 Funções'}
-        subtitle={
-          item
-            ? `Grupo: ${item.grupoTitulo} · Rota Canônica: ${item.rota} · RBAC Mínimo: ${item.rbacMinimo}`
-            : `Rota catalogada do Financeiro Disk (/financeiro/${slug}).`
+      <WorkspaceHeader
+        eyebrow={item ? `Financeiro Disk · ${item.grupoTitulo}` : 'Financeiro Disk'}
+        title={item ? `#${String(item.numero).padStart(3, '0')} — ${item.itemTitulo}` : `Subárea Financeira: ${slug}`}
+        subtitle="Ficha de escopo e direcionamento para a rotina operacional correspondente."
+        statusBadge={item?.integracaoFinanceiroRh ? 'Integrada ao Fluxo Operacional' : 'Mapeada no Escopo'}
+        actions={
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <Link
+              href="/financeiro"
+              style={{
+                display: 'inline-block',
+                padding: '9px 14px',
+                borderRadius: '8px',
+                backgroundColor: '#0f172a',
+                color: '#ffffff',
+                fontSize: '12px',
+                fontWeight: 600,
+                textDecoration: 'none',
+              }}
+            >
+              ← Voltar à Central Financeira
+            </Link>
+            <Link
+              href="/financeiro?aba=catalogo"
+              style={{
+                display: 'inline-block',
+                padding: '9px 14px',
+                borderRadius: '8px',
+                border: '1px solid #cbd5e1',
+                backgroundColor: '#ffffff',
+                color: '#0f172a',
+                fontSize: '12px',
+                fontWeight: 600,
+                textDecoration: 'none',
+              }}
+            >
+              Ver Matriz de Implantação
+            </Link>
+          </div>
         }
       />
 
-      <div>
-        <Link
-          href="/financeiro"
-          style={{
-            display: 'inline-block',
-            padding: '8px 14px',
-            borderRadius: '6px',
-            backgroundColor: '#0f172a',
-            color: '#ffffff',
-            fontSize: '12px',
-            fontWeight: 600,
-            textDecoration: 'none',
-          }}
-        >
-          ← Voltar à Central Operacional do Financeiro Disk (104 Opções)
-        </Link>
-      </div>
-
-      {error && (
-        <div
-          style={{
-            padding: '12px 16px',
-            borderRadius: '8px',
-            backgroundColor: '#fee2e2',
-            color: '#991b1b',
-            fontSize: '13px',
-          }}
-        >
-          {error}
-        </div>
-      )}
+      {error && <ErrorState title="Falha ao Carregar Subárea" description={error} />}
 
       {item ? (
-        <section
-          style={{
-            backgroundColor: '#ffffff',
-            border: '1px solid #e2e8f0',
-            borderRadius: '10px',
-            padding: '20px',
-          }}
+        <ActionPanel
+          title={`Especificação da Rotina #${String(item.numero).padStart(3, '0')} — ${item.itemTitulo}`}
+          subtitle="Transparência sobre o escopo de implantação e atalho para a área de trabalho ativa."
         >
-          <h2 style={{ margin: '0 0 12px 0', fontSize: '16px', fontWeight: 700 }}>
-            Ficha de Rastreabilidade Oficial — Opção #{String(item.numero).padStart(3, '0')}
-          </h2>
           <dl
             style={{
               display: 'grid',
               gridTemplateColumns: '220px 1fr',
-              rowGap: '10px',
+              rowGap: '12px',
               columnGap: '16px',
               fontSize: '13px',
               margin: 0,
             }}
           >
-            <dt style={{ fontWeight: 700, color: '#475569' }}>Domínio:</dt>
-            <dd style={{ margin: 0 }}>{item.dominio}</dd>
-            <dt style={{ fontWeight: 700, color: '#475569' }}>Grupo Principal:</dt>
+            <dt style={{ fontWeight: 700, color: '#475569' }}>Grupo Funcional:</dt>
             <dd style={{ margin: 0 }}>{item.grupoTitulo}</dd>
-            <dt style={{ fontWeight: 700, color: '#475569' }}>Módulo de Origem:</dt>
-            <dd style={{ margin: 0 }}>
-              <code>{item.modulo}</code>
-            </dd>
-            <dt style={{ fontWeight: 700, color: '#475569' }}>Rota Canônica BRAVO_II:</dt>
+            <dt style={{ fontWeight: 700, color: '#475569' }}>Rota Canônica:</dt>
             <dd style={{ margin: 0 }}>
               <code>{item.rota}</code>
             </dd>
-            <dt style={{ fontWeight: 700, color: '#475569' }}>Status de Migração Real:</dt>
-            <dd style={{ margin: 0, fontWeight: 700 }}>{item.statusMigracao}</dd>
-            <dt style={{ fontWeight: 700, color: '#475569' }}>Ponte Financeiro ↔ RH:</dt>
+            <dt style={{ fontWeight: 700, color: '#475569' }}>Integração Financeiro ↔ RH:</dt>
             <dd style={{ margin: 0 }}>
-              {item.integracaoFinanceiroRh ? 'Sim (Integrada ao contrato rh.pagamento_aprovado.v1)' : 'Escopo interno Financeiro Disk'}
+              {item.integracaoFinanceiroRh
+                ? 'Ativa — Operada na aba Tesouraria e Folha SoD da Central Financeira'
+                : 'Escopo dedicado do Financeiro Disk'}
             </dd>
           </dl>
-        </section>
+
+          <div
+            style={{
+              marginTop: '18px',
+              padding: '14px',
+              borderRadius: '8px',
+              backgroundColor: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '12px',
+            }}
+          >
+            <div style={{ fontSize: '13px', color: '#334155' }}>
+              Para executar lançamentos no Livro Razão, gerenciar Centros de Custo ou aprovar lotes na Tesouraria, acesse as abas operacionais da Central Financeira.
+            </div>
+            <Link
+              href={item.integracaoFinanceiroRh ? '/financeiro?aba=tesouraria' : '/financeiro?aba=razao'}
+              style={{
+                padding: '8px 14px',
+                borderRadius: '8px',
+                backgroundColor: '#1d4ed8',
+                color: '#ffffff',
+                textDecoration: 'none',
+                fontSize: '12px',
+                fontWeight: 600,
+              }}
+            >
+              Abrir Área de Trabalho →
+            </Link>
+          </div>
+        </ActionPanel>
       ) : (
-        <HonestEmptyState
-          title={`Rota Canônica /financeiro/${slug} Preservada`}
-          description="Autentique-se na API para carregar os metadados persistidos desta opção na tabela catalog_149_functions."
-          governanceNote="Nenhuma das 104 opções do Financeiro Disk foi suprimida."
+        <OperationalEmptyState
+          title={`Subárea /financeiro/${slug}`}
+          description="Autentique-se na plataforma para consultar a especificação completa desta rotina financeira."
         />
       )}
     </div>

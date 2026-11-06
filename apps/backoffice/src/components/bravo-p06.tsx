@@ -13,7 +13,7 @@ export function Head({
   return (
     <header className="b6-header">
       <div>
-        <small>BRAVO_II · Operação DiskIngressos (Pacote 06)</small>
+        <small>BRAVO_II · Gestão Operacional</small>
         <h1>{title}</h1>
         {description && <p>{description}</p>}
       </div>

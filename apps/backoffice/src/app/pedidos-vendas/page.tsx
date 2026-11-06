@@ -52,7 +52,7 @@ export default function PedidosVendasPage() {
   // Criação de Assentos Numerados no Setor
   const [seatCodesCsv, setSeatCodesCsv] = useState('A-01, A-02, A-03');
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+  const apiUrl = '';
 
   const loadData = useCallback(async () => {
     if (!sessionToken || !hasPermission('order:read')) {
@@ -125,25 +125,10 @@ export default function PedidosVendasPage() {
 
   if (!hasPermission('order:read')) {
     return (
-      <section
-        role="alert"
-        style={{
-          padding: '28px',
-          borderRadius: '10px',
-          backgroundColor: '#fef2f2',
-          border: '1px solid #fecaca',
-          color: '#991b1b',
-        }}
-      >
-        <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', marginBottom: '6px' }}>
-          HTTP 403 — Barreira de Autorização RBAC/ABAC
-        </div>
-        <h1 style={{ margin: '0 0 8px 0', fontSize: '20px' }}>Acesso Negado a Pedidos e Vendas</h1>
-        <p style={{ margin: 0, fontSize: '14px' }}>
-          O perfil ativo (<strong>{actor.roles.join(', ')}</strong>) não possui a permissão{' '}
-          <code>order:read</code>.
-        </p>
-      </section>
+      <HonestEmptyState
+        title="Acesso Restrito à Central de Vendas e PDV"
+        description={`Sua credencial atual (${actor.roles.join(', ')}) não inclui permissão de acesso operacional a pedidos e terminais de venda.`}
+      />
     );
   }
 

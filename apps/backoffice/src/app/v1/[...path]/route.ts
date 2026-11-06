@@ -39,7 +39,7 @@ async function handler(req:NextRequest,ctx:{params:Promise<{path:string[]}>}):Pr
     const cookie=req.headers.get('cookie');if(cookie)headers.set('Cookie',cookie);
     const auth=req.headers.get('authorization');if(auth)headers.set('Authorization',auth);
     const csrf=req.headers.get('x-csrf-token');if(csrf)headers.set('X-CSRF-Token',csrf);
-    if(browserOrigin)headers.set('Origin',browserOrigin);
+    if(browserOrigin)headers.set('Origin',process.env.APP_ORIGIN||browserOrigin);
     const contentType=req.headers.get('content-type');
     if(mutating&&contentType&&!/^application\/json(?:;|$)/i.test(contentType))return failure(415,'Apenas requisições JSON são aceitas');
     if(contentType&&mutating)headers.set('Content-Type',contentType);

@@ -8,7 +8,7 @@ import { ensureCorrelationId } from '@bravo-ii/telemetry';
 export class HealthController {
   constructor(private readonly db: DatabaseService) {}
 
-  @Get(['health', 'api/v1/health'])
+  @Get(['health', 'api/v1/health', 'v1/health'])
   async checkHealth(@Req() req: Request) {
     const correlationId = ensureCorrelationId(req.headers['x-correlation-id']);
     const config = loadEnvironmentConfig();
