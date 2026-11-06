@@ -63,6 +63,13 @@ if (api && origin && api.origin === origin.origin) {
   errors.push('BRAVO_API_URL não pode apontar ao próprio frontend (loop em /v1)');
 }
 
+if (process.env.ENABLE_PDV_OPERATIONS === 'true') {
+  errors.push('Ativação PDV exige homologação formal e não é permitida neste pacote');
+}
+if (process.env.ENABLE_PAGBANK_SANDBOX === 'true' && !process.env.PAGBANK_SANDBOX_TOKEN) {
+  errors.push('Sandbox PagBank ativado sem token');
+}
+
 if (stage === 'ready' || stage === 'all') {
   if (!has('node_modules/@nestjs/core') && !has('apps/api/node_modules/@nestjs/core')) {
     errors.push('Dependências não instaladas: execute pnpm install / npm install');

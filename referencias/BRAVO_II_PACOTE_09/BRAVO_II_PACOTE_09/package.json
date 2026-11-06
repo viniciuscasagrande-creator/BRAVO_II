@@ -1,0 +1,44 @@
+{
+  "name": "bravo-ii-pacote-09",
+  "private": true,
+  "version": "0.9.0",
+  "type": "module",
+  "workspaces": [
+    "apps/api",
+    "apps/backoffice",
+    "packages/domain-p06",
+    "packages/core-policy",
+    "packages/domain-p08",
+    "packages/domain-p09"
+  ],
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "db:generate": "prisma generate --schema prisma/schema.prisma",
+    "db:migrate:dev": "prisma migrate dev --schema prisma/schema.prisma",
+    "db:migrate:deploy": "prisma migrate deploy --schema prisma/schema.prisma",
+    "db:validate": "prisma validate --schema prisma/schema.prisma",
+    "build:packages": "npm run build -w @bravo-ii/domain-p06 && npm run build -w @bravo-ii/core-policy && npm run build -w @bravo-ii/domain-p08 && npm run build -w @bravo-ii/domain-p09",
+    "build:api": "npm run build -w @bravo-ii/api",
+    "build:web": "npm run build -w @bravo-ii/backoffice",
+    "build": "npm run build:packages && npm run db:generate && npm run build:api && npm run build:web",
+    "dev:api": "npm run dev -w @bravo-ii/api",
+    "dev:web": "npm run dev -w @bravo-ii/backoffice",
+    "test:offline": "bash scripts/test-offline.sh",
+    "test:smoke": "node scripts/smoke.mjs",
+    "bootstrap:admin": "node scripts/bootstrap-admin.mjs",
+    "doctor": "node scripts/doctor.mjs",
+    "doctor:ready": "node scripts/doctor.mjs --stage=ready",
+    "test:p08": "npm run build -w @bravo-ii/domain-p08 && node --test packages/domain-p08/tests/*.test.mjs",
+    "test:smoke:p08": "node scripts/smoke-p08.mjs",
+    "test:p09": "npm run build -w @bravo-ii/domain-p09 && node --test packages/domain-p09/tests/*.test.mjs",
+    "test:homologacao": "node scripts/check-homologacao-p09.mjs",
+    "test:smoke:p09": "node scripts/smoke-p09.mjs"
+  },
+  "devDependencies": {
+    "prisma": "6.16.2",
+    "typescript": "5.9.3",
+    "@types/node": "22.18.6"
+  }
+}

@@ -14,7 +14,7 @@ import type { Request, Response } from 'express';
 import { IdentityService } from './identity.service';
 import { AuthGuard, type AuthenticatedRequest, RequirePermission } from '../../common/auth/auth.guard';
 import { csrfForToken } from '../../common/auth/crypto.util';
-import { originAllowed } from '@bravo-ii/core-policy';
+import { normalizeRoleForPolicy, originAllowed } from '@bravo-ii/core-policy';
 import { ensureCorrelationId } from '@bravo-ii/telemetry';
 
 const SESSION_COOKIE_NAME = 'bravo_session';
@@ -103,7 +103,7 @@ export class IdentityController {
       user: {
         id: actor.userId,
         email: actor.email,
-        roles: actor.roles,
+        roles: Array.from(new Set([...actor.roles, ...actor.roles.map(normalizeRoleForPolicy)])),
         forcePasswordChange: false,
       },
       csrfToken,

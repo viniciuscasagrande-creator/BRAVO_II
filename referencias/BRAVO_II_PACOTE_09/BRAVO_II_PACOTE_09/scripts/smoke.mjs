@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+const base=(process.env.SMOKE_URL||'http://127.0.0.1:3000').replace(/\/$/,'');
+const run=async(path,opts)=>fetch(base+path,{redirect:'manual',...opts});
+const health=await run('/v1/saude');assert.equal(health.status,200,'API não responde');
+const body=await health.json();assert.equal(body.publicacaoExterna,false);assert.equal(body.pagamentosReais,false);
+const db=await run('/v1/saude/banco');assert.equal(db.status,200,'PostgreSQL não está conectado');
+const menu=await run('/v1/navegacao/menu');assert.equal(menu.status,401,'Menu aberto sem autenticação');
+const events=await run('/v1/eventos');assert.equal(events.status,401,'Eventos expostos sem sessão');
+const spoof=await run('/v1/auth/login',{method:'POST',headers:{'Origin':'https://exemplo-invalido.local','Content-Type':'application/json'},body:JSON.stringify({email:'falso@exemplo.com',password:'inválido'})});
+assert.equal(spoof.status,403,'Login aceitou origem não confiável');
+console.log('PASS: API + PostgreSQL, rota protegida, origem, operações reais desativadas');
+if(process.env.SMOKE_ADMIN_EMAIL && process.env.SMOKE_ADMIN_PASSWORD){
+ const origin=process.env.APP_ORIGIN||'http://localhost:3000';
+ const login=await run('/v1/auth/login',{method:'POST',headers:{'Origin':origin,'Content-Type':'application/json'},body:JSON.stringify({email:process.env.SMOKE_ADMIN_EMAIL,password:process.env.SMOKE_ADMIN_PASSWORD})});
+ assert.equal(login.status,200,'Falha login com credenciais de homologação');
+ const data=await login.json();assert(data.csrfToken);const cookie=login.headers.get('set-cookie')?.split(';')[0];assert(cookie);
+ const authMenu=await run('/v1/navegacao/menu',{headers:{Cookie:cookie}});assert.equal(authMenu.status,200);
+ const items=(await authMenu.json()).items;assert(items.some(i=>i.id==='produtores'));
+ const noCsrf=await run('/v1/comercial/produtores',{method:'POST',headers:{Cookie:cookie,Origin:origin,'Content-Type':'application/json'},body:'{}'});
+ assert.equal(noCsrf.status,403,'Mutação sem CSRF não foi bloqueada');
+ const logout=await run('/v1/auth/logout',{method:'POST',headers:{Cookie:cookie,Origin:origin,'X-CSRF-Token':data.csrfToken,'Content-Type':'application/json'},body:'{}'});assert.equal(logout.status,200);
+ const closed=await run('/v1/navegacao/menu',{headers:{Cookie:cookie}});assert.equal(closed.status,401);
+ console.log('PASS: login, sessão, menu por perfil, CSRF e revogação de sessão');
+}else console.log('Não foram fornecidas credenciais de homologação: testes de login/CSRF/logout ficam pendentes.');

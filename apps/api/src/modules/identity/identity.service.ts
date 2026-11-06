@@ -23,7 +23,7 @@ import {
   type PermissionCode,
   type RoleCode,
 } from '@bravo-ii/contracts';
-import { isLoginLocked, menuForRoles, nextFailedLogin } from '@bravo-ii/core-policy';
+import { isLoginLocked, menuForRoles, nextFailedLogin, normalizeRoleForPolicy } from '@bravo-ii/core-policy';
 import { AuditService } from '../governance/audit.service';
 
 @Injectable()
@@ -286,7 +286,7 @@ export class IdentityService {
       user: {
         id: user.id,
         email: user.email,
-        roles,
+        roles: Array.from(new Set([...roles, ...roles.map(normalizeRoleForPolicy)])) as RoleCode[],
         forcePasswordChange: Boolean(user.force_password_change),
       },
     };

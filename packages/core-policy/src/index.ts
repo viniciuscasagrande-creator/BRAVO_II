@@ -1,4 +1,4 @@
-/** Fonte única de permissões de menu e validação de origem/cookie/CSRF (Pacote 07). */
+/** Fonte única de permissões de menu. API sempre valida as permissões nas operações. */
 export const ROLES = [
   'ADMIN',
   'COMERCIAL',
@@ -9,6 +9,8 @@ export const ROLES = [
   'AUDITOR',
   'RH',
   'PRODUTOR',
+  'SAC',
+  'PDV',
 ] as const;
 
 export type Role = (typeof ROLES)[number];
@@ -23,54 +25,17 @@ export type MenuItem = {
 };
 
 export const MENU: readonly MenuItem[] = [
-  {
-    id: 'home',
-    label: 'Painel inicial',
-    href: '/',
-    roles: ['ADMIN', 'COMERCIAL', 'CADASTRO', 'OPERACOES', 'PUBLICACAO', 'FINANCEIRO_DISK', 'AUDITOR', 'RH'],
-    status: 'ATIVO',
-    group: 'Geral',
-  },
-  {
-    id: 'produtores',
-    label: 'Central de Produtores',
-    href: '/comercial/produtores',
-    roles: ['ADMIN', 'COMERCIAL', 'CADASTRO', 'OPERACOES', 'FINANCEIRO_DISK', 'AUDITOR'],
-    status: 'ATIVO',
-    group: 'Comercial',
-  },
-  {
-    id: 'eventos',
-    label: 'Gestão de Eventos',
-    href: '/eventos',
-    roles: ['ADMIN', 'COMERCIAL', 'CADASTRO', 'OPERACOES', 'PUBLICACAO', 'FINANCEIRO_DISK', 'AUDITOR'],
-    status: 'ATIVO',
-    group: 'Eventos',
-  },
-  {
-    id: 'taxas',
-    label: 'Taxa Disk por evento',
-    href: '/comercial',
-    roles: ['ADMIN', 'COMERCIAL', 'FINANCEIRO_DISK', 'AUDITOR'],
-    status: 'ATIVO',
-    group: 'Comercial',
-  },
-  {
-    id: 'financeiro',
-    label: 'Financeiro Disk — 104 funções',
-    href: '/financeiro',
-    roles: ['ADMIN', 'FINANCEIRO_DISK', 'AUDITOR'],
-    status: 'EM_IMPLANTACAO',
-    group: 'Financeiro',
-  },
-  {
-    id: 'rh',
-    label: 'RH e Departamento Pessoal — 45 funções',
-    href: '/rh',
-    roles: ['ADMIN', 'RH', 'AUDITOR'],
-    status: 'EM_IMPLANTACAO',
-    group: 'Pessoas',
-  },
+  {id:'home',label:'Painel inicial',href:'/',roles:['ADMIN','COMERCIAL','CADASTRO','OPERACOES','PUBLICACAO','FINANCEIRO_DISK','AUDITOR','RH'],status:'ATIVO',group:'Geral'},
+  {id:'produtores',label:'Central de Produtores',href:'/comercial/produtores',roles:['ADMIN','COMERCIAL','CADASTRO','OPERACOES','FINANCEIRO_DISK','AUDITOR'],status:'ATIVO',group:'Comercial'},
+  {id:'eventos',label:'Gestão de Eventos',href:'/eventos',roles:['ADMIN','COMERCIAL','CADASTRO','OPERACOES','PUBLICACAO','FINANCEIRO_DISK','AUDITOR'],status:'ATIVO',group:'Eventos'},
+  {id:'taxas',label:'Taxa Disk por evento',href:'/comercial',roles:['ADMIN','COMERCIAL','FINANCEIRO_DISK','AUDITOR'],status:'ATIVO',group:'Comercial'},
+  {id:'clientes',label:'Central de Clientes',href:'/clientes',roles:['ADMIN','OPERACOES','SAC','AUDITOR'],status:'ATIVO',group:'Vendas e SAC'},
+  {id:'pedidos',label:'Pedidos e Reservas',href:'/pedidos',roles:['ADMIN','OPERACOES','SAC','FINANCEIRO_DISK','AUDITOR'],status:'ATIVO',group:'Vendas e SAC'},
+  {id:'ingressos',label:'Consulta de Ingressos',href:'/ingressos',roles:['ADMIN','OPERACOES','SAC','AUDITOR'],status:'ATIVO',group:'Vendas e SAC'},
+  {id:'checkout',label:'Checkout · Homologação',href:'/checkout',roles:['ADMIN','OPERACOES','FINANCEIRO_DISK','AUDITOR'],status:'ATIVO',group:'Vendas e SAC'},
+  {id:'pdv',label:'PDV · Configuração',href:'/pdv',roles:['ADMIN','OPERACOES','PDV'],status:'ATIVO',group:'Vendas e SAC'},
+  {id:'financeiro',label:'Financeiro Disk — 104 funções',href:'/financeiro',roles:['ADMIN','FINANCEIRO_DISK','AUDITOR'],status:'EM_IMPLANTACAO',group:'Financeiro'},
+  {id:'rh',label:'RH e Departamento Pessoal — 45 funções',href:'/rh',roles:['ADMIN','RH','AUDITOR'],status:'EM_IMPLANTACAO',group:'Pessoas'},
 ];
 
 export function normalizeRoleForPolicy(role: string): string {
@@ -87,6 +52,11 @@ export function normalizeRoleForPolicy(role: string): string {
       return 'AUDITOR';
     case 'PRODUTOR_PDT':
       return 'PRODUTOR';
+    case 'SAC_ATENDIMENTO':
+      return 'SAC';
+    case 'OPERADOR_PDV':
+    case 'PDV_CAIXA':
+      return 'PDV';
     default:
       return role;
   }
@@ -150,6 +120,10 @@ export function validateHomologationEnv(env: Record<string, string | undefined>)
   if (env.BRAVO_ENV !== 'HOMOLOGACAO') errors.push('BRAVO_ENV precisa ser HOMOLOGACAO');
   for (const flag of ['ENABLE_EXTERNAL_PUBLICATION', 'ENABLE_REAL_PAYMENTS', 'ENABLE_REAL_REFUNDS']) {
     if (env[flag] !== 'false') errors.push(`${flag} deve ser false`);
+  }
+  const pepper = env.CPF_HASH_PEPPER || '';
+  if (pepper.length < 32 || /SUBSTITUA|EXEMPLO|PLACEHOLDER/i.test(pepper)) {
+    errors.push('CPF_HASH_PEPPER deve conter 32+ caracteres aleatórios reais e não pode ser valor de exemplo');
   }
   let db: URL | undefined;
   try {

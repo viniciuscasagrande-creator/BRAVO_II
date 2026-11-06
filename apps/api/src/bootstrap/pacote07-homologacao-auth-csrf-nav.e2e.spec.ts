@@ -252,16 +252,28 @@ describe('BRAVO_II — Pacote 07 E2E: Homologação PostgreSQL, Autenticação C
     };
 
     const adminMenu = await getMenuIdsFor('admin.p07@diskingressos.test', 'BravoP07#AdminPassword2026');
-    assert.deepEqual(adminMenu, ['home', 'produtores', 'eventos', 'taxas', 'financeiro', 'rh']);
+    assert.deepEqual(adminMenu, [
+      'home',
+      'produtores',
+      'eventos',
+      'taxas',
+      'clientes',
+      'pedidos',
+      'ingressos',
+      'checkout',
+      'pdv',
+      'financeiro',
+      'rh',
+    ]);
 
     const comercialMenu = await getMenuIdsFor('comercial.p07@diskingressos.test', 'BravoP07#ComercialPassword2026');
     assert.deepEqual(comercialMenu, ['home', 'produtores', 'eventos', 'taxas']);
 
     const operacoesMenu = await getMenuIdsFor('operacoes.p07@diskingressos.test', 'BravoP07#OperacoesPassword2026');
-    assert.deepEqual(operacoesMenu, ['home', 'produtores', 'eventos']);
+    assert.deepEqual(operacoesMenu, ['home', 'produtores', 'eventos', 'clientes', 'pedidos', 'ingressos', 'checkout', 'pdv']);
 
     const financeiroMenu = await getMenuIdsFor('financeiro.p07@diskingressos.test', 'BravoP07#FinanceiroPassword2026');
-    assert.deepEqual(financeiroMenu, ['home', 'produtores', 'eventos', 'taxas', 'financeiro']);
+    assert.deepEqual(financeiroMenu, ['home', 'produtores', 'eventos', 'taxas', 'pedidos', 'checkout', 'financeiro']);
 
     const rhMenu = await getMenuIdsFor('rh.p07@diskingressos.test', 'BravoP07#RhPassword2026');
     assert.deepEqual(rhMenu, ['home', 'rh']);

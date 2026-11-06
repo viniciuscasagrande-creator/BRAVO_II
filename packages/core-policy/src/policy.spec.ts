@@ -36,7 +36,12 @@ test('Comercial pode abrir produtores e não pode acessar RH', () => {
 
 test('Bloqueia origem parecida e ausente', () => {
   assert(originAllowed('https://preview.diskingressos.com.br', 'https://preview.diskingressos.com.br'));
-  assert(!originAllowed('https://preview.diskingressos.com.br.atacante.net', 'https://preview.diskingressos.com.br'));
+  assert(
+    !originAllowed(
+      'https://preview.diskingressos.com.br.atacante.net',
+      'https://preview.diskingressos.com.br'
+    )
+  );
   assert(!originAllowed(undefined, 'https://preview.diskingressos.com.br'));
 });
 
@@ -60,7 +65,11 @@ test('Bloqueio expira e permite retomar a autenticação depois de 30 minutos', 
   assert.equal(fourth.failedLogins, 5);
   assert(isLoginLocked(fourth.lockedUntil, now));
   assert(!isLoginLocked(fourth.lockedUntil, new Date(now.getTime() + 30 * 60 * 1000)));
-  const again = nextFailedLogin(fourth.failedLogins, fourth.lockedUntil, new Date(now.getTime() + 30 * 60 * 1000));
+  const again = nextFailedLogin(
+    fourth.failedLogins,
+    fourth.lockedUntil,
+    new Date(now.getTime() + 30 * 60 * 1000)
+  );
   assert.equal(again.failedLogins, 1);
   assert.equal(again.lockedUntil, null);
 });
@@ -75,15 +84,19 @@ test('Configuração de homologação recusa banco operacional e flags financeir
     ENABLE_EXTERNAL_PUBLICATION: 'false',
     ENABLE_REAL_PAYMENTS: 'false',
     ENABLE_REAL_REFUNDS: 'false',
+    CPF_HASH_PEPPER: 'a'.repeat(64),
   };
   assert.deepEqual(validateHomologationEnv(ok), []);
   assert(
-    validateHomologationEnv({ ...ok, DATABASE_URL: 'postgresql://bravo:senha@localhost:5432/bravo_producao' }).some((x) =>
-      x.includes('identificador')
-    )
+    validateHomologationEnv({
+      ...ok,
+      DATABASE_URL: 'postgresql://bravo:senha@localhost:5432/bravo_producao',
+    }).some((x) => x.includes('identificador'))
   );
   assert(
-    validateHomologationEnv({ ...ok, ENABLE_REAL_REFUNDS: 'true' }).some((x) => x.includes('ENABLE_REAL_REFUNDS'))
+    validateHomologationEnv({ ...ok, ENABLE_REAL_REFUNDS: 'true' }).some((x) =>
+      x.includes('ENABLE_REAL_REFUNDS')
+    )
   );
   assert(
     validateHomologationEnv({ ...ok, APP_ORIGIN: 'https://www.diskingressos.com.br' }).some((x) =>
@@ -91,9 +104,11 @@ test('Configuração de homologação recusa banco operacional e flags financeir
     )
   );
   assert(
-    validateHomologationEnv({ ...ok, APP_ORIGIN: 'http://preview.exemplo.com', NODE_ENV: 'production' }).some((x) =>
-      x.includes('https')
-    )
+    validateHomologationEnv({
+      ...ok,
+      APP_ORIGIN: 'http://preview.exemplo.com',
+      NODE_ENV: 'production',
+    }).some((x) => x.includes('https'))
   );
   assert.deepEqual(
     validateHomologationEnv({
@@ -104,4 +119,26 @@ test('Configuração de homologação recusa banco operacional e flags financeir
     }),
     []
   );
+});
+
+test('SAC não acessa financeiro e perfil PDV vê somente a tela de configuração', () => {
+  assert(isPermittedNav(['SAC'], '/clientes'));
+  assert(!isPermittedNav(['SAC'], '/financeiro'));
+  assert(isPermittedNav(['PDV'], '/pdv'));
+  assert(!isPermittedNav(['PDV'], '/checkout'));
+});
+
+test('Bloqueia segredo de CPF não configurado', () => {
+  const env = {
+    BRAVO_ENV: 'HOMOLOGACAO',
+    DATABASE_URL: 'postgresql://bravo:senha@localhost:5432/bravo_ii_hml',
+    APP_ORIGIN: 'http://localhost:3000',
+    NODE_ENV: 'development',
+    COOKIE_SECURE: 'false',
+    ENABLE_EXTERNAL_PUBLICATION: 'false',
+    ENABLE_REAL_PAYMENTS: 'false',
+    ENABLE_REAL_REFUNDS: 'false',
+    CPF_HASH_PEPPER: 'SUBSTITUA_POR_SEGREDO_ALEATORIO_DE_32_OU_MAIS_CARACTERES',
+  };
+  assert(validateHomologationEnv(env).some((v) => v.includes('CPF_HASH_PEPPER')));
 });

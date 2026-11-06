@@ -23,6 +23,8 @@ import { MessagingModule } from '../modules/messaging/messaging.module';
 import { GateControlModule } from '../modules/gate-control/gate-control.module';
 import { ReportingModule } from '../modules/reporting/reporting.module';
 import { Pacote06Module } from '../modules/pacote06/pacote06.module';
+import { BravoPacote08Module } from '../modules/pacote08/module';
+import { BravoPacote09Module } from '../modules/pacote09/module';
 
 @Module({
   imports: [
@@ -49,6 +51,8 @@ import { Pacote06Module } from '../modules/pacote06/pacote06.module';
     GateControlModule,
     ReportingModule,
     Pacote06Module,
+    BravoPacote08Module,
+    BravoPacote09Module,
   ],
   controllers: [HealthController],
 })

@@ -940,12 +940,17 @@ export class Pacote06Service {
       lot_number: number;
       nominal_price_cents: string | number;
       max_quantity: number;
+      reserved_count: number;
+      issued_count: number;
       starts_at: string | null;
       ends_at: string | null;
       status: string;
     }>(
       `SELECT id, session_id, sector_id, modality_name, category_type, lot_number,
-              nominal_price_cents, max_quantity, starts_at, ends_at, status
+              nominal_price_cents, max_quantity,
+              COALESCE(reserved_count, 0) AS reserved_count,
+              COALESCE(issued_count, 0) AS issued_count,
+              starts_at, ends_at, status
        FROM event_price_lots WHERE event_id = $1 ORDER BY lot_number ASC, created_at ASC`,
       [eventId]
     );
@@ -1073,9 +1078,11 @@ export class Pacote06Service {
         name: l.modality_name,
         faceValueCents: Number(l.nominal_price_cents),
         capacity: l.max_quantity,
+        reservedCount: Number(l.reserved_count ?? 0),
+        issuedCount: Number(l.issued_count ?? 0),
         startsAt: l.starts_at ?? ev.sales_starts_at ?? ev.starts_at,
         endsAt: l.ends_at ?? ev.ends_at ?? ev.starts_at,
-        status: l.status,
+        status: l.status === 'ACTIVE' || l.status === 'ATIVO' ? 'ATIVO' : l.status === 'DRAFT' ? 'RASCUNHO' : l.status,
       })),
       channels: channelsRes.rows.map((ch) => ({
         id: ch.id,
@@ -1953,6 +1960,20 @@ export class Pacote06Service {
         message: 'Solicitação de publicação não encontrada para confirmação do worker.',
       });
     }
+
+    await this.db.query(
+      `UPDATE event_price_lots
+       SET status = 'ATIVO'
+       WHERE event_id = $1 AND status IN ('DRAFT', 'RASCUNHO', 'ACTIVE')`,
+      [params.eventId]
+    );
+
+    await this.db.query(
+      `UPDATE event_sessions
+       SET status = 'ATIVA'
+       WHERE event_id = $1 AND status IN ('SCHEDULED', 'RASCUNHO', 'ON_SALE')`,
+      [params.eventId]
+    );
 
     await this.db.query(
       `UPDATE events SET status = 'PUBLICADO', updated_at = NOW() WHERE id = $1`,

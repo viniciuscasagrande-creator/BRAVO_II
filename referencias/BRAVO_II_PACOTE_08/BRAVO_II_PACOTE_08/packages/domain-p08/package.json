@@ -1,0 +1,9 @@
+{
+  "name":"@bravo-ii/domain-p08",
+  "version":"0.8.0",
+  "private":true,
+  "type":"module",
+  "main":"./dist/index.js",
+  "types":"./dist/index.d.ts",
+  "scripts":{"build":"tsc -p tsconfig.json","test":"node --test tests/*.test.mjs"}
+}

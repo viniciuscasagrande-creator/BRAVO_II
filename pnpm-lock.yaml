@@ -187,6 +187,12 @@ importers:
       '@bravo-ii/domain-p06':
         specifier: workspace:*
         version: link:../../packages/domain-p06
+      '@bravo-ii/domain-p08':
+        specifier: workspace:*
+        version: link:../../packages/domain-p08
+      '@bravo-ii/domain-p09':
+        specifier: workspace:*
+        version: link:../../packages/domain-p09
       '@bravo-ii/telemetry':
         specifier: workspace:*
         version: link:../../packages/telemetry
@@ -342,6 +348,24 @@ importers:
         version: 5.9.3
 
   packages/domain-p06:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.5
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
+  packages/domain-p08:
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.20.5
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
+  packages/domain-p09:
     devDependencies:
       '@types/node':
         specifier: ^22.10.2

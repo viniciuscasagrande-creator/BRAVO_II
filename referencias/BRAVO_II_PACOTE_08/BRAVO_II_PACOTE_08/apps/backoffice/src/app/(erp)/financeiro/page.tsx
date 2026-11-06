@@ -1,0 +1,1 @@
+export default function Financeiro(){return <section className="bravo-panel"><h1>Financeiro Disk</h1><p>As 104 funções do Financeiro estão preservadas no inventário de referência. Este módulo ainda NÃO está conectado nem operacional neste pacote.</p></section>;}

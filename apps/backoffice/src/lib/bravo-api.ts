@@ -121,7 +121,15 @@ export type EventFull = {
   sessions: { id: string; name: string; startsAt: string; endsAt: string; capacity: number }[];
   areas: { id: string; label: string; capacity: number; isNumbered: boolean }[];
   ticketCategories: { id: string; name: string }[];
-  lots: { id: string; name: string; faceValueCents: number; capacity: number }[];
+  lots: {
+    id: string;
+    name: string;
+    sessionId: string;
+    faceValueCents: number;
+    capacity: number;
+    status: string;
+    areaId?: string | null;
+  }[];
   channels: { channel: string; enabled: boolean }[];
   approvals: { step: string; decision: string; actorId: string }[];
 };

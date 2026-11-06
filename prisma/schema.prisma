@@ -1,5 +1,5 @@
-// PACOTE 06 & PACOTE 07 — CONTRATO DE ESQUEMA CONCILIADO COM O CORE ÚNICO BRAVO_II
-// Compartilha o mesmo banco PostgreSQL das migrations 0001..0006 sem duplicar Financeiro (104) ou RH (45).
+// PACOTE 06, PACOTE 07 & PACOTE 08 — CONTRATO DE ESQUEMA CONCILIADO COM O CORE ÚNICO BRAVO_II
+// Compartilha o mesmo banco PostgreSQL das migrations 0001..0007 sem duplicar Financeiro (104) ou RH (45).
 generator client { provider = "prisma-client-js" }
 datasource db { provider = "postgresql" url = env("DATABASE_URL") }
 
@@ -63,6 +63,7 @@ model BravoEvent {
   areas          BravoEventArea[]
   ticketCategories BravoTicketCategory[]
   lots           BravoPriceLot[]
+  saleOrders     BravoSaleOrder[]
   channels       BravoEventChannel[]
   media          BravoEventMedia[]
   fees           BravoEventFee[]
@@ -97,6 +98,7 @@ model BravoEventSession {
   status      String   @default("RASCUNHO")
   event       BravoEvent @relation(fields:[eventId],references:[id],onDelete:Restrict)
   lots        BravoPriceLot[]
+  saleOrders  BravoSaleOrder[]
   @@index([eventId,startsAt])
 }
 
@@ -143,6 +145,9 @@ model BravoPriceLot {
   name           String
   faceValueCents Int
   capacity       Int
+  reservedCount  Int       @default(0)
+  issuedCount    Int       @default(0)
+  saleOrders     BravoSaleOrder[]
   startsAt       DateTime
   endsAt         DateTime
   status         String    @default("RASCUNHO")
@@ -328,4 +333,139 @@ model BravoIdentitySession {
   user       BravoIdentityUser @relation(fields:[userId],references:[id],onDelete:Cascade)
   @@index([userId,expiresAt])
   @@index([expiresAt])
+}
+
+// PACOTE 08 — VENDAS E INGRESSOS, isolados de execução financeira.
+// CPF em claro NÃO é persistido: somente fingerprint HMAC com segredo de homologação.
+model BravoCustomer {
+  id             String   @id @default(uuid()) @db.Uuid
+  fullName       String
+  cpfFingerprint String   @unique @db.VarChar(64)
+  cpfLast4       String   @db.VarChar(4)
+  email          String
+  phone          String
+  birthDate      DateTime?
+  address        Json?
+  marketingOptIn Boolean  @default(false)
+  createdBy      String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  orders         BravoSaleOrder[]
+  @@index([email])
+}
+
+model BravoSaleOrder {
+  id               String   @id @default(uuid()) @db.Uuid
+  customerId       String   @db.Uuid
+  eventId          String   @db.Uuid
+  sessionId        String   @db.Uuid
+  lotId            String   @db.Uuid
+  channel          String
+  quantity         Int
+  unitCents        Int
+  totalCents       Int
+  status           String   @default("RESERVADO")
+  idempotencyKey   String   @unique @db.Uuid
+  requestHash      String   @db.VarChar(64)
+  expiresAt        DateTime
+  createdBy        String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  confirmedAt      DateTime?
+  customer         BravoCustomer @relation(fields:[customerId],references:[id],onDelete:Restrict)
+  event            BravoEvent @relation(fields:[eventId],references:[id],onDelete:Restrict)
+  session          BravoEventSession @relation(fields:[sessionId],references:[id],onDelete:Restrict)
+  lot              BravoPriceLot @relation(fields:[lotId],references:[id],onDelete:Restrict)
+  tickets          BravoIssuedTicket[]
+  checkoutAttempts BravoCheckoutAttempt[]
+  pdvTerminalId    String?  @db.Uuid
+  pdvShiftId       String?  @db.Uuid
+  pdvTerminal      BravoPdvTerminal? @relation(fields:[pdvTerminalId],references:[id],onDelete:Restrict)
+  pdvShift         BravoPdvShift? @relation(fields:[pdvShiftId],references:[id],onDelete:Restrict)
+  confirmation     BravoPaymentConfirmation?
+  @@index([status,expiresAt])
+  @@index([customerId,createdAt])
+  @@index([eventId,createdAt])
+}
+
+model BravoIssuedTicket {
+  id          String   @id @default(uuid()) @db.Uuid
+  number      String   @unique @db.Char(8)
+  orderId     String   @db.Uuid
+  eventId     String   @db.Uuid
+  sessionId   String   @db.Uuid
+  lotId       String   @db.Uuid
+  status      String   @default("EMITIDO")
+  issuedAt    DateTime @default(now())
+  order       BravoSaleOrder @relation(fields:[orderId],references:[id],onDelete:Restrict)
+  @@index([orderId])
+  @@index([eventId,sessionId,status])
+}
+
+model BravoTicketSequence {
+  id         Int @id
+  lastNumber Int @default(0)
+}
+
+// Recibo de liquidação verificado POR FUTURO ADAPTADOR DE ADQUIRENTE.
+// Nenhuma rota HTTP pública de confirmação de pagamento no P08.
+model BravoPaymentConfirmation {
+  id           String @id @default(uuid()) @db.Uuid
+  orderId      String @unique @db.Uuid
+  provider     String
+  providerRef  String
+  amountCents  Int
+  evidenceHash String @db.VarChar(64)
+  recordedAt   DateTime @default(now())
+  order        BravoSaleOrder @relation(fields:[orderId],references:[id],onDelete:Restrict)
+  @@unique([provider,providerRef])
+}
+
+// PACOTE 09 — Não há confirmação bancária nem cartão em claro neste módulo.
+// Tentativas ficam em homologação; sem webhooks de captura habilitados.
+model BravoCheckoutAttempt {
+  id                 String   @id @default(uuid()) @db.Uuid
+  orderId            String   @db.Uuid
+  idempotencyKey     String   @unique @db.Uuid
+  requestHash        String   @db.VarChar(64)
+  provider           String   // PAGBANK | REDE
+  method             String   // PIX | CARTAO_CREDITO | CARTAO_DEBITO
+  status             String   @default("PENDENTE_HOMOLOGACAO")
+  amountCents        Int
+  sandboxCheckoutId  String?  @unique
+  lastError          String?
+  createdBy          String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  order              BravoSaleOrder @relation(fields:[orderId],references:[id],onDelete:Restrict)
+  @@unique([orderId]) // um checkout por pedido nesta fase; evita cobrança duplicada
+  @@index([orderId,createdAt])
+  @@index([status,createdAt])
+}
+
+model BravoPdvTerminal {
+  id           String  @id @default(uuid()) @db.Uuid
+  code         String  @unique @db.VarChar(32)
+  label        String
+  venue        String
+  status       String  @default("BLOQUEADO_HOMOLOGACAO")
+  createdBy    String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  shifts       BravoPdvShift[]
+  orders       BravoSaleOrder[]
+  @@index([status])
+}
+
+model BravoPdvShift {
+  id           String @id @default(uuid()) @db.Uuid
+  terminalId   String @db.Uuid
+  operatorId   String
+  status       String @default("ABERTO")
+  openedAt     DateTime @default(now())
+  closedAt     DateTime?
+  terminal     BravoPdvTerminal @relation(fields:[terminalId],references:[id],onDelete:Restrict)
+  orders       BravoSaleOrder[]
+  @@index([terminalId,status])
+  @@index([operatorId,status])
 }

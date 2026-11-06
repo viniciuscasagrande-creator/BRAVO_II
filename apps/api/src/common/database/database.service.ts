@@ -9,11 +9,16 @@ export interface QueryResultRow {
   [column: string]: unknown;
 }
 
+export interface TransactionRunner {
+  query<T = Record<string, unknown>>(sql: string, params?: unknown[]): Promise<{ rows: T[]; rowCount: number }>;
+}
+
 @Injectable()
 export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   private pgPool: Pool | null = null;
   private pglite: PGlite | null = null;
   private initialized = false;
+  private txLock: Promise<void> = Promise.resolve();
 
   async onModuleInit(): Promise<void> {
     await this.ensureInitialized();
@@ -25,12 +30,24 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     }
 
     const config = loadEnvironmentConfig();
-    if (config.databaseUrl) {
-      this.pgPool = new Pool({
+    const forceMemory = config.nodeEnv === 'test' || config.pgliteDataDir === 'memory://';
+
+    if (config.databaseUrl && !forceMemory) {
+      const candidatePool = new Pool({
         connectionString: config.databaseUrl,
+        connectionTimeoutMillis: 1500,
       });
-    } else {
-      if (config.nodeEnv === 'test' || config.pgliteDataDir === 'memory://') {
+      try {
+        await candidatePool.query('SELECT 1');
+        this.pgPool = candidatePool;
+      } catch {
+        await candidatePool.end().catch(() => {});
+        this.pgPool = null;
+      }
+    }
+
+    if (!this.pgPool) {
+      if (forceMemory) {
         this.pglite = new PGlite();
       } else {
         const resolvedDir = path.resolve(process.cwd(), config.pgliteDataDir);
@@ -66,6 +83,66 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       rows: res.rows,
       rowCount: res.rows.length > 0 ? res.rows.length : (res.affectedRows ?? 0),
     };
+  }
+
+  async withTransaction<R>(fn: (tx: TransactionRunner) => Promise<R>): Promise<R> {
+    await this.ensureInitialized();
+
+    if (this.pgPool) {
+      const client = await this.pgPool.connect();
+      try {
+        await client.query('BEGIN ISOLATION LEVEL SERIALIZABLE');
+        const tx: TransactionRunner = {
+          query: async <T = Record<string, unknown>>(sql: string, params: unknown[] = []) => {
+            const res = await client.query(sql, params);
+            return {
+              rows: res.rows as T[],
+              rowCount: res.rowCount ?? res.rows.length,
+            };
+          },
+        };
+        const result = await fn(tx);
+        await client.query('COMMIT');
+        return result;
+      } catch (err) {
+        await client.query('ROLLBACK').catch(() => {});
+        throw err;
+      } finally {
+        client.release();
+      }
+    }
+
+    if (!this.pglite) {
+      throw new Error('Motor de banco de dados PostgreSQL não inicializado.');
+    }
+
+    let releaseLock!: () => void;
+    const prevLock = this.txLock;
+    this.txLock = new Promise<void>((resolve) => {
+      releaseLock = resolve;
+    });
+    await prevLock;
+
+    try {
+      await this.pglite.query('BEGIN');
+      const tx: TransactionRunner = {
+        query: async <T = Record<string, unknown>>(sql: string, params: unknown[] = []) => {
+          const res = await this.pglite!.query<T>(sql, params);
+          return {
+            rows: res.rows,
+            rowCount: res.rows.length > 0 ? res.rows.length : (res.affectedRows ?? 0),
+          };
+        },
+      };
+      const result = await fn(tx);
+      await this.pglite.query('COMMIT');
+      return result;
+    } catch (err) {
+      await this.pglite.query('ROLLBACK').catch(() => {});
+      throw err;
+    } finally {
+      releaseLock();
+    }
   }
 
   async execSqlScript(sqlScript: string): Promise<void> {

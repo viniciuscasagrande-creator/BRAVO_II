@@ -18,6 +18,8 @@
     "@bravo-ii/contracts": "workspace:*",
     "@bravo-ii/core-policy": "workspace:*",
     "@bravo-ii/domain-p06": "workspace:*",
+    "@bravo-ii/domain-p08": "workspace:*",
+    "@bravo-ii/domain-p09": "workspace:*",
     "@bravo-ii/telemetry": "workspace:*",
     "@electric-sql/pglite": "^0.2.15",
     "@nestjs/common": "^10.4.15",
