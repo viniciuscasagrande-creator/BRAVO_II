@@ -31,12 +31,15 @@ export class AuditService {
     const occurredAt = new Date().toISOString();
     const safeBefore = params.beforeState ? maskSensitiveData(params.beforeState) : null;
     const safeAfter = params.afterState ? maskSensitiveData(params.afterState) : null;
+    const actorRole = params.actorRole.includes('ADMIN_BRAVO')
+      ? 'ADMIN_BRAVO'
+      : (params.actorRole || 'UNKNOWN').slice(0, 64);
 
     const integrityHash = computeAuditIntegrityHash({
       id,
       occurredAt,
       actorUserId: params.actorUserId,
-      actorRole: params.actorRole,
+      actorRole,
       canonicalAction: params.canonicalAction,
       resourceType: params.resourceType,
       resourceId: params.resourceId ?? null,
@@ -60,7 +63,7 @@ export class AuditService {
         id,
         occurredAt,
         params.actorUserId,
-        params.actorRole,
+        actorRole,
         params.sessionId ?? null,
         params.ipAddress ?? null,
         params.canonicalAction,

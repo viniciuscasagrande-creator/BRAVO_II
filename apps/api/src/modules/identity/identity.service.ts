@@ -139,12 +139,30 @@ export class IdentityService {
         );
         const existing = await this.db.query<{ id: string }>('SELECT id FROM users WHERE email = $1', [op.email]);
         if (existing.rows.length > 0) {
-          await this.db.query(
-            `INSERT INTO user_role_grants (user_id, role_code)
-             VALUES ($1, $2)
-             ON CONFLICT (user_id, role_code) DO NOTHING`,
-            [existing.rows[0].id, op.role]
-          );
+          const userId = existing.rows[0].id;
+          const rolesToGrant: RoleCode[] =
+            op.role === 'ADMIN_BRAVO'
+              ? [
+                  'ADMIN_BRAVO',
+                  'COMERCIAL_DISK',
+                  'OPERACAO_EVENTOS',
+                  'FINANCEIRO_DISK',
+                  'RH_DP_DISK',
+                  'SAC_ATENDIMENTO',
+                  'MARKETING_DISK',
+                  'PDV_CAIXA',
+                  'PORTARIA_CHECKIN',
+                  'AUDITOR_INTERNO',
+                ]
+              : [op.role];
+          for (const rCode of rolesToGrant) {
+            await this.db.query(
+              `INSERT INTO user_role_grants (user_id, role_code)
+               VALUES ($1, $2)
+               ON CONFLICT (user_id, role_code) DO NOTHING`,
+              [userId, rCode]
+            );
+          }
         }
       }
     }

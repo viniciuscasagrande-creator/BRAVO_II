@@ -78,25 +78,10 @@ export interface RoleDefinition {
 export const CANONICAL_ROLES: Record<RoleCode, RoleDefinition> = {
   ADMIN_BRAVO: {
     code: 'ADMIN_BRAVO',
-    namePtBr: 'Administrador do BRAVO_II',
-    descriptionPtBr: 'Gerencia perfis, parametrizações, catálogo, governança e consulta auditoria, sem executar liquidação financeira direta.',
+    namePtBr: 'Administrador Geral do BRAVO_II',
+    descriptionPtBr: 'Acesso total a todos os departamentos, módulos, submenus, parametrizações, catálogo, governança e auditoria do ERP.',
     isInternal: true,
-    permissions: [
-      'overview:read',
-      'commercial:read',
-      'event:read',
-      'order:read',
-      'ticket:read',
-      'sac:read',
-      'coupon:read',
-      'marketing:read',
-      'remarketing:read',
-      'pdt:admin',
-      'reports:read',
-      'catalog:read',
-      'governance:read',
-      'audit:read',
-    ],
+    permissions: [...PERMISSION_CODES],
   },
   COMERCIAL_DISK: {
     code: 'COMERCIAL_DISK',

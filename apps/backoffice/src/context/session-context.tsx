@@ -2,6 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
+  CANONICAL_NAVIGATION_MENU,
   filterNavigationByPermissions,
   type AuthenticatedActorDto,
   type NavigationMenuItem,
@@ -125,32 +126,27 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const isAdminActor = useMemo(
+    () => actor.roles.includes('ADMIN_BRAVO') || (actor.roles as string[]).includes('ADMIN'),
+    [actor.roles]
+  );
+
   const navigationItems = useMemo(() => {
+    if (isAdminActor) {
+      return CANONICAL_NAVIGATION_MENU;
+    }
     const items = filterNavigationByPermissions(actor.permissions);
     if (items.length === 0) {
-      return filterNavigationByPermissions([
-        'overview:read',
-        'commercial:read',
-        'event:read',
-        'order:read',
-        'ticket:read',
-        'sac:read',
-        'coupon:read',
-        'finance:read',
-        'rh:self-read',
-        'refund:request',
-        'marketing:read',
-        'remarketing:read',
-        'pdt:portal-read',
-        'reports:read',
-        'governance:read',
-      ]);
+      return CANONICAL_NAVIGATION_MENU;
     }
     return items;
-  }, [actor.permissions]);
+  }, [actor.permissions, isAdminActor]);
 
   const hasPermission = useCallback(
     (permission: PermissionCode): boolean => {
+      if (isAdminActor) {
+        return true;
+      }
       if (permission === 'pdt:portal-read' && actor.permissions.includes('pdt:admin')) {
         return true;
       }
@@ -168,7 +164,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       }
       return actor.permissions.includes(permission);
     },
-    [actor.permissions]
+    [actor.permissions, isAdminActor]
   );
 
   const sessionToken = isAuthenticated ? (csrfToken ? `csrf:${csrfToken}` : 'cookie-session') : null;
