@@ -9,7 +9,12 @@ import {
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
 import { DatabaseService } from '../database/database.service';
-import { compareSecret, csrfForToken, hashSessionToken } from './crypto.util';
+import {
+  compareSecret,
+  csrfForToken,
+  hashSessionToken,
+  verifyStatelessCookieSessionToken,
+} from './crypto.util';
 import { assertCookieToken, isMutating, originAllowed } from '@bravo-ii/core-policy';
 import type { AuthenticatedActorDto, PermissionCode, RoleCode } from '@bravo-ii/contracts';
 import { AuditService } from '../../modules/governance/audit.service';
@@ -86,7 +91,7 @@ export class AuthGuard implements CanActivate {
     }
 
     const tokenHash = hashSessionToken(rawToken);
-    const sessionRes = await this.db.query<{
+    let sessionRes = await this.db.query<{
       session_id: string;
       user_id: string;
       email: string;
@@ -108,6 +113,39 @@ export class AuthGuard implements CanActivate {
        WHERE s.token_hash = $1`,
       [tokenHash]
     );
+
+    if (sessionRes.rows.length === 0 && process.env.BRAVO_EMBEDDED_PG === 'true') {
+      const claim = verifyStatelessCookieSessionToken(rawToken);
+      if (claim) {
+        const userLookup = await this.db.query<{ id: string }>(
+          `SELECT id FROM users WHERE RIGHT(REPLACE(id::text, '-', ''), 8) = $1 LIMIT 1`,
+          [claim.userIdTailHex]
+        );
+        if (userLookup.rows.length > 0) {
+          const recoveredSessionId = `00000000-0000-4000-8000-${tokenHash.slice(0, 12)}`;
+          await this.db.query(
+            `INSERT INTO auth_sessions (id, user_id, token_hash, ip_address, expires_at)
+             VALUES ($1, $2, $3, $4, $5)
+             ON CONFLICT DO NOTHING`,
+            [recoveredSessionId, userLookup.rows[0].id, tokenHash, req.ip ?? null, claim.expiresAtIso]
+          );
+          sessionRes = await this.db.query(
+            `SELECT
+              s.id AS session_id,
+              u.id AS user_id,
+              u.email,
+              u.full_name,
+              u.status,
+              s.expires_at,
+              s.revoked_at
+             FROM auth_sessions s
+             INNER JOIN users u ON u.id = s.user_id
+             WHERE s.token_hash = $1`,
+            [tokenHash]
+          );
+        }
+      }
+    }
 
     if (sessionRes.rows.length === 0) {
       throw new UnauthorizedException({

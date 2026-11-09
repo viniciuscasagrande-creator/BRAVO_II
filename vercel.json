@@ -8,7 +8,7 @@
   "functions": {
     "api/v1.js": {
       "maxDuration": 30,
-      "includeFiles": "{apps/api/dist/**,packages/*/dist/**,database/migrations/**,00-INVENTARIO/**,reference/**,prisma/schema.prisma}"
+      "includeFiles": "{apps/api/dist/**,packages/*/dist/**,database/migrations/**,00-INVENTARIO/**,reference/**,prisma/schema.prisma,node_modules/.pnpm/@electric-sql+pglite*/node_modules/@electric-sql/pglite/dist/**}"
     }
   },
   "headers": [

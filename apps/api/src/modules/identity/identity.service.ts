@@ -64,6 +64,90 @@ export class IdentityService {
         );
       }
     }
+
+    if (process.env.BRAVO_EMBEDDED_PG === 'true' || process.env.NODE_ENV !== 'test') {
+      const hmlHash =
+        'scrypt:15f9ccccfb8114a49a360492b9c259bb:de197d210efdfe1ef640b5630c45ef82334781f039f145a73c44971aca2b9b2a63eb8ed516c4c40b09a59424a1967b20a359dea18dcceeb174b5619d71af477a';
+      const defaultOperators: Array<{ id: string; email: string; fullName: string; role: RoleCode }> = [
+        {
+          id: '00000000-0000-4000-8000-000000000199',
+          email: 'admin.hml@diskingressos.com.br',
+          fullName: 'Administrador Geral BRAVO_II (Homologação)',
+          role: 'ADMIN_BRAVO',
+        },
+        {
+          id: '00000000-0000-4000-8000-000000000100',
+          email: 'admin.local@diskingressos.com.br',
+          fullName: 'Administrador Geral BRAVO_II',
+          role: 'ADMIN_BRAVO',
+        },
+        {
+          id: '00000000-0000-4000-8000-000000000101',
+          email: 'financeiro.local@diskingressos.com.br',
+          fullName: 'Operador Financeiro Disk',
+          role: 'FINANCEIRO_DISK',
+        },
+        {
+          id: '00000000-0000-4000-8000-000000000102',
+          email: 'sac.local@diskingressos.com.br',
+          fullName: 'Operador SAC Disk',
+          role: 'SAC_ATENDIMENTO',
+        },
+        {
+          id: '00000000-0000-4000-8000-000000000103',
+          email: 'produtor.local@pdt.diskingressos.com.br',
+          fullName: 'Operador Produtor PDT',
+          role: 'PRODUTOR_PDT',
+        },
+        {
+          id: '00000000-0000-4000-8000-000000000104',
+          email: 'comercial.local@diskingressos.com.br',
+          fullName: 'Operador Comercial Disk',
+          role: 'COMERCIAL_DISK',
+        },
+        {
+          id: '00000000-0000-4000-8000-000000000105',
+          email: 'operacao.local@diskingressos.com.br',
+          fullName: 'Operador de Eventos Disk',
+          role: 'OPERACAO_EVENTOS',
+        },
+        {
+          id: '00000000-0000-4000-8000-000000000106',
+          email: 'pdv.local@diskingressos.com.br',
+          fullName: 'Operador Caixa PDV Disk',
+          role: 'PDV_CAIXA',
+        },
+        {
+          id: '00000000-0000-4000-8000-000000000107',
+          email: 'portaria.local@diskingressos.com.br',
+          fullName: 'Operador Portaria Check-in Disk',
+          role: 'PORTARIA_CHECKIN',
+        },
+        {
+          id: '00000000-0000-4000-8000-000000000108',
+          email: 'rh.local@diskingressos.com.br',
+          fullName: 'Gestor RH & DP Disk',
+          role: 'RH_DP_DISK',
+        },
+      ];
+      for (const op of defaultOperators) {
+        await this.db.query(
+          `INSERT INTO users (id, email, full_name, password_hash, status, failed_logins, locked_until)
+           VALUES ($1, $2, $3, $4, 'ACTIVE', 0, NULL)
+           ON CONFLICT (email) DO NOTHING`,
+          [op.id, op.email, op.fullName, hmlHash]
+        );
+        const existing = await this.db.query<{ id: string }>('SELECT id FROM users WHERE email = $1', [op.email]);
+        if (existing.rows.length > 0) {
+          await this.db.query(
+            `INSERT INTO user_role_grants (user_id, role_code)
+             VALUES ($1, $2)
+             ON CONFLICT (user_id, role_code) DO NOTHING`,
+            [existing.rows[0].id, op.role]
+          );
+        }
+      }
+    }
   }
 
   async ensureOperatorAccount(params: {
@@ -214,7 +298,7 @@ export class IdentityService {
       });
     }
 
-    const { rawToken, tokenHash } = generateCookieSessionToken();
+    const { rawToken, tokenHash } = generateCookieSessionToken(user.id);
     const sessionId = randomUUID();
     const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString();
 

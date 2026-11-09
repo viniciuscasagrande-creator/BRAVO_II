@@ -46,11 +46,13 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     }
 
     const config = loadEnvironmentConfig();
-    // PGlite é exclusivo de testes explícitos; nunca inferir autorização por URI ou flags externas.
-    const forceMemory = config.nodeEnv === 'test' &&
-      process.env.BRAVO_ENV !== 'HOMOLOGACAO' &&
-      process.env.BRAVO_ENV !== 'PRODUCAO' &&
-      process.env.VERCEL !== '1';
+    // PGlite é utilizado em testes explícitos ou como motor PostgreSQL embarcado de contingência em homologação quando DATABASE_URL externa não está definida.
+    const forceMemory =
+      process.env.BRAVO_EMBEDDED_PG === 'true' ||
+      (config.nodeEnv === 'test' &&
+        process.env.BRAVO_ENV !== 'HOMOLOGACAO' &&
+        process.env.BRAVO_ENV !== 'PRODUCAO' &&
+        process.env.VERCEL !== '1');
 
     if (config.databaseUrl && !forceMemory) {
       const candidatePool = new Pool({

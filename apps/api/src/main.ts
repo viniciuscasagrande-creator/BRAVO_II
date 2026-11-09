@@ -10,6 +10,7 @@ import { validateHomologationEnv } from '@bravo-ii/core-policy';
 import { validateAiEnvironment } from '@bravo-ii/domain-ia';
 import { StructuredLogger } from '@bravo-ii/telemetry';
 import { IdentityService } from './modules/identity/identity.service';
+import { FinanceService } from './modules/finance/finance.service';
 import {
   isValidProxyKey,
   proxyGuardRequired,
@@ -84,6 +85,9 @@ async function bootstrap() {
 
   const identityService = app.get(IdentityService);
   await identityService.syncCanonicalRolesAndPermissions();
+
+  const financeService = app.get(FinanceService);
+  await financeService.ensureCatalogSeeded();
 
   await app.init();
   return app;
