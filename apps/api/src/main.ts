@@ -1,4 +1,6 @@
 import 'reflect-metadata';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import { NestFactory } from '@nestjs/core';
 import type { NextFunction, Request, Response } from 'express';
 import { AppModule } from './bootstrap/app.module';
@@ -14,10 +16,30 @@ import {
   validatePreviewDeploymentEnv,
 } from './core/security/proxy-guard';
 
+function ensureLocalEnvFileLoaded(): void {
+  if (process.env.VERCEL === '1' || process.env.NODE_ENV === 'test') return;
+  const candidates = [
+    path.resolve(process.cwd(), '.env'),
+    path.resolve(process.cwd(), '../../.env'),
+    path.resolve(__dirname, '../../../.env'),
+  ];
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate) && typeof process.loadEnvFile === 'function') {
+      try {
+        process.loadEnvFile(candidate);
+      } catch {}
+      break;
+    }
+  }
+}
+
 async function bootstrap() {
+  ensureLocalEnvFileLoaded();
   if (process.env.BRAVO_ENV === 'HOMOLOGACAO') {
     const origin = process.env.APP_ORIGIN;
-    if (!origin || !/^https:\/\/[^/\s?#]+$/.test(origin)) {
+    const requireHttps = process.env.VERCEL === '1' || process.env.NODE_ENV === 'production';
+    const originPattern = requireHttps ? /^https:\/\/[^/\s?#]+$/ : /^https?:\/\/[^/\s?#]+$/;
+    if (!origin || !originPattern.test(origin)) {
       throw new Error('APP_ORIGIN HTTPS exata é obrigatória em homologação');
     }
     const homologationErrors = [
