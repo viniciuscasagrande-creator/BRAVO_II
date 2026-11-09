@@ -197,6 +197,35 @@ module.exports = async function bravoRootVercelApiHandler(req, res) {
 
     if (candidateDbUrl) {
       process.env.DATABASE_URL = candidateDbUrl;
+    } else {
+      if (req.url === '/v1/saude' || req.url.startsWith('/v1/saude?')) {
+        sendJson(res, 200, {
+          api: 'ATIVA',
+          banco: 'NAO_VERIFICADO',
+          ambiente: 'HOMOLOGACAO',
+          publicacaoExterna: false,
+          pagamentosReais: false,
+          googleApiConfigurada: Boolean(process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY),
+          vercelEnv: process.env.VERCEL_ENV || null,
+          hasDatabaseUrl: false,
+          hasBravoApiUrl: Boolean(configuredUpstream),
+          hasBravoProxyKey: Boolean(process.env.BRAVO_PROXY_KEY && process.env.BRAVO_PROXY_KEY.length >= 32),
+        });
+        return;
+      }
+      sendJson(res, 503, {
+        statusCode: 503,
+        code: 'MISSING_BACKEND_CONNECTION_ENV',
+        message:
+          'Rota /v1 ativa na Vercel, porém DATABASE_URL (PostgreSQL Neon _hml) ou BRAVO_API_URL (origem HTTPS da API separada) não está configurada nas variáveis de ambiente deste projeto Vercel.',
+        diagnostics: {
+          vercelEnv: process.env.VERCEL_ENV || null,
+          hasDatabaseUrl: false,
+          hasBravoApiUrl: Boolean(configuredUpstream),
+          hasBravoProxyKey: Boolean(process.env.BRAVO_PROXY_KEY && process.env.BRAVO_PROXY_KEY.length >= 32),
+        },
+      });
+      return;
     }
 
     req.headers['x-bravo-proxy-key'] = RUNTIME_BFF_KEY;

@@ -1,7 +1,12 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "pnpm run build",
+  "outputDirectory": "dist",
+  "cleanUrls": true,
   "functions": {
     "api/v1.js": {
-      "includeFiles": "{apps/api/dist/**,database/migrations/**,00-INVENTARIO/**,reference/**}"
+      "maxDuration": 30,
+      "includeFiles": "{apps/api/dist/**,packages/*/dist/**,database/migrations/**,00-INVENTARIO/**,reference/**,prisma/schema.prisma}"
     }
   },
   "rewrites": [
