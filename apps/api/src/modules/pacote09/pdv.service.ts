@@ -6,7 +6,13 @@ import {
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { randomUUID } from 'node:crypto';
-import { assertPdvTerminal, assertShiftMayOpen, CheckoutRuleError } from '@bravo-ii/domain-p09';
+import {
+  assertPdvSectorAllowed,
+  assertPdvTerminal,
+  assertShiftMayOpen,
+  CheckoutRuleError,
+  summarizePdvShiftReconciliation,
+} from '@bravo-ii/domain-p09';
 import { normalizeRoleForPolicy } from '@bravo-ii/core-policy';
 import type { AuthenticatedActorDto } from '@bravo-ii/contracts';
 import { DatabaseService } from '../../common/database/database.service';
@@ -252,6 +258,105 @@ export class BravoPdvService {
     }
 
     return this.orders.reserve({ ...body, channel: 'PDV' }, actor, { terminalId, shiftId }, correlationId);
+  }
+
+  /** PDV-001: Lista turnos de PDV com resumo de conciliação de pedidos por turno. */
+  async listShifts(actor: AuthenticatedActorDto) {
+    assertInternalRole(actor, 'ADMIN', 'OPERACOES', 'PDV', 'FINANCEIRO_DISK', 'AUDITOR');
+    const shiftsRes = await this.db.query<{
+      id: string;
+      terminal_id: string;
+      terminal_code: string;
+      terminal_label: string;
+      operator_id: string;
+      status: string;
+      opened_at: string | Date;
+      closed_at: string | Date | null;
+    }>(
+      `SELECT s.id, s.terminal_id, t.code AS terminal_code, t.label AS terminal_label,
+              s.operator_id, s.status, s.opened_at, s.closed_at
+       FROM p09_pdv_shifts s
+       INNER JOIN p09_pdv_terminals t ON t.id = s.terminal_id
+       ORDER BY s.opened_at DESC
+       LIMIT 50`
+    );
+
+    const ordersRes = await this.db.query<{
+      pdv_shift_id: string;
+      status: string;
+      total_cents: number;
+      quantity: number;
+    }>(
+      `SELECT pdv_shift_id, status, total_cents, quantity
+       FROM p08_sale_orders
+       WHERE pdv_shift_id IS NOT NULL`
+    );
+
+    return {
+      items: shiftsRes.rows.map((s) => {
+        const shiftOrders = ordersRes.rows
+          .filter((o) => o.pdv_shift_id === s.id)
+          .map((o) => ({
+            status: o.status,
+            totalCents: Number(o.total_cents),
+            quantity: Number(o.quantity),
+          }));
+        const reconciliation = summarizePdvShiftReconciliation(shiftOrders);
+        return {
+          id: s.id,
+          terminalId: s.terminal_id,
+          terminalCode: s.terminal_code,
+          terminalLabel: s.terminal_label,
+          operatorId: s.operator_id,
+          status: s.status,
+          openedAt: s.opened_at,
+          closedAt: s.closed_at,
+          reconciliation,
+        };
+      }),
+    };
+  }
+
+  /** PDV-001: Conciliação consolidada de um terminal PDV e validação de setor autorizado. */
+  async reconcileTerminal(terminalId: string, actor: AuthenticatedActorDto, sectorId?: string) {
+    assertInternalRole(actor, 'ADMIN', 'OPERACOES', 'PDV', 'FINANCEIRO_DISK', 'AUDITOR');
+    const termRes = await this.db.query<{
+      id: string;
+      code: string;
+      label: string;
+      venue: string;
+      status: string;
+    }>(
+      `SELECT id, code, label, venue, status FROM p09_pdv_terminals WHERE id = $1`,
+      [terminalId]
+    );
+    if (termRes.rows.length === 0) {
+      throw new NotFoundException({ code: 'TERMINAL_NAO_LOCALIZADO', message: 'Terminal não localizado' });
+    }
+    if (sectorId) {
+      assertPdvSectorAllowed([], sectorId);
+    }
+    const ordersRes = await this.db.query<{
+      status: string;
+      total_cents: number;
+      quantity: number;
+    }>(
+      `SELECT status, total_cents, quantity
+       FROM p08_sale_orders
+       WHERE pdv_terminal_id = $1`,
+      [terminalId]
+    );
+    const summary = summarizePdvShiftReconciliation(
+      ordersRes.rows.map((o) => ({
+        status: o.status,
+        totalCents: Number(o.total_cents),
+        quantity: Number(o.quantity),
+      }))
+    );
+    return {
+      terminal: termRes.rows[0],
+      reconciliation: summary,
+    };
   }
 }
 // Referência de equivalência estrita: shift.operatorId!==actor.id / shift.terminal.status!=='ATIVO'

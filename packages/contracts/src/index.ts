@@ -321,8 +321,10 @@ export const CANONICAL_NAVIGATION_MENU: NavigationMenuItem[] = [
       { id: 'comercial-painel', labelPtBr: 'Visão Geral Comercial', href: '/comercial', requiredPermission: 'commercial:read' },
       { id: 'comercial-produtores', labelPtBr: 'Produtores (PJ)', href: '/comercial/produtores', requiredPermission: 'commercial:read' },
       { id: 'comercial-produtor-novo', labelPtBr: 'Cadastrar Produtor', href: '/comercial/produtores/novo', requiredPermission: 'commercial:write' },
-      { id: 'comercial-contratos', labelPtBr: 'Contratos e Negociações', href: '/comercial?aba=contratos', requiredPermission: 'commercial:read' },
-      { id: 'comercial-taxas', labelPtBr: 'Taxa Disk por Evento', href: '/comercial?aba=taxas', requiredPermission: 'event-fee:read-internal' },
+      { id: 'comercial-aprovacoes', labelPtBr: 'Aprovação de Produtores', href: '/comercial/aprovacoes', requiredPermission: 'commercial:read' },
+      { id: 'comercial-negociacoes', labelPtBr: 'Negociações e Planos', href: '/comercial/negociacoes', requiredPermission: 'commercial:read' },
+      { id: 'comercial-contratos', labelPtBr: 'Contratos Comerciais', href: '/comercial/contratos', requiredPermission: 'commercial:read' },
+      { id: 'comercial-beneficiarios', labelPtBr: 'Contas e Beneficiários', href: '/comercial/beneficiarios', requiredPermission: 'commercial:read' },
     ],
   },
   {
@@ -337,8 +339,9 @@ export const CANONICAL_NAVIGATION_MENU: NavigationMenuItem[] = [
     subItems: [
       { id: 'eventos-central', labelPtBr: 'Todos os Eventos', href: '/eventos', requiredPermission: 'event:read' },
       { id: 'eventos-novo', labelPtBr: 'Criar Evento (Assistente)', href: '/eventos/novo', requiredPermission: 'event:write' },
-      { id: 'eventos-sessoes', labelPtBr: 'Sessões, Setores e Lotes', href: '/eventos?aba=estrutura', requiredPermission: 'event:read' },
-      { id: 'eventos-aprovacoes', labelPtBr: 'Aprovações e Publicação', href: '/eventos?aba=aprovacoes', requiredPermission: 'event:read' },
+      { id: 'eventos-locais', labelPtBr: 'Locais e Capacidades', href: '/eventos/locais', requiredPermission: 'event:read' },
+      { id: 'eventos-mapas', labelPtBr: 'Construtor de Mapas', href: '/mapas', requiredPermission: 'event:read' },
+      { id: 'eventos-diagnostico-assentos', labelPtBr: 'Diagnóstico de Assentos', href: '/relatorios/assentos', requiredPermission: 'event:read' },
     ],
   },
   {
@@ -353,8 +356,15 @@ export const CANONICAL_NAVIGATION_MENU: NavigationMenuItem[] = [
     subItems: [
       { id: 'pedidos-lista', labelPtBr: 'Central de Vendas eCaixa', href: '/pedidos-vendas', requiredPermission: 'order:read' },
       { id: 'pedidos-reservas', labelPtBr: 'Pedidos e Reservas', href: '/pedidos', requiredPermission: 'order:read' },
-      { id: 'pedidos-checkout', labelPtBr: 'Checkout e Pagamentos', href: '/checkout', requiredPermission: 'order:read' },
-      { id: 'pedidos-pdv', labelPtBr: 'Terminais de PDV e Bilheteria', href: '/pdv', requiredPermission: 'order:read' },
+      { id: 'pedidos-novo', labelPtBr: 'Criar Pedido Administrativo', href: '/pedidos/novo', requiredPermission: 'order:read' },
+      { id: 'pedidos-fila-reservas', labelPtBr: 'Reservas e Desistências', href: '/pedidos/reservas', requiredPermission: 'order:read' },
+      { id: 'pedidos-transferencias', labelPtBr: 'Transferências de Titularidade', href: '/pedidos/transferencias', requiredPermission: 'order:read' },
+      { id: 'pedidos-checkout', labelPtBr: 'Pagamentos e Checkout', href: '/pagamentos', requiredPermission: 'order:read' },
+      { id: 'pedidos-tarifas', labelPtBr: 'Métodos e Tarifas (MDR)', href: '/pagamentos/configuracoes', requiredPermission: 'order:read' },
+      { id: 'pedidos-pdv-pontos', labelPtBr: 'Pontos de Venda (PDV)', href: '/pdv/pontos', requiredPermission: 'order:read' },
+      { id: 'pedidos-pdv-operadores', labelPtBr: 'Operadores PDV', href: '/pdv/operadores', requiredPermission: 'order:read' },
+      { id: 'pedidos-pdv-caixa', labelPtBr: 'Caixa e Conciliação PDV', href: '/pdv/caixa', requiredPermission: 'order:read' },
+      { id: 'pedidos-pdv-vendas', labelPtBr: 'Vendas no PDV', href: '/pdv/vendas', requiredPermission: 'order:read' },
       { id: 'pedidos-clientes', labelPtBr: 'Central de Clientes', href: '/clientes', requiredPermission: 'order:read' },
     ],
   },
@@ -368,8 +378,11 @@ export const CANONICAL_NAVIGATION_MENU: NavigationMenuItem[] = [
     requiredPermission: 'ticket:read',
     descriptionPtBr: 'Busca por código numérico de 8 dígitos, credenciais QR independentes e controle de acesso.',
     subItems: [
-      { id: 'ingressos-central', labelPtBr: 'Emissão e Portaria QR', href: '/ingressos-portaria', requiredPermission: 'ticket:read' },
+      { id: 'ingressos-central', labelPtBr: 'Validações de Portaria', href: '/portaria/validacoes', requiredPermission: 'ticket:read' },
       { id: 'ingressos-consulta', labelPtBr: 'Consulta por 8 Dígitos', href: '/ingressos', requiredPermission: 'ticket:read' },
+      { id: 'portaria-validadores', labelPtBr: 'Usuários Validadores', href: '/portaria/validadores', requiredPermission: 'ticket:read' },
+      { id: 'portaria-regras', labelPtBr: 'Regras de Acesso QR', href: '/portaria/regras', requiredPermission: 'ticket:read' },
+      { id: 'portaria-facial', labelPtBr: 'Reconhecimento Facial (LGPD)', href: '/portaria/facial', requiredPermission: 'ticket:read' },
     ],
   },
   {
@@ -383,7 +396,9 @@ export const CANONICAL_NAVIGATION_MENU: NavigationMenuItem[] = [
     descriptionPtBr: 'Atendimento omnicanal, fila de chamados, SLA, trocas de sessão, cancelamentos e base de conhecimento.',
     subItems: [
       { id: 'sac-fila', labelPtBr: 'Painel de Atendimento', href: '/sac', requiredPermission: 'sac:read' },
-      { id: 'sac-chamados', labelPtBr: 'Fila de Chamados', href: '/sac/chamados', requiredPermission: 'sac:read' },
+      { id: 'sac-clientes', labelPtBr: 'Clientes SAC', href: '/sac/clientes', requiredPermission: 'sac:read' },
+      { id: 'sac-ocorrencias', labelPtBr: 'Ocorrências e Chamados', href: '/sac/ocorrencias', requiredPermission: 'sac:read' },
+      { id: 'sac-reenvios', labelPtBr: 'Reenvio de Ingressos', href: '/sac/reenvios', requiredPermission: 'sac:read' },
       { id: 'sac-gestao', labelPtBr: 'Equipes, Filas e SLA', href: '/sac/gestao', requiredPermission: 'sac:read' },
       { id: 'sac-itil', labelPtBr: 'Incidentes e Problemas', href: '/sac/itil', requiredPermission: 'sac:read' },
       { id: 'sac-conhecimento', labelPtBr: 'Base de Conhecimento', href: '/sac/conhecimento', requiredPermission: 'sac:read' },
@@ -402,6 +417,7 @@ export const CANONICAL_NAVIGATION_MENU: NavigationMenuItem[] = [
     descriptionPtBr: 'Campanhas de desconto, códigos promocionais, limites por sessão e quotas de cortesias.',
     subItems: [
       { id: 'cupons-campanhas', labelPtBr: 'Campanhas e Cortesias', href: '/cupons-cortesias', requiredPermission: 'coupon:read' },
+      { id: 'vendas-descontos', labelPtBr: 'Cupons e Descontos', href: '/vendas/descontos', requiredPermission: 'coupon:read' },
     ],
   },
   {
@@ -515,6 +531,9 @@ export const CANONICAL_NAVIGATION_MENU: NavigationMenuItem[] = [
     descriptionPtBr: 'Central de relatórios por evento, produtor, período e departamento, com exportação auditada.',
     subItems: [
       { id: 'relatorios-catalogo', labelPtBr: 'Central de Relatórios', href: '/relatorios', requiredPermission: 'reports:read' },
+      { id: 'relatorios-vendas', labelPtBr: 'Vendas e Ingressos', href: '/relatorios/vendas', requiredPermission: 'reports:read' },
+      { id: 'relatorios-acessos', labelPtBr: 'Acessos e Portaria', href: '/relatorios/acessos', requiredPermission: 'reports:read' },
+      { id: 'relatorios-assentos', labelPtBr: 'Diagnóstico de Assentos', href: '/relatorios/assentos', requiredPermission: 'reports:read' },
     ],
   },
   {
@@ -541,6 +560,10 @@ export const CANONICAL_NAVIGATION_MENU: NavigationMenuItem[] = [
     descriptionPtBr: 'Trilha de auditoria imutável, perfis de acesso, escopos e saúde das integrações.',
     subItems: [
       { id: 'admin-auditoria', labelPtBr: 'Trilha de Auditoria e Governança', href: '/administracao', requiredPermission: 'audit:read' },
+      { id: 'admin-usuarios', labelPtBr: 'Usuários e Perfis', href: '/administracao/usuarios', requiredPermission: 'audit:read' },
+      { id: 'admin-tarefas', labelPtBr: 'Tarefas e Notificações', href: '/administracao/tarefas', requiredPermission: 'audit:read' },
+      { id: 'auditoria-logs', labelPtBr: 'Logs de Auditoria', href: '/auditoria/logs', requiredPermission: 'audit:read' },
+      { id: 'auditoria-integracoes', labelPtBr: 'Saúde de Integrações', href: '/auditoria/integracoes', requiredPermission: 'audit:read' },
     ],
   },
 ];

@@ -48,6 +48,16 @@ export class BravoPdvController {
     return this.pdv.list(req.actor!);
   }
 
+  @Get('turnos')
+  listShifts(@Req() req: AuthenticatedRequest) {
+    return this.pdv.listShifts(req.actor!);
+  }
+
+  @Get('terminais/:id/conciliacao')
+  reconcileTerminal(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.pdv.reconcileTerminal(id, req.actor!);
+  }
+
   @Post('terminais')
   register(
     @Req() req: AuthenticatedRequest,

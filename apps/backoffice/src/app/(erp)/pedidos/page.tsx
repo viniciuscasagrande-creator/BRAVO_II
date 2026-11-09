@@ -30,6 +30,16 @@ export default function Pedidos() {
   const [busy, setBusy] = useState(false);
   const [customerSearch, setCustomerSearch] = useState('');
   const [customers, setCustomers] = useState<{ id: string; fullName: string; email: string }[]>([]);
+  const [availableSeats, setAvailableSeats] = useState<
+    Array<{ id: string; seatLabel: string; status: string; isAccessible: boolean }>
+  >([]);
+  const [selectedSeatIds, setSelectedSeatIds] = useState<string[]>([]);
+  const [couponCode, setCouponCode] = useState('');
+  const [couponPreview, setCouponPreview] = useState<{
+    code: string;
+    discountCents: number;
+    finalTotalCents: number;
+  } | null>(null);
   const [form, setForm] = useState({
     eventId: '',
     sessionId: '',
@@ -99,17 +109,77 @@ export default function Pedidos() {
       }>('pedidos/reservas', {
         ...form,
         quantity: Number(form.quantity),
+        seatIds: selectedSeatIds.length > 0 ? selectedSeatIds : undefined,
+        couponCode: couponCode.trim() ? couponCode.trim().toUpperCase() : undefined,
         channel: 'ONLINE',
         idempotencyKey: crypto.randomUUID(),
       });
       setMsg(
         `Reserva ${result.id} criada até ${dateBR(result.expiresAt)}. NÃO é pagamento realizado nem ingresso emitido.`
       );
+      setSelectedSeatIds([]);
       await load();
     } catch (e) {
       setErr((e as Error).message);
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function cancelReservation(orderId: string) {
+    setErr('');
+    setMsg('');
+    setBusy(true);
+    try {
+      await post(`pedidos/${orderId}/cancelar-reserva`);
+      setMsg(`Reserva ${orderId.slice(0, 8)}… cancelada e estoque/poltronas liberados.`);
+      await load();
+    } catch (e) {
+      setErr((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function validateCoupon() {
+    if (!form.eventId || !form.lotId || !couponCode.trim()) return;
+    setErr('');
+    const selectedLot = (detail?.lots || []).find((l) => l.id === form.lotId);
+    const subtotalCents = (selectedLot?.faceValueCents || 0) * Number(form.quantity || 1);
+    try {
+      const res = await get<{
+        code: string;
+        discountCents: number;
+        finalTotalCents: number;
+      }>(
+        `pedidos/cupons/validar?eventId=${encodeURIComponent(form.eventId)}&code=${encodeURIComponent(
+          couponCode.trim()
+        )}&subtotalCents=${subtotalCents}`
+      );
+      setCouponPreview(res);
+    } catch (e) {
+      setCouponPreview(null);
+      setErr((e as Error).message);
+    }
+  }
+
+  async function handleLotChange(lotId: string) {
+    setForm({ ...form, lotId });
+    setSelectedSeatIds([]);
+    setAvailableSeats([]);
+    setCouponPreview(null);
+    if (!lotId || !detail) return;
+    const lot = detail.lots.find((l) => l.id === lotId);
+    const area = detail.areas.find((a) => a.id === lot?.areaId);
+    if (area?.isNumbered && lot?.areaId) {
+      try {
+        const res = await get<{
+          items: Array<{ id: string; seatLabel: string; status: string; isAccessible: boolean }>;
+        }>(`pedidos/eventos/${detail.id}/setores/${lot.areaId}/poltronas`);
+        setAvailableSeats(res.items);
+      } catch (e) {
+        setErr((e as Error).message);
+      }
     }
   }
 
@@ -134,8 +204,18 @@ export default function Pedidos() {
   return (
     <main className="b6">
       <Head
-        title="Pedidos e Reservas"
+        title="PED-01 · Pedidos e Reservas"
         description="Fluxo interno de homologação, sem pagamento ou emissão real. Inventário atômico por lote."
+        action={
+          <div className="b6-actions">
+            <Link className="b6-btn b6-btn-secondary" href="/pedidos/reservas">
+              Fila de Reservas / TTL
+            </Link>
+            <Link className="b6-btn" href="/pedidos/novo">
+              Novo Pedido Administrativo
+            </Link>
+          </div>
+        }
       />
       <Notice text={err} error />
       {msg && (
@@ -213,7 +293,7 @@ export default function Pedidos() {
                 <select
                   required
                   value={form.lotId}
-                  onChange={(e) => setForm({ ...form, lotId: e.target.value })}
+                  onChange={(e) => handleLotChange(e.target.value)}
                 >
                   <option value="">Selecione o lote</option>
                   {lots
@@ -236,6 +316,61 @@ export default function Pedidos() {
                   onChange={(e) => setForm({ ...form, quantity: Number(e.target.value) })}
                 />
               </label>
+              {availableSeats.length > 0 && (
+                <div className="b6-field">
+                  <span>
+                    Poltronas numeradas ({selectedSeatIds.length}/{form.quantity} selecionadas)
+                  </span>
+                  <div className="b6-actions" style={{ marginTop: 6, flexWrap: 'wrap' }}>
+                    {availableSeats.map((st) => {
+                      const checked = selectedSeatIds.includes(st.id);
+                      const disabled = st.status !== 'AVAILABLE' && !checked;
+                      return (
+                        <button
+                          key={st.id}
+                          type="button"
+                          disabled={disabled}
+                          className={`b6-btn ${checked ? '' : 'b6-btn-secondary'}`}
+                          onClick={() => {
+                            if (checked) {
+                              setSelectedSeatIds(selectedSeatIds.filter((id) => id !== st.id));
+                            } else if (selectedSeatIds.length < form.quantity) {
+                              setSelectedSeatIds([...selectedSeatIds, st.id]);
+                            }
+                          }}
+                        >
+                          {st.seatLabel} {st.isAccessible ? '(PCD)' : ''}{' '}
+                          {st.status !== 'AVAILABLE' ? `[${st.status}]` : ''}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              <div className="b6-field">
+                <span>Cupom promocional (opcional)</span>
+                <div className="b6-actions">
+                  <input
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    placeholder="Ex.: PROMO10"
+                  />
+                  <button
+                    type="button"
+                    className="b6-btn b6-btn-secondary"
+                    onClick={validateCoupon}
+                    disabled={!form.eventId || !form.lotId || !couponCode.trim()}
+                  >
+                    Validar cupom
+                  </button>
+                </div>
+                {couponPreview && (
+                  <small className="b6-muted">
+                    Cupom {couponPreview.code}: desconto {real(couponPreview.discountCents)} · Total final{' '}
+                    {real(couponPreview.finalTotalCents)}
+                  </small>
+                )}
+              </div>
               <button className="b6-btn" disabled={busy || !form.customerId || !form.lotId}>
                 {busy ? 'Processando...' : 'Reservar (sem cobrar)'}
               </button>
@@ -276,18 +411,38 @@ export default function Pedidos() {
                   <th>Valor</th>
                   <th>Situação</th>
                   <th>Criado em</th>
+                  <th>Ações</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((o) => (
                   <tr key={o.id}>
-                    <td title={o.id}>{o.id.slice(0, 8)}…</td>
+                    <td title={o.id}>
+                      <Link href={`/pedidos/${o.id}`}>{o.id.slice(0, 8)}…</Link>
+                    </td>
                     <td>{o.event.name}</td>
                     <td>{o.customer.fullName}</td>
                     <td>{o.quantity}</td>
                     <td>{real(o.totalCents)}</td>
                     <td>{o.status}</td>
                     <td>{dateBR(o.createdAt)}</td>
+                    <td>
+                      <div className="b6-actions">
+                        <Link className="b6-btn b6-btn-secondary" href={`/pedidos/${o.id}`}>
+                          Abrir
+                        </Link>
+                        {canManage && o.status === 'RESERVADO' ? (
+                          <button
+                            type="button"
+                            className="b6-btn b6-btn-secondary"
+                            disabled={busy}
+                            onClick={() => cancelReservation(o.id)}
+                          >
+                            Cancelar reserva
+                          </button>
+                        ) : null}
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>

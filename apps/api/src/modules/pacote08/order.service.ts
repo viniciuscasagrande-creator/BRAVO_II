@@ -8,7 +8,9 @@ import {
 import { createHash, createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
 import {
   AdapterReceipt,
+  assertChannelOrderLimit,
   assertConfirmedPayment,
+  calculateCouponDiscountCents,
   calculateLineTotal,
   expiresAt,
   formatTicketNumber,
@@ -30,6 +32,8 @@ export type ReserveInput = {
   quantity: number;
   channel: 'ONLINE' | 'PDV' | 'BILHETERIA';
   idempotencyKey: string;
+  seatIds?: string[];
+  couponCode?: string;
 };
 
 // Referência de equivalência Prisma: TransactionIsolationLevel.Serializable / UPDATE "BravoPriceLot" SET "reservedCount"="reservedCount"+quantity WHERE "capacity"-"reservedCount"-"issuedCount">=quantity
@@ -206,7 +210,10 @@ export class BravoOrdersService {
         enabledChannels,
         channel: body.channel,
         numbered: lot.area_type === 'SEATED',
+        seatIds: body.seatIds,
+        quantity: body.quantity,
       });
+      assertChannelOrderLimit(body.quantity, body.channel, null);
     });
 
     const unitCents = Number(lot.nominal_price_cents);
@@ -255,6 +262,22 @@ export class BravoOrdersService {
           code: 'EVENTO_INDISPONIVEL',
           message: 'Evento indisponível para vendas',
         });
+      }
+
+      if (lot.area_type === 'SEATED' && Array.isArray(body.seatIds) && body.seatIds.length > 0) {
+        const seatLock = await tx.query<{ id: string }>(
+          `UPDATE seats
+           SET status = 'HELD', active_hold_id = $1, updated_at = NOW()
+           WHERE id = ANY($2::uuid[]) AND sector_id = $3 AND status = 'AVAILABLE'
+           RETURNING id`,
+          [orderId, body.seatIds, lot.sector_id]
+        );
+        if (seatLock.rowCount !== body.seatIds.length) {
+          throw new ConflictException({
+            code: 'POLTRONA_INDISPONIVEL',
+            message: 'Uma ou mais poltronas já estão reservadas ou ocupadas',
+          });
+        }
       }
 
       // Atualização atômica no PostgreSQL: não existe leitura separada de estoque para decidir.
@@ -497,6 +520,10 @@ export class BravoOrdersService {
           });
         }
         await tx.query(
+          `UPDATE seats SET status = 'AVAILABLE', active_hold_id = NULL, updated_at = NOW() WHERE active_hold_id = $1`,
+          [row.id]
+        );
+        await tx.query(
           `UPDATE p08_sale_orders SET status = 'EXPIRADO', updated_at = NOW() WHERE id = $1`,
           [row.id]
         );
@@ -613,6 +640,10 @@ export class BravoOrdersService {
         });
       }
       await tx.query(
+        `UPDATE seats SET status = 'AVAILABLE', active_hold_id = NULL, updated_at = NOW() WHERE active_hold_id = $1`,
+        [id]
+      );
+      await tx.query(
         `UPDATE p08_sale_orders SET status = 'CANCELADO', updated_at = NOW() WHERE id = $1`,
         [id]
       );
@@ -633,6 +664,101 @@ export class BravoOrdersService {
     }
 
     return result;
+  }
+
+  /** PED-003: Valida cupom promocional no servidor para simulação/reserva de pedido. */
+  async validateCouponForOrder(
+    eventId: string,
+    code: string,
+    subtotalCents: number,
+    actor: AuthenticatedActorDto
+  ) {
+    assertInternalRole(actor, 'ADMIN', 'OPERACOES', 'SAC', 'PDV');
+    const normalizedCode = (code || '').trim().toUpperCase();
+    if (!normalizedCode) {
+      throw new BadRequestException({ code: 'CUPOM_INVALIDO', message: 'Informe um código de cupom' });
+    }
+    const res = await this.db.query<{
+      id: string;
+      code: string;
+      discount_type: string;
+      discount_value_bps: number | null;
+      discount_value_cents: string | number | null;
+      max_uses: number | null;
+      current_uses: number;
+      valid_from: string | Date | null;
+      valid_until: string | Date | null;
+      is_active: boolean;
+    }>(
+      `SELECT id, code, discount_type, discount_value_bps, discount_value_cents,
+              max_uses, current_uses, valid_from, valid_until, is_active
+       FROM coupon_campaigns
+       WHERE event_id = $1 AND UPPER(code) = $2
+       LIMIT 1`,
+      [eventId, normalizedCode]
+    );
+    if (res.rows.length === 0) {
+      throw new NotFoundException({
+        code: 'CUPOM_NAO_ENCONTRADO',
+        message: 'Cupom promocional não encontrado para este evento',
+      });
+    }
+    const c = res.rows[0];
+    let couponCalc = { discountCents: 0, finalTotalCents: subtotalCents };
+    asRequestError(() => {
+      if (!c.is_active) {
+        throw new SalesRuleError('Cupom promocional inativo');
+      }
+      if (c.max_uses !== null && Number(c.current_uses) >= Number(c.max_uses)) {
+        throw new SalesRuleError('Cupom promocional esgotado');
+      }
+      couponCalc = calculateCouponDiscountCents(subtotalCents, {
+        discountType: c.discount_type === 'PERCENTAGE' ? 'PERCENTAGE' : 'FIXED',
+        percentageRate: c.discount_value_bps !== null ? Number(c.discount_value_bps) / 100 : null,
+        fixedAmountCents: c.discount_value_cents !== null ? Number(c.discount_value_cents) : null,
+      });
+    });
+
+    return {
+      couponId: c.id,
+      code: c.code,
+      discountType: c.discount_type,
+      subtotalCents,
+      discountCents: couponCalc.discountCents,
+      finalTotalCents: couponCalc.finalTotalCents,
+    };
+  }
+
+  /** PED-002: Lista poltronas disponíveis e bloqueadas de um setor numerado. */
+  async listAvailableSeats(eventId: string, sectorId: string, actor: AuthenticatedActorDto) {
+    assertInternalRole(actor, 'ADMIN', 'OPERACOES', 'SAC', 'PDV');
+    const res = await this.db.query<{
+      id: string;
+      row_label: string;
+      seat_number: string;
+      seat_label: string;
+      status: string;
+      is_accessible: boolean;
+    }>(
+      `SELECT st.id, st.row_label, st.seat_number, st.seat_label, st.status, st.is_accessible
+       FROM seats st
+       INNER JOIN event_sectors sec ON sec.id = st.sector_id
+       WHERE sec.event_id = $1 AND st.sector_id = $2
+       ORDER BY st.row_label ASC, st.seat_number ASC
+       LIMIT 300`,
+      [eventId, sectorId]
+    );
+    return {
+      sectorId,
+      items: res.rows.map((r) => ({
+        id: r.id,
+        rowLabel: r.row_label,
+        seatNumber: r.seat_number,
+        seatLabel: r.seat_label,
+        status: r.status,
+        isAccessible: Boolean(r.is_accessible),
+      })),
+    };
   }
 
   /**

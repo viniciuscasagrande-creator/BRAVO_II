@@ -49,6 +49,30 @@ export class BravoOrdersController {
     return this.orders.expireReserved(req.actor!, correlationId);
   }
 
+  @Get('cupons/validar')
+  validateCoupon(
+    @Req() req: AuthenticatedRequest,
+    @Query('eventId') eventId: string,
+    @Query('code') code: string,
+    @Query('subtotalCents') subtotalCents: string
+  ) {
+    return this.orders.validateCouponForOrder(
+      eventId,
+      code,
+      Number(subtotalCents || 0),
+      req.actor!
+    );
+  }
+
+  @Get('eventos/:eventId/setores/:sectorId/poltronas')
+  listSeats(
+    @Req() req: AuthenticatedRequest,
+    @Param('eventId') eventId: string,
+    @Param('sectorId') sectorId: string
+  ) {
+    return this.orders.listAvailableSeats(eventId, sectorId, req.actor!);
+  }
+
   @Get(':id')
   get(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
     return this.orders.get(id, req.actor!);

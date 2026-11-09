@@ -12,8 +12,31 @@ type Terminal = {
   createdAt: string;
 };
 
+type PdvShift = {
+  id: string;
+  terminalId: string;
+  terminalCode: string;
+  terminalLabel: string;
+  operatorId: string;
+  status: string;
+  openedAt: string;
+  closedAt: string | null;
+  reconciliation: {
+    totalOrders: number;
+    reservedCount: number;
+    reservedAmountCents: number;
+    paidCount: number;
+    paidAmountCents: number;
+    cancelledOrExpiredCount: number;
+  };
+};
+
+const real = (cents: number) =>
+  (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
 export default function Pdv() {
   const [rows, setRows] = useState<Terminal[]>([]);
+  const [shifts, setShifts] = useState<PdvShift[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -21,8 +44,12 @@ export default function Pdv() {
   const [form, setForm] = useState({ code: '', label: '', venue: '' });
 
   async function load() {
-    const result = await get<{ items: Terminal[] }>('pdv/terminais');
+    const [result, shiftResult] = await Promise.all([
+      get<{ items: Terminal[] }>('pdv/terminais'),
+      get<{ items: PdvShift[] }>('pdv/turnos').catch(() => ({ items: [] })),
+    ]);
     setRows(result.items);
+    setShifts(shiftResult.items);
   }
 
   useEffect(() => {
@@ -137,6 +164,47 @@ export default function Pdv() {
           </div>
         ) : (
           <Empty message="Nenhum terminal cadastrado neste ambiente." />
+        )}
+      </section>
+      <section className="b6-panel" style={{ marginTop: 18 }}>
+        <h2>Turnos e Conciliação de Caixa PDV</h2>
+        {shifts.length ? (
+          <div className="b6-table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>Terminal</th>
+                  <th>Operador</th>
+                  <th>Situação</th>
+                  <th>Abertura</th>
+                  <th>Reservados</th>
+                  <th>Liquidados</th>
+                  <th>Cancelados/Expirados</th>
+                </tr>
+              </thead>
+              <tbody>
+                {shifts.map((s) => (
+                  <tr key={s.id}>
+                    <td>
+                      {s.terminalCode} — {s.terminalLabel}
+                    </td>
+                    <td>{s.operatorId.slice(0, 8)}…</td>
+                    <td>{s.status}</td>
+                    <td>{dateBR(s.openedAt)}</td>
+                    <td>
+                      {s.reconciliation.reservedCount} ({real(s.reconciliation.reservedAmountCents)})
+                    </td>
+                    <td>
+                      {s.reconciliation.paidCount} ({real(s.reconciliation.paidAmountCents)})
+                    </td>
+                    <td>{s.reconciliation.cancelledOrExpiredCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <Empty message="Nenhum turno de PDV aberto neste ambiente (operações físicas bloqueadas até homologação)." />
         )}
       </section>
     </main>

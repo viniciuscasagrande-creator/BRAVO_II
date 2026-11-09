@@ -30,3 +30,21 @@
   - **Construtor de Mapas, Filas e Poltronas (`MAP-001` / `MAP-002` / `ADR-003`)**: Geração de filas numeradas em lote (`/v1/eventos/:id/areas/:areaId/filas`), duplicação de setor/mapa (`/v1/eventos/:id/areas/:areaId/duplicar`) e exclusão protegida contra setores com vendas ou reservas (`/v1/eventos/:id/areas/:areaId/excluir`).
 - **Suíte de Testes**:
   - **58/58 testes aprovados** (`node --test tests/*.test.mjs`).
+
+## 3. Evidências do Pacote 03 — Pedidos, Bilheteria e Canais
+
+- **Regras implementadas e testadas**:
+  - **Reservas de Poltronas Numeradas sem Duplicidade e Liberação de Reserva Expirada/Cancelada (`PED-001` & `PED-002` / `ADR-004`)**:
+    - `mayReserve` (`@bravo-ii/domain-p08`) valida `seatIds` distintos em quantidade idêntica a `quantity` quando o setor é numerado (`area_type === 'SEATED'`).
+    - `BravoOrdersService.reserve` executa bloqueio transacional atômico em `seats` (`UPDATE seats SET status = 'HELD', active_hold_id = $1 WHERE id = ANY($2::uuid[]) AND sector_id = $3 AND status = 'AVAILABLE'`), rejeitando concorrência com `409 Conflict` (`POLTRONA_INDISPONIVEL`).
+    - `BravoOrdersService.expireReserved` (`/v1/pedidos/reservas/expiradas/processar`) e `BravoOrdersService.cancelUnpaid` (`/v1/pedidos/:id/cancelar-reserva`) liberam o estoque do lote e as poltronas bloqueadas (`UPDATE seats SET status = 'AVAILABLE', active_hold_id = NULL WHERE active_hold_id = $1`).
+    - Listagem de poltronas por setor em `/v1/pedidos/eventos/:eventId/setores/:sectorId/poltronas`.
+  - **Limite por Pedido/Canal e Cupom Promocional no Servidor (`PED-003`)**:
+    - `assertChannelOrderLimit` e `calculateCouponDiscountCents` implementados em `@bravo-ii/domain-p08`.
+    - Validação de cupom promocional exposta em `GET /v1/pedidos/cupons/validar` consultando `coupon_campaigns`.
+  - **Bilheteria e PDV — Setores Autorizados, Turnos e Conciliação de Caixa (`PDV-001` / `ADR-005`)**:
+    - `assertPdvSectorAllowed` e `summarizePdvShiftReconciliation` implementados em `@bravo-ii/domain-p09`.
+    - Endpoints `GET /v1/pdv/turnos` e `GET /v1/pdv/terminais/:id/conciliacao` expostos em `BravoPdvController` / `BravoPdvService`, preservando o bloqueio fail-closed de operações físicas não homologadas (`ENABLE_PDV_OPERATIONS !== 'true'`).
+- **Suíte de Testes**:
+  - **61/61 testes aprovados** (`node --test tests/*.test.mjs`).
+

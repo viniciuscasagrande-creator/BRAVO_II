@@ -153,12 +153,24 @@ export function mayReserve(input: {
   enabledChannels: string[];
   channel: SaleChannel;
   numbered: boolean;
+  seatIds?: string[];
+  quantity?: number;
 }) {
   if (input.eventStatus !== 'PUBLICADO') throw new SalesRuleError('Evento ainda não publicado');
   if (input.lotStatus !== 'ATIVO' || input.sessionStatus !== 'ATIVA') {
     throw new SalesRuleError('Sessão ou lote ainda não liberado');
   }
-  if (input.numbered) throw new SalesRuleError('Lugares numerados aguardam módulo de alocação por assento');
+  if (input.numbered) {
+    if (!Array.isArray(input.seatIds) || input.seatIds.length === 0) {
+      throw new SalesRuleError('Lugares numerados aguardam módulo de alocação por assento');
+    }
+    if (input.quantity !== undefined && input.seatIds.length !== input.quantity) {
+      throw new SalesRuleError('Quantidade de poltronas selecionadas deve coincidir com a quantidade do pedido');
+    }
+    if (new Set(input.seatIds).size !== input.seatIds.length) {
+      throw new SalesRuleError('Poltrona duplicada informada na mesma reserva');
+    }
+  }
   if (!input.enabledChannels.includes(input.channel)) throw new SalesRuleError('Canal de venda não habilitado');
   if (input.salesStartAt && input.now < input.salesStartAt) throw new SalesRuleError('Venda ainda não iniciada');
   if (input.now < input.lotStartsAt || input.now >= input.lotEndsAt) {
@@ -168,6 +180,55 @@ export function mayReserve(input: {
     throw new SalesRuleError('Evento já iniciado; requer regra operacional específica');
   }
   return true;
+}
+
+export function assertChannelOrderLimit(
+  quantity: number,
+  channel: SaleChannel,
+  customMaxPerOrder?: number | null
+): number {
+  const defaultLimit = channel === 'ONLINE' ? MAX_TICKETS_PER_ORDER : MAX_TICKETS_PER_ORDER;
+  const effectiveLimit =
+    customMaxPerOrder && Number.isInteger(customMaxPerOrder) && customMaxPerOrder > 0
+      ? Math.min(customMaxPerOrder, MAX_TICKETS_PER_ORDER)
+      : defaultLimit;
+  if (!Number.isInteger(quantity) || quantity < 1 || quantity > effectiveLimit) {
+    throw new SalesRuleError(`PED-003: Limite máximo de ${effectiveLimit} ingressos por pedido no canal ${channel}`);
+  }
+  return effectiveLimit;
+}
+
+export function calculateCouponDiscountCents(
+  subtotalCents: number,
+  coupon: {
+    discountType: 'PERCENTAGE' | 'FIXED';
+    percentageRate?: number | null;
+    fixedAmountCents?: number | null;
+  }
+): { discountCents: number; finalTotalCents: number } {
+  if (!Number.isSafeInteger(subtotalCents) || subtotalCents < 0) {
+    throw new SalesRuleError('Subtotal inválido para cálculo de cupom');
+  }
+  let discountCents = 0;
+  if (coupon.discountType === 'FIXED') {
+    const fixed = Number(coupon.fixedAmountCents ?? 0);
+    if (!Number.isSafeInteger(fixed) || fixed < 0) {
+      throw new SalesRuleError('Valor fixo do cupom inválido');
+    }
+    discountCents = Math.min(subtotalCents, fixed);
+  } else if (coupon.discountType === 'PERCENTAGE') {
+    const rate = Number(coupon.percentageRate ?? 0);
+    if (Number.isNaN(rate) || rate < 0 || rate > 100) {
+      throw new SalesRuleError('Percentual de desconto do cupom inválido');
+    }
+    discountCents = Math.min(subtotalCents, Math.round((subtotalCents * Math.round(rate * 100)) / 10000));
+  } else {
+    throw new SalesRuleError('Tipo de desconto de cupom inválido');
+  }
+  return {
+    discountCents,
+    finalTotalCents: Math.max(0, subtotalCents - discountCents),
+  };
 }
 
 export function expiresAt(now: Date) {

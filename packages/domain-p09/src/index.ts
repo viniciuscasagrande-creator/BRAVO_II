@@ -165,3 +165,48 @@ export function safeSandboxPayload(order: {
     payment_methods: [{ type: 'PIX' }],
   };
 }
+
+/** PDV-001: Verifica se um setor está autorizado para venda no terminal PDV quando há restrição configurada. */
+export function assertPdvSectorAllowed(allowedSectorIds: string[], requestedSectorId: string) {
+  if (!Array.isArray(allowedSectorIds) || allowedSectorIds.length === 0) {
+    return true;
+  }
+  if (!allowedSectorIds.includes(requestedSectorId)) {
+    throw new CheckoutRuleError('Setor não autorizado para venda neste ponto de venda (PDV)');
+  }
+  return true;
+}
+
+/** PDV-001: Consolida o resumo de conciliação de caixa/turno PDV em centavos inteiros. */
+export function summarizePdvShiftReconciliation(
+  orders: Array<{ status: string; totalCents: number; quantity: number }>
+) {
+  let reservedCount = 0;
+  let reservedAmountCents = 0;
+  let paidCount = 0;
+  let paidAmountCents = 0;
+  let cancelledOrExpiredCount = 0;
+
+  for (const order of orders) {
+    const qty = Number(order.quantity || 0);
+    const total = Number(order.totalCents || 0);
+    if (order.status === 'PAGO') {
+      paidCount += qty;
+      paidAmountCents += total;
+    } else if (order.status === 'RESERVADO') {
+      reservedCount += qty;
+      reservedAmountCents += total;
+    } else if (order.status === 'CANCELADO' || order.status === 'EXPIRADO') {
+      cancelledOrExpiredCount += qty;
+    }
+  }
+
+  return {
+    totalOrders: orders.length,
+    reservedCount,
+    reservedAmountCents,
+    paidCount,
+    paidAmountCents,
+    cancelledOrExpiredCount,
+  };
+}

@@ -87,6 +87,23 @@ export type ProducerSummary = {
   createdAt: string;
 };
 
+export type ProducerFull = ProducerSummary & {
+  contracts?: {
+    id: string;
+    contractNumber: string;
+    title: string;
+    status: string;
+    signedAt?: string | null;
+  }[];
+  contacts?: {
+    id: string;
+    fullName: string;
+    email: string;
+    phone: string;
+    roleType: string;
+  }[];
+};
+
 export type EventSummary = {
   id: string;
   name: string;
@@ -94,6 +111,9 @@ export type EventSummary = {
   startsAt: string;
   endsAt: string;
   createdAt: string;
+  venueName?: string;
+  venueCity?: string;
+  venueState?: string;
   producers: { producer: { legalName: string }; role: string }[];
 };
 
@@ -106,8 +126,11 @@ export type EventFull = {
   startsAt: string;
   endsAt: string;
   salesStartAt?: string;
+  venueName?: string;
+  venueCity?: string;
+  venueState?: string;
   producers: { producer: { id: string; legalName: string; status: string }; role: string }[];
-  sessions: { id: string; name: string; startsAt: string; endsAt: string; capacity: number }[];
+  sessions: { id: string; name: string; startsAt: string; endsAt: string; capacity: number; status?: string }[];
   areas: {
     id: string;
     label: string;
