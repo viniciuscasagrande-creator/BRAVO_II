@@ -1,11 +1,15 @@
 /** Proxy interno (BFF) do Backoffice para NestJS. Nenhuma chave é enviada ao navegador. */
+import {randomUUID} from 'node:crypto';
 import type {NextRequest} from 'next/server';
 export const runtime='nodejs';
 export const dynamic='force-dynamic';
 export const maxDuration=30;
 const MAX_JSON_BYTES=1024*1024;
-function failure(status:number,message:string):Response {
-  return Response.json({statusCode:status,message},{status,headers:{'Cache-Control':'no-store'}});
+function failure(status:number,message:string,diagnostics?:Record<string,unknown>):Response {
+  return Response.json(
+    diagnostics?{statusCode:status,message,diagnostics}:{statusCode:status,message},
+    {status,headers:{'Cache-Control':'no-store'}}
+  );
 }
 function getUpstream():URL {
   const raw=process.env.BRAVO_API_URL||'http://127.0.0.1:4100';
@@ -29,10 +33,16 @@ async function handler(req:NextRequest,ctx:{params:Promise<{path:string[]}>}):Pr
   if(mutating&&browserOrigin!==ownOrigin)return failure(403,'Origem não autorizada');
   const declared=Number(req.headers.get('content-length')||0);
   if(mutating&&declared>MAX_JSON_BYTES)return failure(413,'Corpo da requisição acima do limite');
+  const correlationId=req.headers.get('x-correlation-id')||randomUUID();
+  const startedAt=Date.now();
   try{
     const upstream=getUpstream();
     const target=new URL(`/v1/${path.map(encodeURIComponent).join('/')}${new URL(req.url).search}`,upstream);
-    const headers=new Headers({Accept:'application/json','X-Bravo-Proxy-Key':process.env.BRAVO_PROXY_KEY!});
+    const headers=new Headers({
+      Accept:'application/json',
+      'X-Bravo-Proxy-Key':process.env.BRAVO_PROXY_KEY!,
+      'X-Correlation-Id':correlationId,
+    });
     // Se a API estiver com Vercel Deployment Protection, usar segredo separado para bypass servidor-servidor.
     const protectionBypass=process.env.BRAVO_API_VERCEL_BYPASS_TOKEN;
     if(protectionBypass)headers.set('x-vercel-protection-bypass',protectionBypass);
@@ -50,7 +60,12 @@ async function handler(req:NextRequest,ctx:{params:Promise<{path:string[]}>}):Pr
       body=new Uint8Array(bytes);
     }
     const response=await fetch(target,{method,headers,body:body as BodyInit|undefined,cache:'no-store',redirect:'manual',signal:AbortSignal.timeout(25000)});
-    const outputHeaders=new Headers({'Cache-Control':'private, no-store, max-age=0','X-Content-Type-Options':'nosniff'});
+    const outputHeaders=new Headers({
+      'Cache-Control':'private, no-store, max-age=0',
+      'X-Content-Type-Options':'nosniff',
+      'X-Correlation-Id':correlationId,
+      'X-Response-Time-Ms':String(Date.now()-startedAt),
+    });
     const resultType=response.headers.get('content-type');if(resultType)outputHeaders.set('Content-Type',resultType);
     const cookies=response.headers.getSetCookie?.()||[];
     for(const setCookie of cookies)outputHeaders.append('Set-Cookie',setCookie);
@@ -58,8 +73,16 @@ async function handler(req:NextRequest,ctx:{params:Promise<{path:string[]}>}):Pr
     const retry=response.headers.get('retry-after');if(retry)outputHeaders.set('Retry-After',retry);
     // Não transportar headers de hop-by-hop ou redirecionamentos externos.
     return new Response(method==='HEAD'?null:response.body,{status:response.status,headers:outputHeaders});
-  }catch{
-    return failure(503,'Integração de homologação indisponível. Verifique a API e as variáveis do servidor.');
+  }catch(err){
+    return failure(503,'Integração de homologação indisponível. Verifique a API e as variáveis do servidor.',{
+      service:'bravo-ii-bff',
+      correlationId,
+      durationMs:Date.now()-startedAt,
+      apiState:'UNREACHABLE_OR_MISCONFIGURED',
+      hasBravoApiUrl:Boolean(process.env.BRAVO_API_URL),
+      hasBravoProxyKey:Boolean(process.env.BRAVO_PROXY_KEY&&process.env.BRAVO_PROXY_KEY.length>=32),
+      reason:err instanceof Error?err.message:'UNKNOWN_BFF_ERROR',
+    });
   }
 }
 export const GET=handler;

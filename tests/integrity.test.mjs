@@ -79,3 +79,84 @@ test('Exige autenticação e origem nos endpoints', () => {
   assert(security.includes('csrfForToken'));
   assert(security.includes('req.actor'));
 });
+
+test('Coerência visual: todas as classes CSS do bravo-shell e componentes P06 existem em bravo-p06.css', () => {
+  const css = read('apps/backoffice/src/components/bravo-p06.css');
+  const defined = new Set([...css.matchAll(/\.([a-zA-Z0-9_-]+)/g)].map((m) => m[1]));
+  const shell = read('apps/backoffice/src/components/bravo-shell.tsx');
+  const requiredClasses = [
+    'bravo-app-shell',
+    'bravo-sidebar',
+    'bravo-sidebar-brand',
+    'bravo-brand-mark',
+    'bravo-brand-copy',
+    'bravo-brand-title',
+    'bravo-brand-subtitle',
+    'bravo-collapse-btn',
+    'bravo-sidebar-search',
+    'bravo-sidebar-nav',
+    'bravo-sidebar-section-label',
+    'bravo-nav-list',
+    'bravo-nav-group',
+    'bravo-nav-row',
+    'bravo-nav-link',
+    'bravo-nav-icon',
+    'bravo-nav-text',
+    'bravo-nav-title',
+    'bravo-nav-caption',
+    'bravo-nav-expand',
+    'bravo-nav-sublist',
+    'bravo-nav-sublink',
+    'bravo-nav-subdot',
+    'bravo-sidebar-footer',
+    'bravo-session-card',
+    'bravo-session-status-row',
+    'bravo-status-dot',
+    'bravo-session-status-text',
+    'bravo-session-user',
+    'bravo-session-role',
+    'bravo-session-actions',
+    'bravo-sidebar-btn',
+    'bravo-collapsed-auth',
+    'bravo-main-column',
+    'bravo-topbar',
+    'bravo-breadcrumbs',
+    'bravo-breadcrumb-sep',
+    'bravo-breadcrumb-item',
+    'bravo-topbar-right',
+    'bravo-env-pill',
+    'bravo-user-pill',
+    'bravo-user-avatar',
+    'bravo-user-meta',
+    'bravo-topbar-logout',
+    'bravo-topbar-login-btn',
+    'bravo-workspace',
+    'bravo-tab-btn',
+    'p06-card',
+    'p06-badge',
+    'p06-table',
+    'ok',
+    'warn',
+    'info',
+    'is-active',
+    'is-collapsed',
+    'is-current',
+    'is-online',
+    'is-preview',
+    'is-primary',
+    'is-secondary',
+  ];
+  for (const cls of requiredClasses) {
+    assert(defined.has(cls), `Classe CSS .${cls} ausente em bravo-p06.css`);
+  }
+  assert(!shell.includes("'Brief'"), 'Ícones improvisados de texto removidos do menu');
+});
+
+test('Configuração de cache Next.js preserva imutabilidade de _next/static e documentação usa pnpm', () => {
+  const nextConf = read('apps/backoffice/next.config.mjs');
+  assert(nextConf.includes('_next/static'));
+  assert(nextConf.includes('immutable'));
+  const readmeVercel = read('README-VERCEL.md');
+  assert(!/\bnpm\s+(install|run|ci)\b/.test(readmeVercel));
+  assert(readmeVercel.includes('pnpm install --frozen-lockfile'));
+});

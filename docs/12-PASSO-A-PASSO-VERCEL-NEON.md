@@ -18,8 +18,8 @@
 
 ## 3. Configuração dos dois projetos Vercel
 - Ambos apontam ao mesmo repositório Git privado.
-- API `bravo-ii-api`: **Root Directory `apps/api`**, incluir fontes externas ao Root, Framework NestJS, build `cd ../.. && npm run build:vercel:api`, install `cd ../.. && npm install`.
-- Backoffice `bravo-ii-web`: **Root Directory `apps/backoffice`**, incluir fontes externas ao Root, Framework Next.js, build `cd ../.. && npm run build:vercel:web`, install `cd ../.. && npm install`.
+- API `bravo-ii-api`: **Root Directory `apps/api`**, incluir fontes externas ao Root, Framework NestJS, build `cd ../.. && pnpm run build:vercel:api`, install `cd ../.. && pnpm install --frozen-lockfile`.
+- Backoffice `bravo-ii-web`: **Root Directory `apps/backoffice`**, incluir fontes externas ao Root, Framework Next.js, build `cd ../.. && pnpm run build:vercel:web`, install `cd ../.. && pnpm install --frozen-lockfile`.
 - Conectar somente Preview nas variáveis; não vincular Neon/Gemini à produção. Implantar branch Git de homologação com Vercel Authentication.
 
 ## 4. Variáveis da API (Preview)

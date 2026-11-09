@@ -68,28 +68,36 @@ body {
   gap: 10px;
 }
 
-.bravo-brand-mark {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 0;
-  text-decoration: none;
-  color: #ffffff;
+.bravo-app-shell.is-collapsed .bravo-sidebar-brand {
+  flex-direction: column;
+  padding: 14px 10px;
+  gap: 8px;
 }
 
+.bravo-brand-mark,
 .bravo-brand-badge {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
   background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%);
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
-  font-size: 14px;
+  font-size: 13px;
+  letter-spacing: 0.03em;
   color: #ffffff;
   flex-shrink: 0;
+  text-decoration: none;
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+}
+
+.bravo-brand-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  gap: 2px;
 }
 
 .bravo-brand-title {
@@ -98,12 +106,16 @@ body {
   letter-spacing: 0.02em;
   color: #ffffff;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .bravo-brand-subtitle {
   font-size: 11px;
   color: #94a3b8;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .bravo-collapse-btn {
@@ -118,10 +130,11 @@ body {
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
 .bravo-collapse-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.14);
   color: #ffffff;
 }
 
@@ -155,48 +168,80 @@ body {
   padding: 12px 10px 20px;
   display: flex;
   flex-direction: column;
+  gap: 6px;
+}
+
+.bravo-sidebar-section-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  padding: 4px 10px 6px;
+}
+
+.bravo-nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
   gap: 4px;
 }
 
 .bravo-nav-group {
   border-radius: 9px;
+  list-style: none;
 }
 
+.bravo-nav-row,
 .bravo-nav-group-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: 9px 11px;
-  border-radius: 8px;
-  border: none;
+  border-radius: 9px;
+  border: 1px solid transparent;
   background: transparent;
   color: #cbd5e1;
-  font-size: 13px;
-  font-weight: 600;
-  text-align: left;
-  cursor: pointer;
-  text-decoration: none;
-  gap: 10px;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
+.bravo-nav-row:hover,
 .bravo-nav-group-header:hover {
   background: rgba(255, 255, 255, 0.06);
   color: #ffffff;
 }
 
+.bravo-nav-row.is-active,
 .bravo-nav-group-header.is-active {
-  background: linear-gradient(90deg, rgba(37, 99, 235, 0.25) 0%, rgba(37, 99, 235, 0.08) 100%);
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.28) 0%, rgba(37, 99, 235, 0.08) 100%);
   color: #ffffff;
   border-left: 3px solid #38bdf8;
 }
 
+.bravo-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  padding: 9px 11px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.bravo-app-shell.is-collapsed .bravo-nav-link {
+  justify-content: center;
+  padding: 10px 6px;
+}
+
 .bravo-nav-icon {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.06);
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -206,9 +251,63 @@ body {
   flex-shrink: 0;
 }
 
+.bravo-nav-row.is-active .bravo-nav-icon {
+  background: rgba(56, 189, 248, 0.18);
+  border-color: rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
+}
+
+.bravo-nav-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+  gap: 1px;
+}
+
+.bravo-nav-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #f1f5f9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bravo-nav-caption {
+  font-size: 10px;
+  font-weight: 500;
+  color: #64748b;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bravo-nav-expand {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  width: 28px;
+  height: 28px;
+  margin-right: 6px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 12px;
+}
+
+.bravo-nav-expand:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+}
+
 .bravo-nav-sublist {
   list-style: none;
-  margin: 4px 0 6px 20px;
+  margin: 4px 0 6px 22px;
   padding: 0 0 0 10px;
   border-left: 1px solid #1e293b;
   display: flex;
@@ -216,8 +315,11 @@ body {
   gap: 2px;
 }
 
+.bravo-nav-sublink,
 .bravo-nav-subitem {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 6px 10px;
   border-radius: 6px;
   font-size: 12px;
@@ -227,26 +329,151 @@ body {
   transition: background-color 0.15s ease, color 0.15s ease;
 }
 
+.bravo-nav-sublink:hover,
 .bravo-nav-subitem:hover {
   color: #f8fafc;
   background: rgba(255, 255, 255, 0.05);
 }
 
+.bravo-nav-sublink.is-active,
 .bravo-nav-subitem.is-active {
   color: #38bdf8;
-  background: rgba(56, 189, 248, 0.1);
+  background: rgba(56, 189, 248, 0.12);
   font-weight: 700;
+}
+
+.bravo-nav-subdot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.65;
+  flex-shrink: 0;
 }
 
 .bravo-sidebar-footer {
   padding: 12px 14px;
   border-top: 1px solid var(--bravo-sidebar-border);
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(15, 23, 42, 0.72);
   font-size: 11px;
   color: #94a3b8;
 }
 
-/* Topbar */
+.bravo-session-card {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 11px 12px;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid #1e293b;
+}
+
+.bravo-session-status-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.bravo-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #64748b;
+  flex-shrink: 0;
+}
+
+.bravo-status-dot.is-online {
+  background: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+}
+
+.bravo-status-dot.is-preview {
+  background: #f59e0b;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+
+.bravo-session-status-text {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #cbd5e1;
+}
+
+.bravo-session-user {
+  font-size: 12px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bravo-session-role {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+.bravo-session-actions {
+  margin-top: 6px;
+  display: flex;
+}
+
+.bravo-sidebar-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.bravo-sidebar-btn.is-primary {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.bravo-sidebar-btn.is-primary:hover {
+  background: #1d4ed8;
+}
+
+.bravo-sidebar-btn.is-secondary {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
+}
+
+.bravo-sidebar-btn.is-secondary:hover {
+  background: rgba(239, 68, 68, 0.18);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #fecaca;
+}
+
+.bravo-collapsed-auth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 8px 0;
+  border-radius: 8px;
+  background: rgba(37, 99, 235, 0.2);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+/* Main Column & Topbar */
+.bravo-main-column,
 .bravo-main-wrapper {
   display: flex;
   flex-direction: column;
@@ -276,26 +503,51 @@ body {
   flex-wrap: wrap;
 }
 
+.bravo-breadcrumb-sep {
+  color: #cbd5e1;
+  font-size: 12px;
+  user-select: none;
+}
+
+.bravo-breadcrumb-item,
 .bravo-breadcrumbs a {
   color: var(--bravo-text-secondary);
   text-decoration: none;
   font-weight: 500;
+  transition: color 0.15s ease;
 }
 
+.bravo-breadcrumb-item:hover,
 .bravo-breadcrumbs a:hover {
   color: var(--bravo-primary);
 }
 
+.bravo-breadcrumb-item.is-current,
 .bravo-breadcrumbs strong {
   color: var(--bravo-text);
   font-weight: 700;
 }
 
+.bravo-topbar-right,
 .bravo-topbar-actions {
   display: flex;
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.bravo-env-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 .bravo-global-search {
@@ -312,18 +564,86 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 5px 12px;
+  padding: 4px 10px 4px 6px;
   border-radius: 999px;
   background: var(--bravo-surface-subtle);
   border: 1px solid var(--bravo-border);
   font-size: 12px;
 }
 
+.bravo-user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #1d4ed8 0%, #0284c7 100%);
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.bravo-user-meta {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.bravo-user-meta strong {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--bravo-text);
+}
+
+.bravo-user-meta small {
+  font-size: 10px;
+  color: var(--bravo-text-muted);
+}
+
+.bravo-topbar-logout {
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.bravo-topbar-logout:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.bravo-topbar-login-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 7px 14px;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+}
+
+.bravo-topbar-login-btn:hover {
+  background: #1e293b;
+}
+
+.bravo-workspace,
 .bravo-workspace-content {
   padding: 28px 32px 48px;
   max-width: 1440px;
   width: 100%;
   margin: 0 auto;
+  flex: 1;
 }
 
 /* Tabs */
@@ -339,7 +659,8 @@ body {
   margin-bottom: 22px;
 }
 
-.bravo-tab {
+.bravo-tab,
+.bravo-tab-btn {
   border: none;
   background: transparent;
   color: #475569;
@@ -352,23 +673,84 @@ body {
   transition: all 0.15s ease;
 }
 
-.bravo-tab:hover {
+.bravo-tab:hover,
+.bravo-tab-btn:hover {
   color: #0f172a;
 }
 
-.bravo-tab.is-active {
+.bravo-tab.is-active,
+.bravo-tab-btn.is-active {
   background: #ffffff;
   color: #0f172a;
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
 }
 
-/* Utilitários e Compatibilidade P06 / P10 */
-.bravo-panel {
+/* Utilitários, Cards, Badges e Tabelas P06 / P10 */
+.bravo-panel,
+.p06-card {
   background: #ffffff;
   border: 1px solid var(--bravo-border);
   border-radius: 14px;
   padding: 22px;
   box-shadow: 0 4px 14px rgba(15, 23, 42, 0.03);
+}
+
+.p06-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #f1f5f9;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+.p06-badge.ok,
+.ok {
+  background: #ecfdf5;
+  color: #065f46;
+  border-color: #a7f3d0;
+}
+
+.p06-badge.warn,
+.warn {
+  background: #fffbeb;
+  color: #92400e;
+  border-color: #fde68a;
+}
+
+.p06-badge.info,
+.info {
+  background: #eff6ff;
+  color: #1e40af;
+  border-color: #bfdbfe;
+}
+
+.p06-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13px;
+}
+
+.p06-table th {
+  background: #f8fafc;
+  color: #475569;
+  padding: 11px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.p06-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #0f172a;
 }
 
 .bravo-warning {
@@ -414,6 +796,7 @@ body {
     position: relative;
     height: auto;
   }
+  .bravo-workspace,
   .bravo-workspace-content {
     padding: 20px 16px 36px;
   }

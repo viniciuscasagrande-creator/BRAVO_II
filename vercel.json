@@ -9,10 +9,53 @@
       "includeFiles": "{apps/api/dist/**,packages/*/dist/**,database/migrations/**,00-INVENTARIO/**,reference/**,prisma/schema.prisma}"
     }
   },
+  "headers": [
+    {
+      "source": "/((?!_next/static|_next/image|favicon.ico).*)",
+      "headers": [
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" },
+        { "key": "Cache-Control", "value": "private, no-store, max-age=0" }
+      ]
+    },
+    {
+      "source": "/_next/static/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/v1/:path*",
       "destination": "/api/v1?__bravo_v1_path=:path*"
+    },
+    {
+      "source": "/eventos/novo",
+      "destination": "/eventos/novo"
+    },
+    {
+      "source": "/eventos/:id",
+      "destination": "/eventos/__dynamic__"
+    },
+    {
+      "source": "/comercial/produtores/novo",
+      "destination": "/comercial/produtores/novo"
+    },
+    {
+      "source": "/comercial/produtores/:id",
+      "destination": "/comercial/produtores/__dynamic__"
+    },
+    {
+      "source": "/comercial/eventos/:id/taxas",
+      "destination": "/comercial/eventos/__dynamic__/taxas"
+    },
+    {
+      "source": "/sac/chamados/:id",
+      "destination": "/sac/chamados/__dynamic__"
     }
   ]
 }

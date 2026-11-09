@@ -1,0 +1,250 @@
+'use client';
+import React, { FormEvent, useEffect, useState } from 'react';
+import { useParams, usePathname } from 'next/navigation';
+import { get, post, currentSession } from '../../../../../lib/bravo-api';
+import { P10Head, P10Links, P10Panel, P10Alert, when } from '../../../../../components/bravo-p10';
+
+type Interaction = { id: string; kind: string; body: string; authorId: string; createdAt: string };
+type Case = {
+  id: string;
+  protocol: string;
+  subject: string;
+  description: string;
+  status: string;
+  category: string;
+  priority: string;
+  resolutionDueAt: string;
+  interactions: Interaction[];
+};
+
+export function ChamadoDetalheClient() {
+  const params = useParams<{ id: string }>();
+  const pathname = usePathname() || '';
+  const rawId = params?.id;
+  const id =
+    rawId && rawId !== '__dynamic__'
+      ? rawId
+      : pathname.split('/').filter(Boolean)[2] || rawId || '';
+
+  const [record, setRecord] = useState<Case | null>(null);
+  const [error, setError] = useState('');
+  const [ok, setOk] = useState('');
+  const [role, setRole] = useState(false);
+  const [note, setNote] = useState('');
+  const [kind, setKind] = useState('NOTA_INTERNA');
+  const [status, setStatus] = useState('EM_ATENDIMENTO');
+  const [reason, setReason] = useState('');
+  const [serviceName, setServiceName] = useState('');
+  const [severity, setSeverity] = useState('SEV3');
+  const [major, setMajor] = useState(false);
+  const [csat, setCsat] = useState(5);
+  const [feedback, setFeedback] = useState('');
+
+  async function load() {
+    if (!id || id === '__dynamic__') return;
+    setRecord(await get<Case>('sac/chamados/' + id));
+  }
+
+  useEffect(() => {
+    load().catch((e) => setError(e.message));
+    currentSession()
+      .then((s) => setRole(s.user.roles.some((r) => ['SAC', 'OPERACOES', 'ADMIN'].includes(r))))
+      .catch(() => {});
+  }, [id]);
+
+  async function action(e: FormEvent, type: 'note' | 'status') {
+    e.preventDefault();
+    setError('');
+    setOk('');
+    try {
+      if (type === 'note') await post('sac/chamados/' + id + '/interacoes', { kind, body: note });
+      else await post('sac/chamados/' + id + '/status', { status, reason });
+      setOk('Operação registrada.');
+      setNote('');
+      setReason('');
+      await load();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
+  async function incident(e: FormEvent) {
+    e.preventDefault();
+    setError('');
+    setOk('');
+    try {
+      await post('sac/chamados/' + id + '/incidente', { serviceName, severity, isMajor: major });
+      setOk('Incidente ITIL registrado.');
+      await load();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
+  async function satisfaction(e: FormEvent) {
+    e.preventDefault();
+    setError('');
+    setOk('');
+    try {
+      await post('sac/chamados/' + id + '/csat', {
+        score: csat,
+        comment: feedback || undefined,
+      });
+      setOk('Avaliação interna registrada.');
+      await load();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }
+
+  return (
+    <main className="p10">
+      <P10Head
+        title={record?.protocol || 'Chamado'}
+        description={record?.subject || 'Consulta do atendimento'}
+      />
+      <P10Links />
+      <P10Alert error={error} success={ok} />
+      {record && (
+        <>
+          <div className="p10-grid">
+            <P10Panel title="Detalhes">
+              <p>
+                <b>Situação:</b> {record.status}
+              </p>
+              <p>
+                <b>Prioridade:</b> {record.priority}
+              </p>
+              <p>
+                <b>Prazo de resolução:</b> {when(record.resolutionDueAt)}
+              </p>
+              <p>{record.description}</p>
+            </P10Panel>
+            {role && (
+              <P10Panel title="Registrar interação">
+                <form className="p10-form" onSubmit={(e) => action(e, 'note')}>
+                  <label>
+                    Tipo
+                    <select value={kind} onChange={(e) => setKind(e.target.value)}>
+                      <option>NOTA_INTERNA</option>
+                      <option>RESPOSTA_CLIENTE</option>
+                    </select>
+                  </label>
+                  <label>
+                    Texto
+                    <textarea
+                      required
+                      minLength={5}
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                    />
+                  </label>
+                  <button>Salvar interação</button>
+                </form>
+                <hr />
+                <form className="p10-form" onSubmit={(e) => action(e, 'status')}>
+                  <label>
+                    Nova situação
+                    <select value={status} onChange={(e) => setStatus(e.target.value)}>
+                      {[
+                        'EM_ATENDIMENTO',
+                        'AGUARDANDO_CLIENTE',
+                        'ESCALADO',
+                        'RESOLVIDO',
+                        'FECHADO',
+                      ].map((x) => (
+                        <option key={x}>{x}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    Justificativa
+                    <input
+                      required
+                      minLength={5}
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                    />
+                  </label>
+                  <button>Atualizar situação</button>
+                </form>
+              </P10Panel>
+            )}
+          </div>
+          {role && (
+            <div className="p10-grid">
+              <P10Panel title="Abrir incidente ITIL">
+                <form className="p10-form" onSubmit={incident}>
+                  <label>
+                    Serviço afetado
+                    <input
+                      required
+                      minLength={3}
+                      value={serviceName}
+                      onChange={(e) => setServiceName(e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    Severidade
+                    <select value={severity} onChange={(e) => setSeverity(e.target.value)}>
+                      {['SEV1', 'SEV2', 'SEV3', 'SEV4'].map((x) => (
+                        <option key={x}>{x}</option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={major}
+                      onChange={(e) => setMajor(e.target.checked)}
+                    />{' '}
+                    Incidente crítico
+                  </label>
+                  <button>Registrar incidente</button>
+                </form>
+              </P10Panel>
+              {record.status === 'FECHADO' && (
+                <P10Panel title="Registrar avaliação CSAT">
+                  <form className="p10-form" onSubmit={satisfaction}>
+                    <label>
+                      Nota
+                      <select
+                        value={csat}
+                        onChange={(e) => setCsat(Number(e.target.value))}
+                      >
+                        {[1, 2, 3, 4, 5].map((x) => (
+                          <option key={x} value={x}>
+                            {x}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      Comentário (opcional)
+                      <input
+                        value={feedback}
+                        onChange={(e) => setFeedback(e.target.value)}
+                      />
+                    </label>
+                    <button>Registrar avaliação</button>
+                  </form>
+                </P10Panel>
+              )}
+            </div>
+          )}
+          <P10Panel title="Linha do tempo">
+            {record.interactions.map((i) => (
+              <div className="p10-card-link" key={i.id}>
+                <b>{i.kind}</b>{' '}
+                <span className="p10-note">
+                  · {when(i.createdAt)} · {i.authorId.slice(0, 8)}
+                </span>
+                <p>{i.body}</p>
+              </div>
+            ))}
+          </P10Panel>
+        </>
+      )}
+    </main>
+  );
+}

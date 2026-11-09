@@ -15,11 +15,25 @@ export default {
     '@bravo-ii/ui',
   ],
   poweredByHeader:false,
-  async headers(){return [{source:'/:path*',headers:[
-    {key:'X-Frame-Options',value:'DENY'},
-    {key:'X-Content-Type-Options',value:'nosniff'},
-    {key:'Referrer-Policy',value:'strict-origin-when-cross-origin'},
-    {key:'Permissions-Policy',value:'camera=(), microphone=(), geolocation=()'},
-    {key:'Cache-Control',value:'private, no-store, max-age=0'}
-  ]}];}
+  async headers(){
+    return [
+      {
+        source:'/((?!_next/static|_next/image|favicon.ico).*)',
+        headers:[
+          {key:'X-Frame-Options',value:'DENY'},
+          {key:'X-Content-Type-Options',value:'nosniff'},
+          {key:'Referrer-Policy',value:'strict-origin-when-cross-origin'},
+          {key:'Permissions-Policy',value:'camera=(), microphone=(), geolocation=()'},
+          {key:'Cache-Control',value:'private, no-store, max-age=0'},
+        ],
+      },
+      {
+        source:'/_next/static/:path*',
+        headers:[
+          {key:'X-Content-Type-Options',value:'nosniff'},
+          {key:'Cache-Control',value:'public, max-age=31536000, immutable'},
+        ],
+      },
+    ];
+  },
 };

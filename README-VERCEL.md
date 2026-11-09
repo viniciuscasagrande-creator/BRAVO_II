@@ -24,8 +24,8 @@ PostgreSQL gerenciado EXCLUSIVO bravo_ii_hml (URL pooler)
 ### Projeto 1: `bravo-ii-api`
 - Framework: NestJS (detecção automática). Root Directory: `apps/api`.
 - **Include source files outside Root Directory = ON** (necessário para os workspaces `packages/*` e schema da raiz).
-- Build Command: `cd ../.. && npm run build:vercel:api`.
-- Install Command: `cd ../.. && npm install` (depois de versionar lockfile, atualizar para `npm ci`).
+- Build Command: `cd ../.. && pnpm run build:vercel:api`.
+- Install Command: `cd ../.. && pnpm install --frozen-lockfile`.
 - Env: copiar as CHAVES do arquivo `apps/api/.env.vercel-preview.example` para **Preview**, gerando valores reais nos Settings. Não colar placeholders.
 - A Vercel detecta `apps/api/src/main.ts` e o executa como uma Vercel Function NestJS. A chave `BRAVO_PROXY_KEY` impede acesso HTTP direto não autenticado pelo BFF.
 - Desabilitar deployment de produção no fluxo de Git; além disso, o código bloqueia VERCEL_ENV=production.
@@ -33,8 +33,8 @@ PostgreSQL gerenciado EXCLUSIVO bravo_ii_hml (URL pooler)
 ### Projeto 2: `bravo-ii-web`
 - Framework: Next.js. Root Directory: `apps/backoffice`.
 - **Include source files outside Root Directory = ON**.
-- Build Command: `cd ../.. && npm run build:vercel:web`.
-- Install Command: `cd ../.. && npm install`.
+- Build Command: `cd ../.. && pnpm run build:vercel:web`.
+- Install Command: `cd ../.. && pnpm install --frozen-lockfile`.
 - Env: copiar CHAVES de `apps/backoffice/.env.vercel-preview.example` para Preview, configurando o endereço HTTPS exato do projeto API e **a mesma** `BRAVO_PROXY_KEY`.
 - Habilitar **Deployment Protection / Vercel Authentication** para o Preview (atentar à proteção dos links individuais).
 - Escolher um **URL Preview estável de branch** para `APP_ORIGIN` da API. Se acessar por URL Preview diferente, o backend recusará POST devido à verificação de origem. Configurar o URL exato e fazer novo deploy da API.
