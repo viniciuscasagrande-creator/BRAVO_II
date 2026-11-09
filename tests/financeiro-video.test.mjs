@@ -39,9 +39,11 @@ test('Menu Financeiro possui os 15 módulos individuais ordenados (01 a 15) e Da
   assert.match(workspace, /MÓDULO/);
   assert.doesNotMatch(workspace, /Math\.random\(|R\$ 1\./);
   assert.doesNotMatch(shell, /Operação Financeira — Todos os Módulos/);
-  assert.match(css, /\.bf-modulebar\s*\{[\s\S]*?display:\s*grid;/);
-  assert.match(css, /grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\);/);
-  assert.doesNotMatch(css, /\.bf-modulebar\s*\{[^}]*overflow-x:\s*auto/);
+  assert.match(css, /\.bf-header-card\s*\{/);
+  assert.match(css, /\.bf-module-select\s*\{/);
+  assert.match(css, /\.bf-tabs\s*\{/);
+  assert.match(css, /\.bf-panel-toolbar\s*\{/);
+  assert.doesNotMatch(workspace, /bf-modulebar/);
   for (const label of [
     '00 · Painel de Cards (15 Módulos)',
     '01 · Produtores e Eventos',

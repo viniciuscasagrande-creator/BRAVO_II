@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useBravoSession } from '../../context/session-context';
 import {
   FINANCEIRO_BASE,
@@ -58,6 +59,7 @@ function downloadCsv(rows: Item[], cols: string[], name: string) {
 }
 
 export default function FinanceiroVideoWorkspace({ screenId }: { screenId?: string }) {
+  const router = useRouter();
   const { isAuthenticated, isLoadingSession, hasPermission } = useBravoSession();
   const canAccess = hasPermission('finance:read');
   const screen = screenId ? findFinanceView(screenId) : undefined;
@@ -174,125 +176,122 @@ export default function FinanceiroVideoWorkspace({ screenId }: { screenId?: stri
       </div>
     );
 
+  const activeSubIndex =
+    screen && activeGroup ? activeGroup.items.findIndex((i) => i.id === screen.id) + 1 : 0;
+
   return (
     <div className="bf-shell">
-      {/* Barra superior fixa e alinhada de módulos ordenados (00 a 15) sem scroll horizontal */}
-      <div className="bf-modulebar" role="navigation" aria-label="Módulos Financeiros Ordenados">
-        <Link
-          href={FINANCEIRO_BASE}
-          className={`bf-modulepill ${!screen ? 'is-active' : ''}`}
-          title="00 · Painel de Cards (15 Módulos · 96 Rotinas)"
-        >
-          <span className="bf-modulepill-num">00</span>
-          <span className="bf-modulepill-label">Painel de Cards</span>
-          <span className="bf-modulepill-count">{FINANCEIRO_TELAS.length}</span>
-        </Link>
-        {orderedGroups.map((g) => {
-          const isCurrentGroup = activeGroup?.id === g.id;
-          return (
-            <Link
-              key={g.id}
-              href={`${FINANCEIRO_BASE}/${g.items[0].id}`}
-              className={`bf-modulepill ${isCurrentGroup ? 'is-active' : ''}`}
-              title={`${g.orderBadge} · ${g.label} (${g.items.length} rotinas)`}
-            >
-              <span className="bf-modulepill-num">{g.orderBadge}</span>
-              <span className="bf-modulepill-label">{g.label}</span>
-              <span className="bf-modulepill-count">{g.items.length}</span>
-            </Link>
-          );
-        })}
-      </div>
-
-      {/* Cabeçalho Executivo */}
-      <div className="bf-head">
-        <div>
-          <div className="bf-eyebrow">
-            BRAVO_II · Financeiro Disk ·{' '}
-            {activeGroup
-              ? `Módulo ${activeGroup.orderBadge} de 15 · ${activeGroup.label}`
-              : 'Dashboard Central Ordenado (15 Módulos · 96 Rotinas)'}
+      {/* Cabeçalho compacto unificado com seletor rápido de módulo e abas horizontais da rotina */}
+      <header className="bf-header-card">
+        <div className="bf-header-top">
+          <div className="bf-header-titles">
+            <div className="bf-eyebrow">
+              <span>FINANCEIRO DISK</span>
+              <span className="bf-eyebrow-sep">·</span>
+              <span>
+                {activeGroup
+                  ? `MÓDULO ${activeGroup.orderBadge} · ${activeGroup.label}`
+                  : `PAINEL DE MÓDULOS (15 GRUPOS · ${FINANCEIRO_TELAS.length} ROTINAS)`}
+              </span>
+            </div>
+            <h1>
+              {screen
+                ? `${activeGroup?.orderBadge}.${activeSubIndex} · ${screen.title}`
+                : 'Central Financeira — Módulos Operacionais'}
+            </h1>
           </div>
-          <h1>
-            {screen
-              ? `${activeGroup?.orderBadge}.${(activeGroup?.items.findIndex((i) => i.id === screen.id) ?? 0) + 1} · ${screen.title}`
-              : 'Dashboard Financeiro — Módulos e Menus Individuais Ordenados'}
-          </h1>
-          <p>
-            {screen
-              ? `Grupo: ${screen.group} · Rota: /financeiro/operacoes/${screen.id}`
-              : 'Selecione diretamente qualquer um dos 15 módulos ou uma das 96 rotinas individuais ordenadas nos cards abaixo.'}
-          </p>
-        </div>
-        <div className="bf-head-actions">
-          {screen && (
-            <Link href={FINANCEIRO_BASE} className="bf-btn">
-              ← Painel de Cards (15 Módulos)
+
+          <div className="bf-header-controls">
+            {screen && (
+              <Link href={FINANCEIRO_BASE} className="bf-btn bf-btn-ghost">
+                ← Todos os Módulos
+              </Link>
+            )}
+
+            <div className="bf-module-select-wrap">
+              <label htmlFor="bf-module-switcher" className="bf-sr-only">
+                Selecionar módulo financeiro
+              </label>
+              <select
+                id="bf-module-switcher"
+                className="bf-module-select"
+                value={activeGroup ? `${FINANCEIRO_BASE}/${activeGroup.items[0].id}` : FINANCEIRO_BASE}
+                onChange={(e) => router.push(e.target.value)}
+              >
+                <option value={FINANCEIRO_BASE}>00 · Painel Geral (15 Módulos)</option>
+                {orderedGroups.map((g) => (
+                  <option key={g.id} value={`${FINANCEIRO_BASE}/${g.items[0].id}`}>
+                    {g.orderBadge} · {g.label} ({g.items.length})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <Link href="/financeiro" className="bf-btn bf-btn-ghost">
+              Tesouraria &amp; RH
             </Link>
-          )}
-          <Link href="/financeiro" className="bf-btn">
-            Tesouraria RH & Matriz (104)
-          </Link>
-          <span className="bf-tag">Homologação · Sem movimentação bancária</span>
+          </div>
         </div>
-      </div>
+
+        {/* Abas horizontais limpas apenas para as sub-telas do módulo atual */}
+        {screen && activeGroup && (
+          <nav className="bf-tabs" aria-label={`Sub-rotinas de ${activeGroup.label}`}>
+            {activeGroup.items.map((item, idx) => {
+              const isActiveScreen = item.id === screen.id;
+              const isConnected = CONNECTED_SCREEN_IDS.has(item.id);
+              return (
+                <Link
+                  key={item.id}
+                  href={`${FINANCEIRO_BASE}/${item.id}`}
+                  className={`bf-tab ${isActiveScreen ? 'is-active' : ''}`}
+                >
+                  <span className="bf-tab-code">
+                    {activeGroup.orderBadge}.{idx + 1}
+                  </span>
+                  <span className="bf-tab-label">{item.title}</span>
+                  <span
+                    className={`bf-tab-dot ${isConnected ? 'is-connected' : 'is-pending'}`}
+                    title={isConnected ? 'Conectada ao PostgreSQL' : 'API pendente'}
+                  />
+                </Link>
+              );
+            })}
+          </nav>
+        )}
+      </header>
 
       {!screen ? (
         <>
-          {/* KPIs do Dashboard de Cards */}
-          <div className="bf-kpis">
-            <div className="bf-kpi">
-              <small>Módulos Financeiros</small>
-              <strong>15 Grupos Ordenados</strong>
-              <span>Numerados de 01 a 15 no menu e no painel</span>
-            </div>
-            <div className="bf-kpi">
-              <small>Menus e Telas Individuais</small>
-              <strong>{FINANCEIRO_TELAS.length} Rotinas</strong>
-              <span>Acesso direto em cada card sem agrupamento genérico</span>
-            </div>
-            <div className="bf-kpi">
-              <small>Conectadas ao PostgreSQL</small>
-              <strong>{CONNECTED_SCREEN_IDS.size} Consultas Reais</strong>
-              <span>Leitura auditada em tempo real (HTTP 200)</span>
-            </div>
-            <div className="bf-kpi">
-              <small>Em Implantação Controlada</small>
-              <strong>{FINANCEIRO_TELAS.length - CONNECTED_SCREEN_IDS.size} Interfaces</strong>
-              <span>Estado explícito de API pendente (sem dados fictícios)</span>
-            </div>
-          </div>
-
-          {/* Barra de filtro rápido dos Cards */}
-          <div className="bf-toolbar">
-            <div className="bf-field" style={{ flex: 2 }}>
-              <label htmlFor="bf-dash-search">Pesquisar módulo ou menu individual (96 rotinas)</label>
+          {/* Barra compacta de busca e filtro no Dashboard */}
+          <div className="bf-dash-bar">
+            <div className="bf-dash-search">
               <input
                 id="bf-dash-search"
                 type="search"
                 value={dashboardQuery}
                 onChange={(e) => setDashboardQuery(e.target.value)}
-                placeholder="Ex.: Produtores, Repasses, MDR, Taxa Disk, PIX, CNAB, Conciliação, Borderôs, DRE, Ledger..."
+                placeholder="Buscar módulo ou rotina (ex.: Produtores, Repasses, MDR, Taxa Disk, PIX, Conciliação, Borderôs, Ledger)..."
+                aria-label="Pesquisar módulo ou rotina financeira"
               />
             </div>
-            <div className="bf-filter-pills" role="group" aria-label="Filtrar por status de integração">
+            <div className="bf-filter-pills" role="group" aria-label="Filtrar por status">
               <button
                 type="button"
-                className={`bf-btn ${dashboardFilter === 'todos' ? 'bf-btn-primary' : ''}`}
+                className={`bf-pill-btn ${dashboardFilter === 'todos' ? 'is-active' : ''}`}
                 onClick={() => setDashboardFilter('todos')}
               >
-                Todos os Menus ({FINANCEIRO_TELAS.length})
+                Todos ({FINANCEIRO_TELAS.length})
               </button>
               <button
                 type="button"
-                className={`bf-btn ${dashboardFilter === 'conectadas' ? 'bf-btn-primary' : ''}`}
+                className={`bf-pill-btn ${dashboardFilter === 'conectadas' ? 'is-active' : ''}`}
                 onClick={() => setDashboardFilter('conectadas')}
               >
-                Conectadas ao PostgreSQL ({CONNECTED_SCREEN_IDS.size})
+                Consultas Ativas ({CONNECTED_SCREEN_IDS.size})
               </button>
               <button
                 type="button"
-                className={`bf-btn ${dashboardFilter === 'interface' ? 'bf-btn-primary' : ''}`}
+                className={`bf-pill-btn ${dashboardFilter === 'interface' ? 'is-active' : ''}`}
                 onClick={() => setDashboardFilter('interface')}
               >
                 API Pendente ({FINANCEIRO_TELAS.length - CONNECTED_SCREEN_IDS.size})
@@ -300,7 +299,7 @@ export default function FinanceiroVideoWorkspace({ screenId }: { screenId?: stri
             </div>
           </div>
 
-          {/* Grid Ordenado de Cards (01 a 15) com Menus Individuais */}
+          {/* Grid limpo de Cards (01 a 15) com visual claro */}
           <div className="bf-groupgrid">
             {filteredDashboardGroups.map((g) => (
               <section
@@ -313,9 +312,7 @@ export default function FinanceiroVideoWorkspace({ screenId }: { screenId?: stri
                     <span className="bf-groupcard-badge">MÓDULO {g.orderBadge}</span>
                     <h2>{g.label}</h2>
                   </div>
-                  <span className="bf-groupcard-count">
-                    {g.items.length} menus · {g.connectedCount} SQL
-                  </span>
+                  <span className="bf-groupcard-count">{g.items.length} rotinas</span>
                 </div>
 
                 <ul className="bf-groupcard-list">
@@ -333,159 +330,20 @@ export default function FinanceiroVideoWorkspace({ screenId }: { screenId?: stri
                           </span>
                           <span className="bf-groupcard-label">{item.title}</span>
                           <span
-                            className={`bf-status-pill ${isConnected ? 'is-connected' : 'is-pending'}`}
-                          >
-                            {isConnected ? 'PostgreSQL' : 'Interface'}
-                          </span>
+                            className={`bf-dot-indicator ${isConnected ? 'is-connected' : 'is-pending'}`}
+                            title={isConnected ? 'Consulta PostgreSQL ativa' : 'API pendente'}
+                          />
                         </Link>
                       </li>
                     );
                   })}
                 </ul>
-
-                <div className="bf-groupcard-foot">
-                  <Link
-                    href={`${FINANCEIRO_BASE}/${g.items[0].id}`}
-                    className="bf-groupcard-cta"
-                  >
-                    Abrir Módulo {g.orderBadge} ({g.label}) →
-                  </Link>
-                </div>
               </section>
             ))}
           </div>
         </>
       ) : (
         <>
-          {/* Submenus individuais ordenados do grupo ativo */}
-          {activeGroup && (
-            <div className="bf-submenubar" role="navigation" aria-label={`Submenus de ${activeGroup.label}`}>
-              <div className="bf-submenubar-title">
-                Menus de {activeGroup.orderBadge} · {activeGroup.label} ({activeGroup.items.length}):
-              </div>
-              <div className="bf-submenubar-list">
-                {activeGroup.items.map((item, idx) => {
-                  const isActiveScreen = item.id === screen.id;
-                  const isConnected = CONNECTED_SCREEN_IDS.has(item.id);
-                  return (
-                    <Link
-                      key={item.id}
-                      href={`${FINANCEIRO_BASE}/${item.id}`}
-                      className={`bf-submenupill ${isActiveScreen ? 'is-active' : ''}`}
-                    >
-                      <span className="bf-submenupill-code">
-                        {activeGroup.orderBadge}.{idx + 1}
-                      </span>
-                      <span>{item.title}</span>
-                      <span
-                        className={`bf-submenupill-dot ${isConnected ? 'is-connected' : 'is-pending'}`}
-                        title={isConnected ? 'Conectada ao PostgreSQL' : 'API pendente'}
-                      />
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* KPIs da Rotina Selecionada */}
-          <div className="bf-kpis">
-            {['Registros consultados', 'Situação do módulo', 'Período', 'Fonte dos dados'].map(
-              (metric, i) => (
-                <div key={metric} className="bf-kpi">
-                  <small>{metric}</small>
-                  <strong>
-                    {i === 0
-                      ? state === 'ok'
-                        ? filteredRows.length
-                        : '—'
-                      : i === 1
-                        ? state === 'ok'
-                          ? 'Consulta concluída'
-                          : state === 'carregando'
-                            ? 'Consultando'
-                            : state === 'nao-conectado'
-                              ? 'API pendente'
-                              : state === 'falha'
-                                ? 'Falha de comunicação'
-                                : 'Aguardando'
-                        : i === 2
-                          ? period === 'mes'
-                            ? 'Mês atual'
-                            : period === 'semana'
-                              ? 'Semana atual'
-                              : 'Todo o período'
-                          : 'BRAVO_II / PostgreSQL'}
-                  </strong>
-                  <span>
-                    {i === 0
-                      ? 'Sem valores simulados'
-                      : i === 1
-                        ? 'Ações reais exigem integração'
-                        : i === 2
-                          ? 'Filtro selecionado'
-                          : 'Backend autorizado'}
-                  </span>
-                </div>
-              )
-            )}
-          </div>
-
-          {/* Barra de Filtros da Rotina */}
-          <div className="bf-toolbar">
-            <div className="bf-field">
-              <label htmlFor="bf-produtor">Produtor</label>
-              <input
-                id="bf-produtor"
-                value={producer}
-                onChange={(e) => setProducer(e.target.value)}
-                placeholder="Filtrar por produtor..."
-              />
-            </div>
-            <div className="bf-field">
-              <label htmlFor="bf-evento">Evento</label>
-              <input
-                id="bf-evento"
-                value={event}
-                onChange={(e) => setEvent(e.target.value)}
-                placeholder="Filtrar por evento..."
-              />
-            </div>
-            <div className="bf-field">
-              <label htmlFor="bf-periodo">Período</label>
-              <select
-                id="bf-periodo"
-                value={period}
-                onChange={(e) => setPeriod(e.target.value)}
-              >
-                <option value="mes">Mês atual</option>
-                <option value="semana">Semana atual</option>
-                <option value="todos">Todos</option>
-              </select>
-            </div>
-            <button
-              type="button"
-              className="bf-btn bf-btn-primary"
-              onClick={() => setReload((x) => x + 1)}
-            >
-              Atualizar
-            </button>
-            <button
-              type="button"
-              disabled={state !== 'ok' || filteredRows.length === 0}
-              className="bf-btn"
-              onClick={() => downloadCsv(filteredRows, screen.columns, screen.id)}
-            >
-              Exportar CSV
-            </button>
-          </div>
-
-          {state === 'nao-conectado' && (
-            <div role="status" className="bf-note">
-              A interface desta rotina foi instalada. A rota de consulta no backend ainda precisa
-              ser vinculada ao serviço real correspondente. Não serão mostrados dados fictícios.
-            </div>
-          )}
           {state === 'falha' && (
             <div role="alert" className="bf-error">
               {error}
@@ -494,32 +352,89 @@ export default function FinanceiroVideoWorkspace({ screenId }: { screenId?: stri
 
           <FinanceiroVideoExtras screen={screen} />
 
-          <div className="bf-panel">
-            <div className="bf-panelhead">
-              <div>
+          {/* Painel único acima da dobra combinando filtros objetivos e tabela */}
+          <section className="bf-panel" aria-label={screen.title}>
+            <div className="bf-panel-toolbar">
+              <div className="bf-panel-status">
                 <strong>{screen.title}</strong>
-                <br />
-                <span>
-                  {screen.kind === 'workflow'
-                    ? 'Fila operacional e aprovações'
-                    : screen.kind === 'report'
-                      ? 'Consulta e exportação'
-                      : screen.kind === 'settings'
-                        ? 'Regras, acessos e configurações'
-                        : 'Movimentações e registros autorizados'}
+                <span
+                  className={`bf-state-badge ${
+                    state === 'ok'
+                      ? 'is-ok'
+                      : state === 'carregando'
+                        ? 'is-loading'
+                        : state === 'falha'
+                          ? 'is-err'
+                          : 'is-pending'
+                  }`}
+                >
+                  {state === 'ok'
+                    ? `${filteredRows.length} registro(s) · PostgreSQL`
+                    : state === 'carregando'
+                      ? 'Consultando...'
+                      : state === 'nao-conectado'
+                        ? 'API pendente'
+                        : state === 'falha'
+                          ? 'Falha na consulta'
+                          : 'Pronto'}
                 </span>
               </div>
-              <div className="bf-field" style={{ minWidth: 220, maxWidth: 320 }}>
-                <label htmlFor="bf-busca">Busca nesta rotina</label>
+
+              <div className="bf-inline-filters">
                 <input
                   id="bf-busca"
                   type="search"
+                  className="bf-input-compact"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Pesquisar registros..."
+                  placeholder="Buscar nos resultados..."
+                  aria-label="Buscar nos resultados"
                 />
+                <input
+                  id="bf-produtor"
+                  className="bf-input-compact"
+                  value={producer}
+                  onChange={(e) => setProducer(e.target.value)}
+                  placeholder="Produtor..."
+                  aria-label="Filtrar por produtor"
+                />
+                <input
+                  id="bf-evento"
+                  className="bf-input-compact"
+                  value={event}
+                  onChange={(e) => setEvent(e.target.value)}
+                  placeholder="Evento..."
+                  aria-label="Filtrar por evento"
+                />
+                <select
+                  id="bf-periodo"
+                  className="bf-input-compact"
+                  value={period}
+                  onChange={(e) => setPeriod(e.target.value)}
+                  aria-label="Período"
+                >
+                  <option value="mes">Mês atual</option>
+                  <option value="semana">Semana atual</option>
+                  <option value="todos">Todo o período</option>
+                </select>
+                <button
+                  type="button"
+                  className="bf-btn bf-btn-primary"
+                  onClick={() => setReload((x) => x + 1)}
+                >
+                  Atualizar
+                </button>
+                <button
+                  type="button"
+                  disabled={state !== 'ok' || filteredRows.length === 0}
+                  className="bf-btn"
+                  onClick={() => downloadCsv(filteredRows, screen.columns, screen.id)}
+                >
+                  CSV
+                </button>
               </div>
             </div>
+
             <div className="bf-tablewrap">
               <table className="bf-table">
                 <thead>
@@ -540,21 +455,17 @@ export default function FinanceiroVideoWorkspace({ screenId }: { screenId?: stri
                 </tbody>
               </table>
             </div>
+
             {!filteredRows.length && (
               <div className="bf-empty">
                 {state === 'carregando'
-                  ? 'Carregando registros...'
+                  ? 'Carregando registros do PostgreSQL...'
                   : state === 'ok'
                     ? 'Nenhum registro encontrado para os filtros selecionados.'
-                    : 'Sem dados operacionais disponíveis. Conecte a API do módulo para habilitar esta rotina.'}
+                    : 'Rotina estruturada com integração de API pendente — nenhum dado fictício é exibido.'}
               </div>
             )}
-          </div>
-
-          <div className="bf-note">
-            Ações de alteração, aprovação, pagamentos e estornos permanecem bloqueadas nesta
-            entrega até a validação dos endpoints, permissões, ledger, idempotência e auditoria.
-          </div>
+          </section>
         </>
       )}
     </div>
