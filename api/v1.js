@@ -47,6 +47,15 @@ function readRawBody(req) {
   });
 }
 
+function cleanEnvUrl(raw) {
+  if (!raw || typeof raw !== 'string') return '';
+  return raw
+    .trim()
+    .replace(/^psql\s+/i, '')
+    .replace(/^['"]+|['"]+$/g, '')
+    .trim();
+}
+
 module.exports = async function bravoRootVercelApiHandler(req, res) {
   try {
     const rawUrl = req.url || '/';
@@ -78,8 +87,15 @@ module.exports = async function bravoRootVercelApiHandler(req, res) {
       return;
     }
 
+    const candidateDbUrl =
+      cleanEnvUrl(process.env.DATABASE_URL) ||
+      cleanEnvUrl(process.env.POSTGRES_URL) ||
+      cleanEnvUrl(process.env.NEON_DATABASE_URL) ||
+      cleanEnvUrl(process.env.DIRECT_URL) ||
+      cleanEnvUrl(process.env.POSTGRES_URL_NON_POOLING);
+
     // Modo 1: Proxy BFF para projeto de API separado quando BRAVO_API_URL aponta para outro host
-    const configuredUpstream = (process.env.BRAVO_API_URL || '').trim();
+    const configuredUpstream = cleanEnvUrl(process.env.BRAVO_API_URL);
     if (configuredUpstream) {
       let upstreamUrl;
       try {
@@ -96,15 +112,15 @@ module.exports = async function bravoRootVercelApiHandler(req, res) {
         const target = new URL(req.url, upstreamUrl);
         const headers = {
           Accept: 'application/json',
-          'X-Bravo-Proxy-Key': process.env.BRAVO_PROXY_KEY || RUNTIME_BFF_KEY,
+          'X-Bravo-Proxy-Key': (process.env.BRAVO_PROXY_KEY || '').trim() || RUNTIME_BFF_KEY,
         };
         if (process.env.BRAVO_API_VERCEL_BYPASS_TOKEN) {
-          headers['x-vercel-protection-bypass'] = process.env.BRAVO_API_VERCEL_BYPASS_TOKEN;
+          headers['x-vercel-protection-bypass'] = process.env.BRAVO_API_VERCEL_BYPASS_TOKEN.trim();
         }
         if (req.headers.cookie) headers.Cookie = req.headers.cookie;
         if (req.headers.authorization) headers.Authorization = req.headers.authorization;
         if (req.headers['x-csrf-token']) headers['X-CSRF-Token'] = req.headers['x-csrf-token'];
-        if (browserOrigin) headers.Origin = process.env.APP_ORIGIN || browserOrigin;
+        if (browserOrigin) headers.Origin = cleanEnvUrl(process.env.APP_ORIGIN) || browserOrigin;
         if (mutating && req.headers['content-type']) {
           headers['Content-Type'] = req.headers['content-type'];
         }
@@ -119,28 +135,41 @@ module.exports = async function bravoRootVercelApiHandler(req, res) {
           signal: AbortSignal.timeout(25000),
         });
 
-        res.statusCode = upstreamRes.status;
-        res.setHeader('Cache-Control', 'private, no-store, max-age=0');
-        res.setHeader('X-Content-Type-Options', 'nosniff');
-        const ct = upstreamRes.headers.get('content-type');
-        if (ct) res.setHeader('Content-Type', ct);
-        const cookies = upstreamRes.headers.getSetCookie ? upstreamRes.headers.getSetCookie() : [];
-        if (cookies.length > 0) {
-          res.setHeader('Set-Cookie', cookies);
-        } else {
-          const singleCookie = upstreamRes.headers.get('set-cookie');
-          if (singleCookie) res.setHeader('Set-Cookie', singleCookie);
-        }
-        const retryAfter = upstreamRes.headers.get('retry-after');
-        if (retryAfter) res.setHeader('Retry-After', retryAfter);
+        const ct = upstreamRes.headers.get('content-type') || '';
+        const isHtmlChallenge = ct.includes('text/html');
+        const upstreamFailed = [404, 502, 503, 504].includes(upstreamRes.status) || isHtmlChallenge;
 
-        if (method === 'HEAD') {
-          res.end();
+        if (!upstreamFailed || !candidateDbUrl) {
+          if (isHtmlChallenge) {
+            sendJson(res, 502, {
+              statusCode: 502,
+              message: `Upstream API (${upstreamUrl.origin}) retornou HTML (status ${upstreamRes.status} — possível Deployment Protection na Vercel ou rota inexistente). Configure BRAVO_API_VERCEL_BYPASS_TOKEN ou DATABASE_URL no projeto.`,
+            });
+            return;
+          }
+
+          res.statusCode = upstreamRes.status;
+          res.setHeader('Cache-Control', 'private, no-store, max-age=0');
+          res.setHeader('X-Content-Type-Options', 'nosniff');
+          if (ct) res.setHeader('Content-Type', ct);
+          const cookies = upstreamRes.headers.getSetCookie ? upstreamRes.headers.getSetCookie() : [];
+          if (cookies.length > 0) {
+            res.setHeader('Set-Cookie', cookies);
+          } else {
+            const singleCookie = upstreamRes.headers.get('set-cookie');
+            if (singleCookie) res.setHeader('Set-Cookie', singleCookie);
+          }
+          const retryAfter = upstreamRes.headers.get('retry-after');
+          if (retryAfter) res.setHeader('Retry-After', retryAfter);
+
+          if (method === 'HEAD') {
+            res.end();
+            return;
+          }
+          const respBytes = Buffer.from(await upstreamRes.arrayBuffer());
+          res.end(respBytes);
           return;
         }
-        const respBytes = Buffer.from(await upstreamRes.arrayBuffer());
-        res.end(respBytes);
-        return;
       }
     }
 
@@ -156,9 +185,9 @@ module.exports = async function bravoRootVercelApiHandler(req, res) {
     if (!process.env.BRAVO_ENV) {
       process.env.BRAVO_ENV = 'HOMOLOGACAO';
     }
-    if (!process.env.APP_ORIGIN) {
-      process.env.APP_ORIGIN = ownOrigin;
-    }
+    const cleanedOrigin = cleanEnvUrl(process.env.APP_ORIGIN);
+    process.env.APP_ORIGIN = cleanedOrigin && /^https:\/\/[^/\s?#]+$/.test(cleanedOrigin) ? cleanedOrigin : ownOrigin;
+
     if (!process.env.CPF_HASH_PEPPER || process.env.CPF_HASH_PEPPER.length < 32) {
       process.env.CPF_HASH_PEPPER = 'bravo_ii_hml_internal_pepper_key_32chars_2026';
     }
@@ -166,11 +195,8 @@ module.exports = async function bravoRootVercelApiHandler(req, res) {
       process.env.COOKIE_SECURE = 'true';
     }
 
-    if (!process.env.DATABASE_URL) {
-      const neonUrl = process.env.POSTGRES_URL || process.env.NEON_DATABASE_URL;
-      if (neonUrl) {
-        process.env.DATABASE_URL = neonUrl;
-      }
+    if (candidateDbUrl) {
+      process.env.DATABASE_URL = candidateDbUrl;
     }
 
     req.headers['x-bravo-proxy-key'] = RUNTIME_BFF_KEY;
