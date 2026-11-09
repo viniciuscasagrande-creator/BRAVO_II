@@ -303,7 +303,12 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
                     <ul className="bravo-nav-sublist">
                       {(item.subItems ?? []).map((sub) => {
                         const cleanSubPath = sub.href.split('?')[0];
-                        const isSubActive = pathname === cleanSubPath;
+                        const finGroupPrefix = cleanSubPath.startsWith('/financeiro/operacoes/')
+                          ? cleanSubPath.split('/').slice(0, 4).join('/') + '/'
+                          : null;
+                        const isSubActive =
+                          pathname === cleanSubPath ||
+                          Boolean(finGroupPrefix && pathname.startsWith(finGroupPrefix));
                         return (
                           <li key={sub.id}>
                             <Link
@@ -316,17 +321,6 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
                           </li>
                         );
                       })}
-                      {item.id === 'financeiro' && (
-                        <li>
-                          <Link
-                            href="/financeiro/operacoes"
-                            className={`bravo-nav-sublink${pathname.startsWith('/financeiro/operacoes') ? ' is-active' : ''}`}
-                          >
-                            <span className="bravo-nav-subdot" aria-hidden="true" />
-                            <span>Operação Financeira — Todos os Módulos</span>
-                          </Link>
-                        </li>
-                      )}
                     </ul>
                   )}
                 </li>
