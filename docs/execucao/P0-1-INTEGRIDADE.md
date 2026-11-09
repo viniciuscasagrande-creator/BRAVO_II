@@ -1,0 +1,18 @@
+# Relatório de Execução — P0.1 Integridade, Segurança e Comunicação Vercel/Neon
+
+## 1. Objetivo
+Aplicar as correções estruturais do pacote **BRAVO_II ENTERPRISE 2.0 — P0.1**, eliminar credenciais demonstrativas do código-fonte e do banco Neon de homologação (`bravo_ii_hml`), restaurar a comunicação BFF `/v1/*` na implantação Vercel (`https://bravoii-g2ac.vercel.app/`) e transformar as sub-rotas de Financeiro, RH, SAC/Estornos, Marketing e Remarketing em estações operacionais reais pré-renderizadas em `dist/`.
+
+## 2. Arquivos Criados e Alterados
+- [`apps/api/src/common/database/database.service.ts`](file:///E:/BRAVO_II/apps/api/src/common/database/database.service.ts): Restrição estrita do PGlite exclusivamente a `NODE_ENV === 'test'` fora de `HOMOLOGACAO`/`PRODUCAO`/`VERCEL`.
+- [`scripts/migrate-preview.mjs`](file:///E:/BRAVO_II/scripts/migrate-preview.mjs): Verificação canônica das migrations SQL versionadas em `database/migrations/*.up.sql` e trava exclusiva para o banco `/bravo_ii_hml`.
+- [`scripts/validate-prisma-schema.mjs`](file:///E:/BRAVO_II/scripts/validate-prisma-schema.mjs): Bloqueio explícito de `--generate` (`exit(2)`) e retorno honesto `status: "STRUCTURAL_ONLY"`, `nativePrismaValidationExecuted: false`.
+- [`apps/api/src/core/security/proxy-guard.ts`](file:///E:/BRAVO_II/apps/api/src/core/security/proxy-guard.ts) e [`apps/backoffice/src/app/v1/[...path]/route.ts`](file:///E:/BRAVO_II/apps/backoffice/src/app/v1/%5B...path%5D/route.ts): Endurecimento da validação de ambiente Preview/Homologação e bloqueio de publicação externa.
+- [`apps/api/src/main.ts`](file:///E:/BRAVO_II/apps/api/src/main.ts): Exigência de `APP_ORIGIN` HTTPS exata quando `BRAVO_ENV === 'HOMOLOGACAO'`.
+- [`package.json`](file:///E:/BRAVO_II/package.json): Substituição de `db:generate` por `db:validate` em `build:vercel:api`.
+- [`api/v1.js`](file:///E:/BRAVO_II/api/v1.js) e [`vercel.json`](file:///E:/BRAVO_II/vercel.json): Handler Serverless na raiz do monorepo para rotear `/v1/*` na Vercel (suportando proxy BFF autenticado para `BRAVO_API_URL` ou execução in-process do NestJS).
+- [`apps/backoffice/src/app/login/page.tsx`](file:///E:/BRAVO_II/apps/backoffice/src/app/login/page.tsx), [`apps/backoffice/src/app/rh/page.tsx`](file:///E:/BRAVO_II/apps/backoffice/src/app/rh/page.tsx), [`apps/backoffice/src/context/session-context.tsx`](file:///E:/BRAVO_II/apps/backoffice/src/context/session-context.tsx) e [`apps/api/src/scripts/run-technical-seed.ts`](file:///E:/BRAVO_II/apps/api/src/scripts/run-technical-seed.ts): Remoção integral das credenciais demonstrativas `BravoLocal#...` e rotação imediata dos hashes `password_hash` no banco Neon (`floral-sunset-85900211` / `bravo_ii_hml`).
+- [`apps/backoffice/src/app/page.tsx`](file:///E:/BRAVO_II/apps/backoffice/src/app/page.tsx), [`apps/backoffice/src/app/financeiro/[slug]/page.tsx`](file:///E:/BRAVO_II/apps/backoffice/src/app/financeiro/%5Bslug%5D/page.tsx), [`apps/backoffice/src/app/rh/[slug]/page.tsx`](file:///E:/BRAVO_II/apps/backoffice/src/app/rh/%5Bslug%5D/page.tsx), [`apps/backoffice/src/app/sac-estornos/page.tsx`](file:///E:/BRAVO_II/apps/backoffice/src/app/sac-estornos/page.tsx), [`apps/backoffice/src/app/marketing/page.tsx`](file:///E:/BRAVO_II/apps/backoffice/src/app/marketing/page.tsx) e [`apps/backoffice/src/app/remarketing/page.tsx`](file:///E:/BRAVO_II/apps/backoffice/src/app/remarketing/page.tsx): Estações operacionais completas e pré-renderização estática (`generateStaticParams`) de 214 rotas em `dist/`.
+
+## 3. Confirmação de Segurança Financeira
+Nenhuma operação financeira real, captura de pagamento, repasse bancário ou estorno real foi habilitada ou executada (`ENABLE_REAL_PAYMENTS=false`, `ENABLE_REAL_REFUNDS=false`, `ENABLE_EXTERNAL_PUBLICATION=false`).

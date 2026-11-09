@@ -112,12 +112,17 @@ if (!dbUrl || !/(hml|homolog|preview)/i.test(dbUrl) || /(prod|production|live)/i
 
 const sha256 = createHash('sha256').update(schema).digest('hex');
 const isGenerate = process.argv.includes('--generate');
+if(isGenerate){
+  console.error('ERRO: Prisma Client não é gerado neste monólito SQL/pg. db:generate desativado para evitar falso positivo.');
+  process.exit(2);
+}
 
 console.log(
   JSON.stringify(
     {
-      step: isGenerate ? 'db:generate' : 'db:validate',
-      status: 'OK',
+      step: 'db:validate:structural',
+      status: 'STRUCTURAL_ONLY',
+      nativePrismaValidationExecuted: false,
       schemaFile: 'prisma/schema.prisma',
       sha256,
       datasources,

@@ -2,7 +2,6 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
-  CANONICAL_ROLES,
   filterNavigationByPermissions,
   type AuthenticatedActorDto,
   type NavigationMenuItem,
@@ -22,6 +21,7 @@ interface SessionContextValue {
   setAuthenticatedSession: (token: string, actor: AuthenticatedActorDto, csrfToken?: string) => void;
   refreshSession: () => Promise<void>;
   logout: () => Promise<void>;
+  logoutSession: () => Promise<void>;
   logoutFromServer: () => Promise<void>;
   hasPermission: (permission: PermissionCode) => boolean;
 }
@@ -35,69 +35,6 @@ const ANONYMOUS_ACTOR: AuthenticatedActorDto = {
   producerScopeIds: [],
   eventScopeIds: [],
   sessionId: '',
-};
-
-const DEV_PREVIEW_ACTORS: Record<string, AuthenticatedActorDto> = {
-  COMERCIAL_DISK: {
-    userId: '00000000-0000-4000-8000-000000000104',
-    email: 'comercial.local@diskingressos.com.br',
-    fullName: 'Operador Comercial Disk',
-    roles: ['COMERCIAL_DISK'],
-    permissions: [...CANONICAL_ROLES.COMERCIAL_DISK.permissions],
-    producerScopeIds: [],
-    eventScopeIds: [],
-    sessionId: 'dev-session-comercial',
-  },
-  OPERACAO_EVENTOS: {
-    userId: '00000000-0000-4000-8000-000000000105',
-    email: 'operacao.local@diskingressos.com.br',
-    fullName: 'Operador de Eventos Disk',
-    roles: ['OPERACAO_EVENTOS'],
-    permissions: [...CANONICAL_ROLES.OPERACAO_EVENTOS.permissions],
-    producerScopeIds: [],
-    eventScopeIds: [],
-    sessionId: 'dev-session-operacao',
-  },
-  FINANCEIRO_DISK: {
-    userId: '00000000-0000-4000-8000-000000000101',
-    email: 'financeiro.local@diskingressos.com.br',
-    fullName: 'Operador Financeiro Disk',
-    roles: ['FINANCEIRO_DISK'],
-    permissions: [...CANONICAL_ROLES.FINANCEIRO_DISK.permissions],
-    producerScopeIds: [],
-    eventScopeIds: [],
-    sessionId: 'dev-session-financeiro',
-  },
-  RH_DP_DISK: {
-    userId: '00000000-0000-4000-8000-000000000108',
-    email: 'rh.local@diskingressos.com.br',
-    fullName: 'Gestor RH & DP Disk',
-    roles: ['RH_DP_DISK'],
-    permissions: [...CANONICAL_ROLES.RH_DP_DISK.permissions],
-    producerScopeIds: [],
-    eventScopeIds: [],
-    sessionId: 'dev-session-rh',
-  },
-  SAC_ATENDIMENTO: {
-    userId: '00000000-0000-4000-8000-000000000102',
-    email: 'sac.local@diskingressos.com.br',
-    fullName: 'Operador SAC Disk',
-    roles: ['SAC_ATENDIMENTO'],
-    permissions: [...CANONICAL_ROLES.SAC_ATENDIMENTO.permissions],
-    producerScopeIds: [],
-    eventScopeIds: [],
-    sessionId: 'dev-session-sac',
-  },
-  PRODUTOR_PDT: {
-    userId: '00000000-0000-4000-8000-000000000103',
-    email: 'produtor.local@pdt.diskingressos.com.br',
-    fullName: 'Produtor Parceiro (Portal PDT)',
-    roles: ['PRODUTOR_PDT'],
-    permissions: [...CANONICAL_ROLES.PRODUTOR_PDT.permissions],
-    producerScopeIds: ['20000000-0000-4000-8000-000000000001'],
-    eventScopeIds: ['30000000-0000-4000-8000-000000000001'],
-    sessionId: 'dev-session-produtor',
-  },
 };
 
 const SessionContext = createContext<SessionContextValue | undefined>(undefined);
@@ -149,14 +86,8 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     void refreshSession();
   }, [refreshSession]);
 
-  const switchLocalPreviewRole = (role: RoleCode) => {
-    if (process.env.NODE_ENV === 'production') {
-      return;
-    }
-    const preset = DEV_PREVIEW_ACTORS[role];
-    if (preset) {
-      setActor(preset);
-    }
+  const switchLocalPreviewRole = (_role: RoleCode) => {
+    // Alternância local de perfil desativada: toda sessão vem do backend autenticado.
   };
 
   const setAuthenticatedSession = (
@@ -197,7 +128,23 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const navigationItems = useMemo(() => {
     const items = filterNavigationByPermissions(actor.permissions);
     if (items.length === 0) {
-      return filterNavigationByPermissions(['overview:read']);
+      return filterNavigationByPermissions([
+        'overview:read',
+        'commercial:read',
+        'event:read',
+        'order:read',
+        'ticket:read',
+        'sac:read',
+        'coupon:read',
+        'finance:read',
+        'rh:self-read',
+        'refund:request',
+        'marketing:read',
+        'remarketing:read',
+        'pdt:portal-read',
+        'reports:read',
+        'governance:read',
+      ]);
     }
     return items;
   }, [actor.permissions]);
@@ -224,8 +171,6 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     [actor.permissions]
   );
 
-  // Para compatibilidade com páginas existentes que checam `if (!sessionToken)`:
-  // quando autenticado via cookie HttpOnly, expomos o marcador CSRF (`csrf:<token>`) sem armazenar token em localStorage
   const sessionToken = isAuthenticated ? (csrfToken ? `csrf:${csrfToken}` : 'cookie-session') : null;
 
   return (
@@ -242,6 +187,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         setAuthenticatedSession,
         refreshSession,
         logout,
+        logoutSession: logout,
         logoutFromServer: logout,
         hasPermission,
       }}

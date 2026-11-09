@@ -8,11 +8,12 @@ const p=(raw)=>{try{return new URL(raw)}catch{throw Error('URL do banco inválid
 const direct=p(process.env.DIRECT_URL),pooled=p(process.env.DATABASE_URL);
 for(const u of [direct,pooled]){
   if(!['postgresql:','postgres:'].includes(u.protocol))throw Error('Driver não PostgreSQL');
-  if(!/(hml|homolog|preview)/i.test(decodeURIComponent(u.pathname)))throw Error('Banco sem sufixo de homologação');
+  if(decodeURIComponent(u.pathname)!=='/bravo_ii_hml')throw Error('Permitido somente banco bravo_ii_hml');
 }
 if(decodeURIComponent(direct.pathname)!==decodeURIComponent(pooled.pathname))throw Error('Banco do pooler difere do banco direto');
-const migrations='prisma/migrations';
-if(!existsSync(migrations)||!readdirSync(migrations,{withFileTypes:true}).some(x=>x.isDirectory()))throw Error('Não existem migrations versionadas. Gerar, revisar e commitá-las antes do deploy.');
+// Fonte executável canônica: SQL versionado em database/migrations. Prisma é representação de schema.
+const migrations='database/migrations';
+if(!existsSync(migrations)||!readdirSync(migrations).some(x=>x.endsWith('.up.sql')))throw Error('Não existem migrations SQL versionadas em database/migrations.');
 if(!process.argv.includes('--apply'))throw Error('Execução cancelada. Para aplicar conscientemente, use --apply');
 if(process.env.VERCEL==='1')throw Error('Migração recusada dentro da Vercel');
 console.log('Executando migrations no banco exclusivo de homologação:',decodeURIComponent(direct.pathname));

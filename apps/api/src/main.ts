@@ -16,6 +16,10 @@ import {
 
 async function bootstrap() {
   if (process.env.BRAVO_ENV === 'HOMOLOGACAO') {
+    const origin = process.env.APP_ORIGIN;
+    if (!origin || !/^https:\/\/[^/\s?#]+$/.test(origin)) {
+      throw new Error('APP_ORIGIN HTTPS exata é obrigatória em homologação');
+    }
     const homologationErrors = [
       ...validateHomologationEnv(process.env),
       ...validatePreviewDeploymentEnv(process.env),

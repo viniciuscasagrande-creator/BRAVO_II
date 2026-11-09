@@ -43,8 +43,15 @@ export function loadEnvironmentConfig(env: NodeJS.ProcessEnv = process.env): Bra
   return {
     nodeEnv,
     port: Number(env.PORT ?? 4000),
-    databaseUrl: env.DATABASE_URL?.trim() || undefined,
-    directUrl: env.DIRECT_URL?.trim() || undefined,
+    databaseUrl:
+      env.DATABASE_URL?.trim() ||
+      env.POSTGRES_URL?.trim() ||
+      env.NEON_DATABASE_URL?.trim() ||
+      undefined,
+    directUrl:
+      env.DIRECT_URL?.trim() ||
+      env.POSTGRES_URL_NON_POOLING?.trim() ||
+      undefined,
     pgliteDataDir: env.PGLITE_DATA_DIR?.trim() || '.data/postgres',
     authSessionSecret: env.AUTH_SESSION_SECRET?.trim() || 'dev-only-local-session-secret-change-in-staging',
     qrSigningSecret: env.QR_SIGNING_SECRET?.trim() || 'dev-only-qr-signing-secret-change-in-staging',

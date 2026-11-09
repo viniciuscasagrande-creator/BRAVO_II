@@ -1,4 +1,5 @@
 import 'reflect-metadata';
+import { randomBytes } from 'node:crypto';
 import { DatabaseService } from '../common/database/database.service';
 import { AuditService } from '../modules/governance/audit.service';
 import { IdentityService } from '../modules/identity/identity.service';
@@ -7,7 +8,7 @@ import { loadEnvironmentConfig } from '@bravo-ii/config';
 
 /**
  * Executa apenas o seed técnico (papéis RBAC, permissões canônicas e, em desenvolvimento local,
- * operadores técnicos sem nenhum dado fictício de negócio).
+ * operadores técnicos sem nenhum dado fictício de negócio e sem senhas estáticas embutidas no código).
  */
 async function main() {
   const config = loadEnvironmentConfig();
@@ -22,76 +23,83 @@ async function main() {
 
   await identity.syncCanonicalRolesAndPermissions();
 
-  // Contas técnicas locais para validação de sessão e RBAC em Preview local (sem criar eventos, pedidos ou saldos falsos)
+  const resolveOperatorSecret = (envKey: string): string => {
+    const provided = process.env[envKey]?.trim() || process.env.BRAVO_SEED_OPERATOR_PASSWORD?.trim();
+    if (provided && provided.length >= 12) {
+      return provided;
+    }
+    return `Bravo#${randomBytes(12).toString('base64url')}!9`;
+  };
+
   await identity.ensureOperatorAccount({
     id: '00000000-0000-4000-8000-000000000100',
-    email: 'admin.local@diskingressos.com.br',
-    fullName: 'Administrador Geral BRAVO_II (Ambiente Local)',
-    plainPassword: 'BravoLocal#Admin2026',
+    email: process.env.BRAVO_SEED_ADMIN_EMAIL || 'admin.hml@diskingressos.com.br',
+    fullName: 'Administrador Geral BRAVO_II',
+    plainPassword: resolveOperatorSecret('BRAVO_SEED_ADMIN_PASSWORD'),
     role: 'ADMIN_BRAVO',
   });
 
   await identity.ensureOperatorAccount({
     id: '00000000-0000-4000-8000-000000000101',
-    email: 'financeiro.local@diskingressos.com.br',
-    fullName: 'Operador Financeiro Disk (Ambiente Local)',
-    plainPassword: 'BravoLocal#Financeiro2026',
+    email: process.env.BRAVO_SEED_FINANCEIRO_EMAIL || 'financeiro.hml@diskingressos.com.br',
+    fullName: 'Operador Financeiro Disk',
+    plainPassword: resolveOperatorSecret('BRAVO_SEED_FINANCEIRO_PASSWORD'),
     role: 'FINANCEIRO_DISK',
   });
 
   await identity.ensureOperatorAccount({
     id: '00000000-0000-4000-8000-000000000102',
-    email: 'sac.local@diskingressos.com.br',
-    fullName: 'Operador SAC Disk (Ambiente Local)',
-    plainPassword: 'BravoLocal#Sac2026',
+    email: process.env.BRAVO_SEED_SAC_EMAIL || 'sac.hml@diskingressos.com.br',
+    fullName: 'Operador SAC Disk',
+    plainPassword: resolveOperatorSecret('BRAVO_SEED_SAC_PASSWORD'),
     role: 'SAC_ATENDIMENTO',
   });
 
   await identity.ensureOperatorAccount({
     id: '00000000-0000-4000-8000-000000000103',
-    email: 'produtor.local@pdt.diskingressos.com.br',
-    fullName: 'Operador Produtor PDT (Ambiente Local)',
-    plainPassword: 'BravoLocal#Produtor2026',
+    email: process.env.BRAVO_SEED_PRODUTOR_EMAIL || 'produtor.hml@pdt.diskingressos.com.br',
+    fullName: 'Operador Produtor PDT',
+    plainPassword: resolveOperatorSecret('BRAVO_SEED_PRODUTOR_PASSWORD'),
     role: 'PRODUTOR_PDT',
   });
 
   await identity.ensureOperatorAccount({
     id: '00000000-0000-4000-8000-000000000104',
-    email: 'comercial.local@diskingressos.com.br',
-    fullName: 'Operador Comercial Disk (Ambiente Local)',
-    plainPassword: 'BravoLocal#Comercial2026',
+    email: process.env.BRAVO_SEED_COMERCIAL_EMAIL || 'comercial.hml@diskingressos.com.br',
+    fullName: 'Operador Comercial Disk',
+    plainPassword: resolveOperatorSecret('BRAVO_SEED_COMERCIAL_PASSWORD'),
     role: 'COMERCIAL_DISK',
   });
 
   await identity.ensureOperatorAccount({
     id: '00000000-0000-4000-8000-000000000105',
-    email: 'operacao.local@diskingressos.com.br',
-    fullName: 'Operador de Eventos Disk (Ambiente Local)',
-    plainPassword: 'BravoLocal#Operacao2026',
+    email: process.env.BRAVO_SEED_OPERACAO_EMAIL || 'operacao.hml@diskingressos.com.br',
+    fullName: 'Operador de Eventos Disk',
+    plainPassword: resolveOperatorSecret('BRAVO_SEED_OPERACAO_PASSWORD'),
     role: 'OPERACAO_EVENTOS',
   });
 
   await identity.ensureOperatorAccount({
     id: '00000000-0000-4000-8000-000000000106',
-    email: 'pdv.local@diskingressos.com.br',
-    fullName: 'Operador Caixa PDV Disk (Ambiente Local)',
-    plainPassword: 'BravoLocal#Pdv2026',
+    email: process.env.BRAVO_SEED_PDV_EMAIL || 'pdv.hml@diskingressos.com.br',
+    fullName: 'Operador Caixa PDV Disk',
+    plainPassword: resolveOperatorSecret('BRAVO_SEED_PDV_PASSWORD'),
     role: 'PDV_CAIXA',
   });
 
   await identity.ensureOperatorAccount({
     id: '00000000-0000-4000-8000-000000000107',
-    email: 'portaria.local@diskingressos.com.br',
-    fullName: 'Operador Portaria Check-in Disk (Ambiente Local)',
-    plainPassword: 'BravoLocal#Portaria2026',
+    email: process.env.BRAVO_SEED_PORTARIA_EMAIL || 'portaria.hml@diskingressos.com.br',
+    fullName: 'Operador Portaria Check-in Disk',
+    plainPassword: resolveOperatorSecret('BRAVO_SEED_PORTARIA_PASSWORD'),
     role: 'PORTARIA_CHECKIN',
   });
 
   await identity.ensureOperatorAccount({
     id: '00000000-0000-4000-8000-000000000108',
-    email: 'rh.local@diskingressos.com.br',
-    fullName: 'Gestor RH & DP Disk (Ambiente Local)',
-    plainPassword: 'BravoLocal#RhDisk2026',
+    email: process.env.BRAVO_SEED_RH_EMAIL || 'rh.hml@diskingressos.com.br',
+    fullName: 'Gestor RH & DP Disk',
+    plainPassword: resolveOperatorSecret('BRAVO_SEED_RH_PASSWORD'),
     role: 'RH_DP_DISK',
   });
 
@@ -107,16 +115,6 @@ async function main() {
         catalogedFunctionsCount: catalogSummary.totalCataloged,
         catalogedFinanceiroCount: catalogSummary.totalFinanceiro,
         catalogedRhCount: catalogSummary.totalRh,
-        seededLocalOperators: [
-          'comercial.local@diskingressos.com.br (COMERCIAL_DISK)',
-          'operacao.local@diskingressos.com.br (OPERACAO_EVENTOS)',
-          'financeiro.local@diskingressos.com.br (FINANCEIRO_DISK)',
-          'rh.local@diskingressos.com.br (RH_DP_DISK)',
-          'sac.local@diskingressos.com.br (SAC_ATENDIMENTO)',
-          'produtor.local@pdt.diskingressos.com.br (PRODUTOR_PDT)',
-          'pdv.local@diskingressos.com.br (PDV_CAIXA)',
-          'portaria.local@diskingressos.com.br (PORTARIA_CHECKIN)',
-        ],
         businessTablesEmpty: true,
       },
       null,

@@ -30,7 +30,7 @@
     "build:packages": "pnpm -r --filter \"./packages/*\" build",
     "build:api": "pnpm --filter @bravo-ii/api build",
     "build:web": "pnpm --filter @bravo-ii/backoffice build",
-    "build:vercel:api": "pnpm run build:packages && pnpm run db:generate && pnpm run build:api",
+    "build:vercel:api": "pnpm run build:packages && pnpm run db:validate && pnpm run build:api",
     "build:vercel:web": "pnpm run build:packages && pnpm run build:web",
     "build": "pnpm -r --filter \"./packages/*\" build && pnpm -r --filter \"./apps/*\" build && node scripts/prepare-vercel-dist.mjs",
     "typecheck": "pnpm -r typecheck",

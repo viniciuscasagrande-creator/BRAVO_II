@@ -12,7 +12,7 @@ export function proxyGuardRequired(env:NodeJS.ProcessEnv):boolean {
 export function validatePreviewDeploymentEnv(env:NodeJS.ProcessEnv):string[] {
   const errors:string[]=[];
   if(env.VERCEL==='1'){
-    if(env.VERCEL_ENV!=='preview'&&env.BRAVO_ENV!=='HOMOLOGACAO')errors.push('Implantação Vercel só é permitida em Preview');
+    if(env.VERCEL_ENV!=='preview'&&(env.BRAVO_ENV!=='HOMOLOGACAO'||env.ENABLE_EXTERNAL_PUBLICATION==='true'))errors.push('Implantação Vercel só é permitida em Preview/Homologação');
     if(!env.BRAVO_PROXY_KEY||env.BRAVO_PROXY_KEY.length<32)errors.push('BRAVO_PROXY_KEY não configurada (mínimo 32 caracteres)');
   }
   if(env.ENABLE_BRAVO_PROXY_GUARD==='true'&&(!env.BRAVO_PROXY_KEY||env.BRAVO_PROXY_KEY.length<32))errors.push('BRAVO_PROXY_KEY não configurada');

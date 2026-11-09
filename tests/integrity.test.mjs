@@ -67,6 +67,10 @@ test('Frontend usa sessão same-origin e CSRF', () => {
 test('Não há senha/usuário simulado no login', () => {
   const login = read('apps/backoffice/src/app/login/page.tsx');
   assert(!login.includes('123456'));
+  assert(!login.includes('BravoLocal#'));
+  assert(!login.includes('quickCredentials'));
+  const rh = read('apps/backoffice/src/app/rh/page.tsx');
+  assert(!rh.includes('BravoLocal#'));
 });
 
 test('Exige autenticação e origem nos endpoints', () => {

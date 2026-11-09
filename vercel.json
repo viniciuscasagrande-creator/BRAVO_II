@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "api/v1.js": {
+      "includeFiles": "{apps/api/dist/**,database/migrations/**,00-INVENTARIO/**,reference/**}"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/v1/:path*",
+      "destination": "/api/v1?__bravo_v1_path=:path*"
+    }
+  ]
+}

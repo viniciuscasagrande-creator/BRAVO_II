@@ -46,11 +46,11 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     }
 
     const config = loadEnvironmentConfig();
-    const isTestRuntime =
-      config.nodeEnv === 'test' ||
-      config.pgliteDataDir === 'memory://' ||
-      Boolean(process.env.NODE_TEST_CONTEXT);
-    const forceMemory = isTestRuntime && process.env.VERCEL !== '1';
+    // PGlite é exclusivo de testes explícitos; nunca inferir autorização por URI ou flags externas.
+    const forceMemory = config.nodeEnv === 'test' &&
+      process.env.BRAVO_ENV !== 'HOMOLOGACAO' &&
+      process.env.BRAVO_ENV !== 'PRODUCAO' &&
+      process.env.VERCEL !== '1';
 
     if (config.databaseUrl && !forceMemory) {
       const candidatePool = new Pool({

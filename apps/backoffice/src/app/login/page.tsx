@@ -8,9 +8,10 @@ import { useBravoSession } from '../../context/session-context';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { actor, isAuthenticated, setAuthenticatedSession, refreshSession } = useBravoSession();
-  const [email, setEmail] = useState('financeiro.local@diskingressos.com.br');
-  const [password, setPassword] = useState('BravoLocal#Financeiro2026');
+  const { actor, isAuthenticated, setAuthenticatedSession, refreshSession, logoutSession } =
+    useBravoSession();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -23,9 +24,10 @@ export default function LoginPage() {
 
     try {
       const client = new BravoApiClient();
-      const res = await client.login({ email, password });
+      const res = await client.login({ email: email.trim(), password });
       setAuthenticatedSession(res.token, res.actor);
       await refreshSession();
+      setPassword('');
       setStatusMessage(
         `Sessão corporativa autenticada com sucesso para ${res.actor.fullName}. Redirecionando para o painel...`
       );
@@ -43,42 +45,26 @@ export default function LoginPage() {
     }
   };
 
-  const quickCredentials = [
+  const securityPolicies = [
     {
-      title: 'Financeiro Disk',
-      subtitle: 'Controladoria, Tesouraria, Livro Razão, Folha SoD e Alçada de Estornos',
-      email: 'financeiro.local@diskingressos.com.br',
-      pass: 'BravoLocal#Financeiro2026',
+      title: 'Sessão Criptografada HttpOnly + Proteção CSRF',
+      description:
+        'O token de sessão é mantido exclusivamente em cookie HttpOnly com validação de token CSRF em todas as operações de escrita.',
     },
     {
-      title: 'Comercial Disk',
-      subtitle: 'Produtores PJ, Contratos, Documentação e Taxa Disk por Evento',
-      email: 'comercial.local@diskingressos.com.br',
-      pass: 'BravoLocal#Comercial2026',
+      title: 'Bloqueio Automático contra Força Bruta',
+      description:
+        'Contas corporativas são bloqueadas temporariamente por 30 minutos após 5 tentativas consecutivas de autenticação malsucedidas.',
     },
     {
-      title: 'Operação de Eventos',
-      subtitle: 'Event Builder, Sessões, Setores, Lotes, Canais e Publicação',
-      email: 'operacao.local@diskingressos.com.br',
-      pass: 'BravoLocal#Operacao2026',
+      title: 'Segregação de Funções (RBAC + ABAC)',
+      description:
+        'Cada operador visualiza e opera exclusivamente os módulos, eventos e alçadas autorizados para seu perfil corporativo.',
     },
     {
-      title: 'RH e Departamento Pessoal',
-      subtitle: 'Cadastro de Colaboradores, Disk Ponto e Lotes de Folha',
-      email: 'rh.local@diskingressos.com.br',
-      pass: 'BravoLocal#RhDisk2026',
-    },
-    {
-      title: 'SAC e Pós-Venda',
-      subtitle: 'Atendimento ao Cliente, Chamados, Trocas e Solicitação de Estorno',
-      email: 'sac.local@diskingressos.com.br',
-      pass: 'BravoLocal#Sac2026',
-    },
-    {
-      title: 'Portal do Produtor (PDT)',
-      subtitle: 'Acompanhamento exclusivo dos eventos vinculados ao produtor',
-      email: 'produtor.local@pdt.diskingressos.com.br',
-      pass: 'BravoLocal#Produtor2026',
+      title: 'Isolamento Estrito do Portal do Produtor (PDT)',
+      description:
+        'Credenciais de produtores acessam apenas eventos vinculados ao seu escopo contratual, sem exposição da Taxa Disk interna.',
     },
   ];
 
@@ -87,7 +73,7 @@ export default function LoginPage() {
       <WorkspaceHeader
         eyebrow="Identidade e Segurança Corporativa"
         title="Acesso à Plataforma BRAVO_II"
-        subtitle="Autenticação única com sessão criptografada HttpOnly. Uma vez autenticado, todos os departamentos autorizados para sua credencial ficam disponíveis sem nova solicitação de senha."
+        subtitle="Autenticação única com sessão criptografada no servidor. Uma vez autenticado, todos os departamentos autorizados para sua credencial ficam disponíveis sem nova solicitação de senha."
         statusBadge={isAuthenticated ? `Autenticado: ${actor.fullName}` : 'Sessão Desconectada'}
       />
 
@@ -100,9 +86,9 @@ export default function LoginPage() {
       >
         <ActionPanel
           title="Credenciais de Operador"
-          subtitle="Informe seu e-mail corporativo e senha para iniciar a sessão no servidor."
+          subtitle="Informe seu e-mail corporativo e senha cadastrados no diretório de identidade do BRAVO_II."
         >
-          <form onSubmit={(e) => void handleApiLogin(e)}>
+          <form onSubmit={(e) => void handleApiLogin(e)} autoComplete="on">
             <div style={{ marginBottom: '14px' }}>
               <label
                 htmlFor="login-email"
@@ -113,6 +99,8 @@ export default function LoginPage() {
               <input
                 id="login-email"
                 type="email"
+                autoComplete="username"
+                placeholder="nome.sobrenome@diskingressos.com.br"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -137,6 +125,8 @@ export default function LoginPage() {
               <input
                 id="login-password"
                 type="password"
+                autoComplete="current-password"
+                placeholder="Informe sua senha corporativa"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -151,23 +141,43 @@ export default function LoginPage() {
               />
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              style={{
-                width: '100%',
-                padding: '11px 18px',
-                borderRadius: '8px',
-                border: 'none',
-                backgroundColor: '#1d4ed8',
-                color: '#ffffff',
-                fontWeight: 700,
-                fontSize: '14px',
-                cursor: 'pointer',
-              }}
-            >
-              {loading ? 'Validando Credencial...' : 'Entrar na Plataforma'}
-            </button>
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <button
+                type="submit"
+                disabled={loading}
+                style={{
+                  flex: 1,
+                  padding: '11px 18px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  backgroundColor: '#1d4ed8',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                }}
+              >
+                {loading ? 'Validando Credencial...' : 'Entrar na Plataforma'}
+              </button>
+              {isAuthenticated && (
+                <button
+                  type="button"
+                  onClick={() => void logoutSession()}
+                  style={{
+                    padding: '11px 16px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    backgroundColor: '#ffffff',
+                    color: '#0f172a',
+                    fontWeight: 600,
+                    fontSize: '13px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Encerrar Sessão Atual
+                </button>
+              )}
+            </div>
 
             {statusMessage && (
               <div
@@ -206,33 +216,25 @@ export default function LoginPage() {
         </ActionPanel>
 
         <ActionPanel
-          title="Perfis de Homologação Disponíveis"
-          subtitle="Selecione um operador abaixo para preencher o formulário e autenticar com o escopo real do departamento."
+          title="Governança de Identidade e Acesso"
+          subtitle="Diretrizes de segurança ativas na autenticação do ERP BRAVO_II."
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {quickCredentials.map((cred) => (
-              <button
-                key={cred.email}
-                type="button"
-                onClick={() => {
-                  setEmail(cred.email);
-                  setPassword(cred.pass);
-                }}
+            {securityPolicies.map((policy) => (
+              <div
+                key={policy.title}
                 style={{
-                  textAlign: 'left',
                   padding: '12px 14px',
                   borderRadius: '8px',
-                  border: email === cred.email ? '1px solid #2563eb' : '1px solid #e2e8f0',
-                  backgroundColor: email === cred.email ? '#eff6ff' : '#f8fafc',
-                  cursor: 'pointer',
+                  border: '1px solid #e2e8f0',
+                  backgroundColor: '#f8fafc',
                 }}
               >
-                <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{cred.title}</div>
-                <div style={{ fontSize: '12px', color: '#475569', marginTop: '2px' }}>{cred.subtitle}</div>
-                <div style={{ fontSize: '11px', color: '#1d4ed8', marginTop: '4px', fontFamily: 'monospace' }}>
-                  {cred.email}
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{policy.title}</div>
+                <div style={{ fontSize: '12px', color: '#475569', marginTop: '4px', lineHeight: 1.5 }}>
+                  {policy.description}
                 </div>
-              </button>
+              </div>
             ))}
           </div>
         </ActionPanel>

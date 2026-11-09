@@ -272,9 +272,9 @@ export default function RhDiskPage() {
             fontSize: '13px',
           }}
         >
-          <strong>Autenticação de API necessária para persistência:</strong>{' '}
+          <strong>Autenticação corporativa necessária para persistência:</strong>{' '}
           <Link href="/login" style={{ color: '#b45309', fontWeight: 700 }}>
-            Clique aqui para autenticar com rh.local@diskingressos.com.br (senha: BravoLocal#RhDisk2026)
+            Clique aqui para iniciar sessão com sua credencial corporativa autorizada para RH e DP
           </Link>{' '}
           e operar Colaboradores, Disk Ponto e Lotes RH no PostgreSQL.
         </div>
