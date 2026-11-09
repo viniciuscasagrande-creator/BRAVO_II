@@ -5,10 +5,12 @@
   "outputDirectory": "dist",
   "functions": {
     "src/main.ts": {
-      "maxDuration": 30
+      "maxDuration": 30,
+      "includeFiles": "{dist/**,../../packages/*/dist/**,../../database/migrations/**,../../00-INVENTARIO/**,../../reference/**,../../prisma/schema.prisma}"
     },
     "api/index.ts": {
-      "maxDuration": 30
+      "maxDuration": 30,
+      "includeFiles": "{dist/**,../../packages/*/dist/**,../../database/migrations/**,../../00-INVENTARIO/**,../../reference/**,../../prisma/schema.prisma}"
     }
   },
   "rewrites": [

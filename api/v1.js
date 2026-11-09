@@ -95,7 +95,10 @@ module.exports = async function bravoRootVercelApiHandler(req, res) {
       cleanEnvUrl(process.env.POSTGRES_URL_NON_POOLING);
 
     // Modo 1: Proxy BFF para projeto de API separado quando BRAVO_API_URL aponta para outro host
-    const configuredUpstream = cleanEnvUrl(process.env.BRAVO_API_URL);
+    const configuredUpstream = cleanEnvUrl(process.env.BRAVO_API_URL)
+      .replace(/\/v1\/?$/i, '')
+      .replace(/\/+$/, '');
+    const cleanProxyKey = cleanEnvUrl(process.env.BRAVO_PROXY_KEY);
     if (configuredUpstream) {
       let upstreamUrl;
       try {
@@ -112,7 +115,7 @@ module.exports = async function bravoRootVercelApiHandler(req, res) {
         const target = new URL(req.url, upstreamUrl);
         const headers = {
           Accept: 'application/json',
-          'X-Bravo-Proxy-Key': (process.env.BRAVO_PROXY_KEY || '').trim() || RUNTIME_BFF_KEY,
+          'X-Bravo-Proxy-Key': cleanProxyKey || RUNTIME_BFF_KEY,
         };
         if (process.env.BRAVO_API_VERCEL_BYPASS_TOKEN) {
           headers['x-vercel-protection-bypass'] = process.env.BRAVO_API_VERCEL_BYPASS_TOKEN.trim();

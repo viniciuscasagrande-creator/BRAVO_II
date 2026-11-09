@@ -12,14 +12,17 @@ function failure(status:number,message:string,diagnostics?:Record<string,unknown
   );
 }
 function getUpstream():URL {
-  const raw=process.env.BRAVO_API_URL||'http://127.0.0.1:4100';
+  const configured=(process.env.BRAVO_API_URL||'').trim().replace(/^['"]+|['"]+$/g,'').replace(/\/v1\/?$/i,'').replace(/\/+$/,'');
+  if(process.env.VERCEL==='1'&&!configured)throw new Error('BRAVO_API_URL não configurada no projeto Backoffice da Vercel');
+  const raw=configured||'http://127.0.0.1:4100';
   const target=new URL(raw);
   if(target.username||target.password||target.pathname!=='/'||target.search||target.hash)throw new Error('BRAVO_API_URL deve conter apenas a origem da API');
   if(process.env.VERCEL==='1'){
     if(process.env.VERCEL_ENV!=='preview'&&(process.env.BRAVO_ENV!=='HOMOLOGACAO'||process.env.ENABLE_EXTERNAL_PUBLICATION==='true'))throw new Error('BFF liberado apenas em Preview');
     if(target.protocol!=='https:'||['localhost','127.0.0.1'].includes(target.hostname))throw new Error('BRAVO_API_URL deve apontar para API HTTPS da Vercel');
   }else if(!['http:','https:'].includes(target.protocol))throw new Error('BRAVO_API_URL inválida');
-  if(!process.env.BRAVO_PROXY_KEY||process.env.BRAVO_PROXY_KEY.length<32)throw new Error('BRAVO_PROXY_KEY não configurada');
+  const proxyKey=(process.env.BRAVO_PROXY_KEY||'').trim().replace(/^['"]+|['"]+$/g,'');
+  if(!proxyKey||proxyKey.length<32)throw new Error('BRAVO_PROXY_KEY não configurada');
   return target;
 }
 async function handler(req:NextRequest,ctx:{params:Promise<{path:string[]}>}):Promise<Response>{
@@ -40,7 +43,7 @@ async function handler(req:NextRequest,ctx:{params:Promise<{path:string[]}>}):Pr
     const target=new URL(`/v1/${path.map(encodeURIComponent).join('/')}${new URL(req.url).search}`,upstream);
     const headers=new Headers({
       Accept:'application/json',
-      'X-Bravo-Proxy-Key':process.env.BRAVO_PROXY_KEY!,
+      'X-Bravo-Proxy-Key':(process.env.BRAVO_PROXY_KEY||'').trim().replace(/^['"]+|['"]+$/g,''),
       'X-Correlation-Id':correlationId,
     });
     // Se a API estiver com Vercel Deployment Protection, usar segredo separado para bypass servidor-servidor.
