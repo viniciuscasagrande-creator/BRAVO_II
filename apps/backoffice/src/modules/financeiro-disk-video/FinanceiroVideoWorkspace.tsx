@@ -176,14 +176,16 @@ export default function FinanceiroVideoWorkspace({ screenId }: { screenId?: stri
 
   return (
     <div className="bf-shell">
-      {/* Barra superior de módulos ordenados (01 a 15) */}
+      {/* Barra superior fixa e alinhada de módulos ordenados (00 a 15) sem scroll horizontal */}
       <div className="bf-modulebar" role="navigation" aria-label="Módulos Financeiros Ordenados">
         <Link
           href={FINANCEIRO_BASE}
           className={`bf-modulepill ${!screen ? 'is-active' : ''}`}
+          title="00 · Painel de Cards (15 Módulos · 96 Rotinas)"
         >
           <span className="bf-modulepill-num">00</span>
-          <span>Painel de Cards (15 Módulos)</span>
+          <span className="bf-modulepill-label">Painel de Cards</span>
+          <span className="bf-modulepill-count">{FINANCEIRO_TELAS.length}</span>
         </Link>
         {orderedGroups.map((g) => {
           const isCurrentGroup = activeGroup?.id === g.id;
@@ -195,7 +197,8 @@ export default function FinanceiroVideoWorkspace({ screenId }: { screenId?: stri
               title={`${g.orderBadge} · ${g.label} (${g.items.length} rotinas)`}
             >
               <span className="bf-modulepill-num">{g.orderBadge}</span>
-              <span>{g.label}</span>
+              <span className="bf-modulepill-label">{g.label}</span>
+              <span className="bf-modulepill-count">{g.items.length}</span>
             </Link>
           );
         })}

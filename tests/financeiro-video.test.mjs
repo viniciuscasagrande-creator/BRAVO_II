@@ -5,6 +5,7 @@ import { readFileSync, existsSync } from 'node:fs';
 const base = 'apps/backoffice/src';
 const cat = JSON.parse(readFileSync(base + '/modules/financeiro-disk-video/catalogo.json', 'utf8'));
 const workspace = readFileSync(base + '/modules/financeiro-disk-video/FinanceiroVideoWorkspace.tsx', 'utf8');
+const css = readFileSync(base + '/modules/financeiro-disk-video/financeiro-video.css', 'utf8');
 const shell = readFileSync(base + '/components/bravo-shell.tsx', 'utf8');
 const contracts = readFileSync('packages/contracts/src/index.ts', 'utf8');
 const controller = readFileSync('apps/api/src/modules/finance/financeiro-video.controller.ts', 'utf8');
@@ -35,6 +36,9 @@ test('Menu Financeiro possui os 15 módulos individuais ordenados (01 a 15) e Da
   assert.match(workspace, /MÓDULO/);
   assert.doesNotMatch(workspace, /Math\.random\(|R\$ 1\./);
   assert.doesNotMatch(shell, /Operação Financeira — Todos os Módulos/);
+  assert.match(css, /\.bf-modulebar\s*\{[\s\S]*?display:\s*grid;/);
+  assert.match(css, /grid-template-columns:\s*repeat\(4,\s*minmax\(0,\s*1fr\)\);/);
+  assert.doesNotMatch(css, /\.bf-modulebar\s*\{[^}]*overflow-x:\s*auto/);
   for (const label of [
     '00 · Painel de Cards (15 Módulos)',
     '01 · Produtores e Eventos',
