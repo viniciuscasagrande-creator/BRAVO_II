@@ -129,7 +129,7 @@ export class BravoApiClient {
     return this.requestJson('/health');
   }
 
-  async login(payload: LoginRequestDto): Promise<{ token: string; actor: AuthenticatedActorDto }> {
+  async login(payload: LoginRequestDto): Promise<{ token: string; csrfToken?: string; actor: AuthenticatedActorDto }> {
     return this.requestJson('/api/v1/auth/login', {
       method: 'POST',
       body: JSON.stringify(payload),

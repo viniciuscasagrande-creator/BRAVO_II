@@ -109,17 +109,27 @@ const INITIAL_EXPLICIT_HTTPS_ORIGIN = (() => {
   return /^https:\/\/[^/\s?#]+$/.test(cleaned) ? cleaned : '';
 })();
 
+function isEmbeddedPlaceholderUrl(url: string): boolean {
+  return !url || /embedded\.local/i.test(url);
+}
+
 function normalizeVercelRuntimeEnv(req: Request): void {
   if (process.env.VERCEL !== '1') return;
 
-  const dbCandidate =
-    cleanVercelEnvUrl(process.env.DATABASE_URL) ||
-    cleanVercelEnvUrl(process.env.POSTGRES_URL) ||
-    cleanVercelEnvUrl(process.env.NEON_DATABASE_URL) ||
-    cleanVercelEnvUrl(process.env.DIRECT_URL) ||
-    cleanVercelEnvUrl(process.env.POSTGRES_URL_NON_POOLING);
+  const candidates = [
+    cleanVercelEnvUrl(process.env.DATABASE_URL),
+    cleanVercelEnvUrl(process.env.POSTGRES_URL),
+    cleanVercelEnvUrl(process.env.NEON_DATABASE_URL),
+    cleanVercelEnvUrl(process.env.DIRECT_URL),
+    cleanVercelEnvUrl(process.env.POSTGRES_URL_NON_POOLING),
+  ];
+  const dbCandidate = candidates.find((c) => c && !isEmbeddedPlaceholderUrl(c)) || '';
   if (dbCandidate) {
     process.env.DATABASE_URL = dbCandidate;
+    delete process.env.BRAVO_EMBEDDED_PG;
+  } else {
+    process.env.DATABASE_URL = 'postgresql://embedded.local/bravo_ii_hml';
+    process.env.BRAVO_EMBEDDED_PG = 'true';
   }
 
   if (process.env.BRAVO_PROXY_KEY) {
@@ -143,7 +153,7 @@ function normalizeVercelRuntimeEnv(req: Request): void {
       ? reqOrigin
       : '';
 
-  process.env.APP_ORIGIN = INITIAL_EXPLICIT_HTTPS_ORIGIN || trustedProxyOrigin || `https://${host}`;
+  process.env.APP_ORIGIN = trustedProxyOrigin || `https://${host}` || INITIAL_EXPLICIT_HTTPS_ORIGIN;
 
   process.env.ENABLE_EXTERNAL_PUBLICATION = 'false';
   process.env.ENABLE_REAL_PAYMENTS = 'false';

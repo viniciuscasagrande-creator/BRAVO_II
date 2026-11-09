@@ -40,6 +40,27 @@ const ANONYMOUS_ACTOR: AuthenticatedActorDto = {
 
 const SessionContext = createContext<SessionContextValue | undefined>(undefined);
 
+function normalizeActor(raw: Partial<AuthenticatedActorDto> | null | undefined): AuthenticatedActorDto {
+  if (!raw || typeof raw !== 'object') {
+    return ANONYMOUS_ACTOR;
+  }
+  return {
+    userId: typeof raw.userId === 'string' ? raw.userId : '',
+    email: typeof raw.email === 'string' ? raw.email : '',
+    fullName:
+      typeof raw.fullName === 'string' && raw.fullName.trim().length > 0
+        ? raw.fullName
+        : typeof raw.email === 'string' && raw.email.trim().length > 0
+          ? raw.email
+          : 'Operador Autenticado',
+    roles: Array.isArray(raw.roles) ? raw.roles : [],
+    permissions: Array.isArray(raw.permissions) ? raw.permissions : [],
+    producerScopeIds: Array.isArray(raw.producerScopeIds) ? raw.producerScopeIds : [],
+    eventScopeIds: Array.isArray(raw.eventScopeIds) ? raw.eventScopeIds : [],
+    sessionId: typeof raw.sessionId === 'string' && raw.sessionId ? raw.sessionId : 'cookie-session',
+  };
+}
+
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [actor, setActor] = useState<AuthenticatedActorDto>(ANONYMOUS_ACTOR);
   const [csrfToken, setCsrfToken] = useState<string | null>(null);
@@ -57,16 +78,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       });
       if (res.ok) {
         const data = (await res.json()) as AuthenticatedActorDto & { csrfToken?: string };
-        setActor({
-          userId: data.userId,
-          email: data.email,
-          fullName: data.fullName,
-          roles: data.roles ?? [],
-          permissions: data.permissions ?? [],
-          producerScopeIds: data.producerScopeIds ?? [],
-          eventScopeIds: data.eventScopeIds ?? [],
-          sessionId: data.sessionId ?? 'cookie-session',
-        });
+        setActor(normalizeActor(data));
         setCsrfToken(data.csrfToken ?? null);
         setIsAuthenticated(true);
       } else if (res.status === 401 || res.status === 403) {
@@ -96,8 +108,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     authenticatedActor: AuthenticatedActorDto,
     nextCsrf?: string
   ) => {
-    setActor(authenticatedActor);
+    setActor(normalizeActor(authenticatedActor));
     setIsAuthenticated(true);
+    setIsLoadingSession(false);
     setSessionError(null);
     if (nextCsrf) {
       setCsrfToken(nextCsrf);

@@ -104,11 +104,22 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       throw new Error('Motor de banco de dados PostgreSQL não inicializado.');
     }
 
-    const res = await this.pglite.query<T>(sql, params);
-    return {
-      rows: res.rows,
-      rowCount: res.rows.length > 0 ? res.rows.length : (res.affectedRows ?? 0),
-    };
+    let releaseLock!: () => void;
+    const prevLock = this.txLock;
+    this.txLock = new Promise<void>((resolve) => {
+      releaseLock = resolve;
+    });
+    await prevLock;
+
+    try {
+      const res = await this.pglite.query<T>(sql, params);
+      return {
+        rows: res.rows,
+        rowCount: res.rows.length > 0 ? res.rows.length : (res.affectedRows ?? 0),
+      };
+    } finally {
+      releaseLock();
+    }
   }
 
   async withTransaction<R>(fn: (tx: TransactionRunner) => Promise<R>): Promise<R> {
@@ -183,7 +194,18 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       throw new Error('Motor de banco de dados PostgreSQL não inicializado.');
     }
 
-    await this.pglite.exec(sqlScript);
+    let releaseLock!: () => void;
+    const prevLock = this.txLock;
+    this.txLock = new Promise<void>((resolve) => {
+      releaseLock = resolve;
+    });
+    await prevLock;
+
+    try {
+      await this.pglite.exec(sqlScript);
+    } finally {
+      releaseLock();
+    }
   }
 
   private resolveMigrationsDir(): string {

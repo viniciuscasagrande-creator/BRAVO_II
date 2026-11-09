@@ -56,6 +56,10 @@ function cleanEnvUrl(raw) {
     .trim();
 }
 
+function isEmbeddedPlaceholderUrl(url) {
+  return !url || /embedded\.local/i.test(url);
+}
+
 function resolvePostgresUrlFromEnv(env) {
   const directCandidates = [
     env.DATABASE_URL,
@@ -67,11 +71,11 @@ function resolvePostgresUrlFromEnv(env) {
   ];
   for (const raw of directCandidates) {
     const cleaned = cleanEnvUrl(raw);
-    if (cleaned) return cleaned;
+    if (cleaned && !isEmbeddedPlaceholderUrl(cleaned)) return cleaned;
   }
   for (const [, val] of Object.entries(env || {})) {
     const cleaned = cleanEnvUrl(val);
-    if (/^postgres(?:ql)?:\/\//i.test(cleaned)) {
+    if (/^postgres(?:ql)?:\/\//i.test(cleaned) && !isEmbeddedPlaceholderUrl(cleaned)) {
       return cleaned;
     }
   }
@@ -205,8 +209,19 @@ module.exports = async function bravoRootVercelApiHandler(req, res) {
     if (!process.env.BRAVO_ENV) {
       process.env.BRAVO_ENV = 'HOMOLOGACAO';
     }
+    // Como o BFF já validou browserOrigin === ownOrigin acima, alinhamos APP_ORIGIN e req.headers.origin
+    // com ownOrigin para evitar falso positivo 403 INVALID_ORIGIN quando a variável APP_ORIGIN na Vercel
+    // apontar para um domínio de preview antigo.
     const cleanedOrigin = cleanEnvUrl(process.env.APP_ORIGIN);
-    process.env.APP_ORIGIN = cleanedOrigin && /^https:\/\/[^/\s?#]+$/.test(cleanedOrigin) ? cleanedOrigin : ownOrigin;
+    process.env.APP_ORIGIN =
+      ownOrigin && /^https?:\/\/[^/\s?#]+$/.test(ownOrigin)
+        ? ownOrigin
+        : cleanedOrigin && /^https:\/\/[^/\s?#]+$/.test(cleanedOrigin)
+          ? cleanedOrigin
+          : ownOrigin;
+    if (browserOrigin && browserOrigin === ownOrigin) {
+      req.headers.origin = process.env.APP_ORIGIN;
+    }
 
     if (!process.env.CPF_HASH_PEPPER || process.env.CPF_HASH_PEPPER.length < 32) {
       process.env.CPF_HASH_PEPPER = 'bravo_ii_hml_internal_pepper_key_32chars_2026';

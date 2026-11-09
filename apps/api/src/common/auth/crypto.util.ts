@@ -42,10 +42,13 @@ export function generateSessionToken(): { rawToken: string; tokenHash: string } 
   return { rawToken, tokenHash };
 }
 
-const STATELESS_SESSION_KEY =
-  process.env.AUTH_SESSION_SECRET ||
-  process.env.CPF_HASH_PEPPER ||
-  'bravo_ii_hml_internal_session_hmac_key_2026';
+function getStatelessSessionKey(): string {
+  return (
+    process.env.AUTH_SESSION_SECRET ||
+    process.env.CPF_HASH_PEPPER ||
+    'bravo_ii_hml_internal_session_hmac_key_2026'
+  );
+}
 
 export function generateCookieSessionToken(userId?: string): { rawToken: string; tokenHash: string } {
   let buf: Buffer;
@@ -56,7 +59,7 @@ export function generateCookieSessionToken(userId?: string): { rawToken: string;
     randomBytes(4).copy(header, 4);
     const expSec = Math.floor(Date.now() / 1000) + 8 * 3600;
     header.writeUInt32BE(expSec >>> 0, 8);
-    const mac = createHmac('sha256', STATELESS_SESSION_KEY).update(header).digest().subarray(0, 20);
+    const mac = createHmac('sha256', getStatelessSessionKey()).update(header).digest().subarray(0, 20);
     buf = Buffer.concat([header, mac]);
   } else {
     buf = randomBytes(32);
@@ -75,7 +78,7 @@ export function verifyStatelessCookieSessionToken(
     if (buf.length !== 32) return null;
     const header = buf.subarray(0, 12);
     const providedMac = buf.subarray(12, 32);
-    const expectedMac = createHmac('sha256', STATELESS_SESSION_KEY).update(header).digest().subarray(0, 20);
+    const expectedMac = createHmac('sha256', getStatelessSessionKey()).update(header).digest().subarray(0, 20);
     if (!timingSafeEqual(providedMac, expectedMac)) return null;
     const expSec = header.readUInt32BE(8);
     const nowSec = Math.floor(Date.now() / 1000);

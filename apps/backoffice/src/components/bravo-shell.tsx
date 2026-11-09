@@ -410,8 +410,9 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
             {isAuthenticated ? (
               <div className="bravo-user-pill">
                 <span className="bravo-user-avatar">
-                  {actor.fullName
+                  {(actor.fullName || 'OP')
                     .split(' ')
+                    .filter(Boolean)
                     .slice(0, 2)
                     .map((n) => n[0])
                     .join('')

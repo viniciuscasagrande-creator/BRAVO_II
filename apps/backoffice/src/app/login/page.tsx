@@ -25,15 +25,18 @@ export default function LoginPage() {
     try {
       const client = new BravoApiClient();
       const res = await client.login({ email: email.trim(), password });
-      setAuthenticatedSession(res.token, res.actor);
-      await refreshSession();
+      setAuthenticatedSession(res.token, res.actor, res.csrfToken);
+      if (!res.csrfToken) {
+        await refreshSession();
+      }
       setPassword('');
+      const operatorName = res?.actor?.fullName || email.trim();
       setStatusMessage(
-        `Sessão corporativa autenticada com sucesso para ${res.actor.fullName}. Redirecionando para o painel...`
+        `Sessão corporativa autenticada com sucesso para ${operatorName}. Redirecionando para o painel...`
       );
       setTimeout(() => {
         router.push('/');
-      }, 450);
+      }, 350);
     } catch (err) {
       setErrorMessage(
         err instanceof Error

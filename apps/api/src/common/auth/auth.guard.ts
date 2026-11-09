@@ -114,7 +114,7 @@ export class AuthGuard implements CanActivate {
       [tokenHash]
     );
 
-    if (sessionRes.rows.length === 0 && process.env.BRAVO_EMBEDDED_PG === 'true') {
+    if (sessionRes.rows.length === 0) {
       const claim = verifyStatelessCookieSessionToken(rawToken);
       if (claim) {
         const userLookup = await this.db.query<{ id: string }>(
