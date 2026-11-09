@@ -1,7 +1,25 @@
 export type ProducerStatus = 'EM_CADASTRO' | 'EM_VALIDACAO' | 'APROVADO' | 'SUSPENSO' | 'INATIVO';
-export type EventStatus = 'RASCUNHO' | 'EM_ANALISE' | 'APROVADO' | 'REPROVADO' | 'PUBLICACAO_SOLICITADA' | 'PUBLICADO' | 'SUSPENSO' | 'CANCELADO' | 'ENCERRADO';
+export type EventStatus =
+  | 'RASCUNHO'
+  | 'EM_ANALISE'
+  | 'APROVADO'
+  | 'REPROVADO'
+  | 'PUBLICACAO_SOLICITADA'
+  | 'PUBLICADO'
+  | 'SUSPENSO'
+  | 'ADIADO'
+  | 'CANCELADO'
+  | 'ENCERRADO';
 export type FeeType = 'PERCENTUAL' | 'FIXA';
 export type ApprovalStep = 'CADASTRAL' | 'COMERCIAL' | 'OPERACIONAL' | 'PUBLICACAO';
+export type ExtendedApprovalArea =
+  | 'CADASTRAL'
+  | 'COMERCIAL'
+  | 'CONTRATO'
+  | 'TECNICA'
+  | 'LOCAL'
+  | 'OPERACIONAL'
+  | 'PUBLICACAO';
 export type Role = 'CADASTRO' | 'COMERCIAL' | 'OPERACOES' | 'PUBLICACAO' | 'FINANCEIRO' | 'ADMIN' | 'PRODUTOR';
 export type Channel = 'ONLINE' | 'PDV' | 'BILHETERIA';
 
@@ -320,6 +338,11 @@ export function assertCanEditEvent(status: EventStatus): void {
   }
 }
 
+export function isPubliclyVisibleEventStatus(status: EventStatus | string): boolean {
+  // EVT-002: Eventos adiados, suspensos, cancelados, encerrados ou em análise não ficam visíveis publicamente.
+  return status === 'PUBLICADO' || status === 'EM_VENDA';
+}
+
 export function publicEventProjection(params: {
   id: string;
   event: EventDraftInput;
@@ -329,6 +352,7 @@ export function publicEventProjection(params: {
   fee?: FeeInput;
   producer?: ProducerInput;
 }) {
+  const publiclyVisible = isPubliclyVisibleEventStatus(params.status);
   return {
     id: params.id,
     name: params.event.name,
@@ -342,18 +366,23 @@ export function publicEventProjection(params: {
     endAt: params.event.endAt,
     ageRating: params.event.ageRating,
     policyUrl: params.event.policyUrl,
-    sessions: params.sessions.map((s) => ({
-      startsAt: s.startsAt,
-      endsAt: s.endsAt,
-      capacity: s.capacity
-    })),
-    lots: params.lots.map((l) => ({
-      name: l.name,
-      faceValueCents: l.faceValueCents,
-      startsAt: l.startsAt,
-      endsAt: l.endsAt
-    })),
-    status: params.status
+    sessions: publiclyVisible
+      ? params.sessions.map((s) => ({
+          startsAt: s.startsAt,
+          endsAt: s.endsAt,
+          capacity: s.capacity
+        }))
+      : [],
+    lots: publiclyVisible
+      ? params.lots.map((l) => ({
+          name: l.name,
+          faceValueCents: l.faceValueCents,
+          startsAt: l.startsAt,
+          endsAt: l.endsAt
+        }))
+      : [],
+    status: params.status,
+    publiclyVisible
   };
 }
 
@@ -364,4 +393,143 @@ export function publicationCommand(eventId: string, revision: number) {
     destination: 'DISKINGRESSOS' as const,
     idempotencyKey: `publication:${eventId}:v${revision}`
   };
+}
+
+// ============================================================================
+// PACOTE 02 — NÚCLEO OPERACIONAL (EVT-001, LOT-001, MAP-001, MAP-002)
+// ============================================================================
+
+export function mapAreaToCanonicalApprovalStep(area: ExtendedApprovalArea | string): ApprovalStep {
+  switch (area) {
+    case 'CADASTRAL':
+      return 'CADASTRAL';
+    case 'COMERCIAL':
+    case 'CONTRATO':
+      return 'COMERCIAL';
+    case 'OPERACIONAL':
+    case 'TECNICA':
+    case 'LOCAL':
+      return 'OPERACIONAL';
+    case 'PUBLICACAO':
+      return 'PUBLICACAO';
+    default:
+      throw new DomainError('ETAPA_APROVACAO_INVALIDA', `Área de aprovação inválida: ${area}`);
+  }
+}
+
+export interface LotInventoryState {
+  id: string;
+  lotNumber: number;
+  modalityName: string;
+  sectorId: string;
+  capacity: number;
+  reservedCount: number;
+  issuedCount: number;
+  status: string;
+}
+
+export function calculateLotAvailability(input: {
+  capacity: number;
+  reservedCount: number;
+  issuedCount: number;
+}) {
+  if (input.capacity < 0 || input.reservedCount < 0 || input.issuedCount < 0) {
+    throw new DomainError('ESTOQUE_NEGATIVO', 'Contadores de estoque do lote não podem ser negativos.');
+  }
+  const committedCount = input.reservedCount + input.issuedCount;
+  const availableCount = Math.max(0, input.capacity - committedCount);
+  const isSoldOut = committedCount >= input.capacity && input.capacity > 0;
+  const occupancyPercent =
+    input.capacity > 0 ? Math.min(100, Math.round((committedCount / input.capacity) * 10000) / 100) : 0;
+  return {
+    capacity: input.capacity,
+    reservedCount: input.reservedCount,
+    issuedCount: input.issuedCount,
+    committedCount,
+    availableCount,
+    isSoldOut,
+    occupancyPercent
+  };
+}
+
+export function evaluateLotProgression(lots: LotInventoryState[]): {
+  soldOutLotIds: string[];
+  activatedLotIds: string[];
+} {
+  // LOT-001 / ADR-002: Soma de vendidos (issuedCount) + reservados (reservedCount) determina esgotamento e virada sequencial.
+  const soldOutLotIds: string[] = [];
+  const activatedLotIds: string[] = [];
+
+  const byGroup = new Map<string, LotInventoryState[]>();
+  for (const lot of lots) {
+    const key = `${lot.sectorId}::${lot.modalityName.trim().toUpperCase()}`;
+    const list = byGroup.get(key) ?? [];
+    list.push(lot);
+    byGroup.set(key, list);
+  }
+
+  for (const groupLots of byGroup.values()) {
+    const ordered = [...groupLots].sort((a, b) => a.lotNumber - b.lotNumber);
+    for (let i = 0; i < ordered.length; i++) {
+      const current = ordered[i];
+      const inv = calculateLotAvailability(current);
+      const isCurrentlyActive = current.status === 'ACTIVE' || current.status === 'ATIVO';
+      if (isCurrentlyActive && inv.isSoldOut) {
+        soldOutLotIds.push(current.id);
+        const nextCandidate = ordered
+          .slice(i + 1)
+          .find((candidate) => ['DRAFT', 'RASCUNHO', 'PAUSED'].includes(candidate.status) && !calculateLotAvailability(candidate).isSoldOut);
+        if (nextCandidate && !activatedLotIds.includes(nextCandidate.id)) {
+          activatedLotIds.push(nextCandidate.id);
+        }
+      }
+    }
+  }
+
+  return { soldOutLotIds, activatedLotIds };
+}
+
+export function generateNumberedRowSeats(input: {
+  rowLabel: string;
+  startNumber: number;
+  endNumber: number;
+}): Array<{ rowLabel: string; seatNumber: string; seatCode: string }> {
+  const row = input.rowLabel?.trim().toUpperCase();
+  if (!row || !/^[A-Z0-9_-]{1,12}$/.test(row)) {
+    throw new DomainError('FILA_INVALIDA', 'Identificador da fila inválido (use letras/números, ex.: A, B, F01).');
+  }
+  if (
+    !Number.isInteger(input.startNumber) ||
+    !Number.isInteger(input.endNumber) ||
+    input.startNumber < 1 ||
+    input.endNumber < input.startNumber ||
+    input.endNumber - input.startNumber + 1 > 500
+  ) {
+    throw new DomainError(
+      'INTERVALO_POLTRONAS_INVALIDO',
+      'Intervalo de poltronas inválido (informe início >= 1 e máximo de 500 poltronas por fila).'
+    );
+  }
+  const seats: Array<{ rowLabel: string; seatNumber: string; seatCode: string }> = [];
+  for (let n = input.startNumber; n <= input.endNumber; n++) {
+    const numStr = String(n).padStart(2, '0');
+    seats.push({
+      rowLabel: row,
+      seatNumber: numStr,
+      seatCode: `${row}-${numStr}`
+    });
+  }
+  return seats;
+}
+
+export function assertCanDeleteSector(input: {
+  committedLotTickets: number;
+  occupiedSeats: number;
+}): void {
+  if (input.committedLotTickets > 0 || input.occupiedSeats > 0) {
+    throw new DomainError(
+      'SETOR_COM_VENDAS_OU_RESERVAS',
+      'MAP-002: Não é permitido excluir setor ou mapa que já possui reservas ativas ou ingressos emitidos.'
+    );
+  }
 }

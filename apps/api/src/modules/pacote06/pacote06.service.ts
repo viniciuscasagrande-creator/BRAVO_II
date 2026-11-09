@@ -10,13 +10,19 @@ import { DatabaseService } from '../../common/database/database.service';
 import { AuditService } from '../governance/audit.service';
 import {
   assertCanApprove,
+  assertCanDeleteSector,
   assertCanEditEvent,
   assertCanRequestPublication,
   assertFeeBelongsToEvent,
   assertFeeCanBeApproved,
   assertProspectiveFeeChange,
   calculateFeeCents,
+  calculateLotAvailability,
   DomainError,
+  evaluateLotProgression,
+  generateNumberedRowSeats,
+  isPubliclyVisibleEventStatus,
+  mapAreaToCanonicalApprovalStep,
   normalizeCnpj,
   publicationCommand,
   publicEventProjection,
@@ -32,6 +38,7 @@ import {
   type Channel,
   type EventDraftInput,
   type EventStatus,
+  type ExtendedApprovalArea,
   type FeeInput,
   type LotInput,
   type ProducerInput,
@@ -254,6 +261,35 @@ export class Pacote06Service {
       [id]
     );
 
+    const contractsRes = await this.db.query<{
+      id: string;
+      contract_number: string;
+      title: string;
+      status: string;
+      valid_from: string;
+      valid_until: string | null;
+      signed_at: string | null;
+      created_at: string;
+    }>(
+      `SELECT id, contract_number, title, status, valid_from, valid_until, signed_at, created_at
+       FROM contracts WHERE producer_id = $1 ORDER BY created_at DESC`,
+      [id]
+    );
+
+    const contactsRes = await this.db.query<{
+      id: string;
+      full_name: string;
+      email: string;
+      phone: string;
+      role_type: string;
+      is_primary: boolean;
+      created_at: string;
+    }>(
+      `SELECT id, full_name, email, phone, role_type, is_primary, created_at
+       FROM producer_contacts WHERE producer_id = $1 ORDER BY is_primary DESC, created_at ASC`,
+      [id]
+    );
+
     const mappedEvents = eventsRes.rows.map((ev) => ({
       eventId: ev.event_id,
       role: ev.relationship_role === 'PRIMARY' ? 'PRINCIPAL' : 'SECUNDARIO',
@@ -294,8 +330,157 @@ export class Pacote06Service {
         verifiedBy: d.verified_by,
         verifiedAt: d.verified_at,
       })),
+      contracts: contractsRes.rows.map((c) => ({
+        id: c.id,
+        contractNumber: c.contract_number,
+        title: c.title,
+        status: c.status,
+        validFrom: c.valid_from,
+        validUntil: c.valid_until,
+        signedAt: c.signed_at,
+        createdAt: c.created_at,
+      })),
+      contacts: contactsRes.rows.map((ct) => ({
+        id: ct.id,
+        fullName: ct.full_name,
+        email: ct.email,
+        phone: ct.phone,
+        roleType: ct.role_type,
+        isPrimary: ct.is_primary,
+        createdAt: ct.created_at,
+      })),
       events: mappedEvents,
       eventLinks: mappedEvents,
+    };
+  }
+
+  async createProducerContract(
+    actor: AuthenticatedActorDto,
+    producerId: string,
+    body: {
+      contractNumber?: string;
+      title: string;
+      status?: 'DRAFT' | 'ACTIVE' | 'SUSPENDED' | 'EXPIRED' | 'TERMINATED';
+      validFrom?: string;
+      validUntil?: string;
+    },
+    correlationId: string
+  ) {
+    this.assertNotProducerOnly(actor, 'Somente equipe interna Comercial/Financeiro pode registrar contratos comerciais.');
+    if (!body.title?.trim() || body.title.trim().length < 3) {
+      throw new DomainError('CONTRATO_TITULO_INVALIDO', 'Título do contrato comercial é obrigatório.');
+    }
+
+    const prodCheck = await this.db.query<{ id: string }>(`SELECT id FROM producers WHERE id = $1`, [producerId]);
+    if (prodCheck.rows.length === 0) {
+      throw new NotFoundException({ code: 'PRODUTOR_NAO_ENCONTRADO', message: 'Produtor não encontrado.' });
+    }
+
+    const contractId = randomUUID();
+    const contractNumber =
+      body.contractNumber?.trim().toUpperCase() ||
+      `CTR-${new Date().getUTCFullYear()}-${Date.now().toString(36).toUpperCase()}`;
+    const status = body.status ?? 'ACTIVE';
+    const validFrom = body.validFrom ? new Date(body.validFrom).toISOString() : new Date().toISOString();
+    const validUntil = body.validUntil ? new Date(body.validUntil).toISOString() : null;
+    const signedAt = status === 'ACTIVE' ? new Date().toISOString() : null;
+
+    await this.db.query(
+      `INSERT INTO contracts (
+         id, producer_id, contract_number, title, status, valid_from, valid_until, signed_at, created_by
+       ) VALUES ($1, $2, $3, $4, $5, $6::timestamptz, $7::timestamptz, $8::timestamptz, $9)`,
+      [
+        contractId,
+        producerId,
+        contractNumber,
+        body.title.trim(),
+        status,
+        validFrom,
+        validUntil,
+        signedAt,
+        actor.userId,
+      ]
+    );
+
+    await this.auditService.record({
+      actorUserId: actor.userId,
+      actorRole: actor.roles.join(','),
+      sessionId: actor.sessionId,
+      canonicalAction: 'PRODUCER_CONTRACT_CREATED',
+      resourceType: 'ProducerContract',
+      resourceId: contractId,
+      producerId,
+      outcome: 'SUCCESS',
+      correlationId,
+      afterState: { id: contractId, producerId, contractNumber, title: body.title.trim(), status },
+    });
+
+    return {
+      id: contractId,
+      producerId,
+      contractNumber,
+      title: body.title.trim(),
+      status,
+      validFrom,
+      validUntil,
+      signedAt,
+    };
+  }
+
+  async addProducerContact(
+    actor: AuthenticatedActorDto,
+    producerId: string,
+    body: {
+      fullName: string;
+      email: string;
+      phone: string;
+      roleType?: 'LEGAL_REPRESENTATIVE' | 'FINANCIAL' | 'OPERATIONAL' | 'COMMERCIAL';
+      isPrimary?: boolean;
+    },
+    correlationId: string
+  ) {
+    this.assertNotProducerOnly(actor, 'Somente equipe interna pode cadastrar contatos corporativos do produtor.');
+    if (!body.fullName?.trim() || !body.email?.includes('@') || !body.phone?.trim()) {
+      throw new DomainError('CONTATO_PRODUTOR_INVALIDO', 'Nome, e-mail e telefone do contato são obrigatórios.');
+    }
+
+    const contactId = randomUUID();
+    const roleType = body.roleType ?? 'FINANCIAL';
+    await this.db.query(
+      `INSERT INTO producer_contacts (id, producer_id, full_name, email, phone, role_type, is_primary)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        contactId,
+        producerId,
+        body.fullName.trim(),
+        body.email.trim().toLowerCase(),
+        body.phone.trim(),
+        roleType,
+        Boolean(body.isPrimary),
+      ]
+    );
+
+    await this.auditService.record({
+      actorUserId: actor.userId,
+      actorRole: actor.roles.join(','),
+      sessionId: actor.sessionId,
+      canonicalAction: 'PRODUCER_CONTACT_ADDED',
+      resourceType: 'ProducerContact',
+      resourceId: contactId,
+      producerId,
+      outcome: 'SUCCESS',
+      correlationId,
+      afterState: { id: contactId, producerId, fullName: body.fullName.trim(), roleType },
+    });
+
+    return {
+      id: contactId,
+      producerId,
+      fullName: body.fullName.trim(),
+      email: body.email.trim().toLowerCase(),
+      phone: body.phone.trim(),
+      roleType,
+      isPrimary: Boolean(body.isPrimary),
     };
   }
 
@@ -1028,6 +1213,7 @@ export class Pacote06Service {
       ageRating: ev.age_rating,
       policyUrl: ev.policy_url,
       status: ev.status,
+      publiclyVisible: isPubliclyVisibleEventStatus(ev.status),
       revision: ev.revision,
       submittedBy: ev.submitted_by,
       submittedAt: ev.submitted_at,
@@ -1059,6 +1245,7 @@ export class Pacote06Service {
         label: a.name,
         capacity: a.capacity,
         isNumbered: a.area_type === 'SEATED',
+        seatsCount: (seatsByArea.get(a.id) ?? []).length,
         seats: seatsByArea.get(a.id) ?? [],
       })),
       categories: categoriesRes.rows.map((c) => ({
@@ -1071,19 +1258,37 @@ export class Pacote06Service {
         name: c.name,
         requiresProof: c.requires_proof,
       })),
-      lots: lotsRes.rows.map((l) => ({
-        id: l.id,
-        sessionId: l.session_id,
-        areaId: l.sector_id,
-        name: l.modality_name,
-        faceValueCents: Number(l.nominal_price_cents),
-        capacity: l.max_quantity,
-        reservedCount: Number(l.reserved_count ?? 0),
-        issuedCount: Number(l.issued_count ?? 0),
-        startsAt: l.starts_at ?? ev.sales_starts_at ?? ev.starts_at,
-        endsAt: l.ends_at ?? ev.ends_at ?? ev.starts_at,
-        status: l.status === 'ACTIVE' || l.status === 'ATIVO' ? 'ATIVO' : l.status === 'DRAFT' ? 'RASCUNHO' : l.status,
-      })),
+      lots: lotsRes.rows.map((l) => {
+        const inv = calculateLotAvailability({
+          capacity: l.max_quantity,
+          reservedCount: Number(l.reserved_count ?? 0),
+          issuedCount: Number(l.issued_count ?? 0),
+        });
+        return {
+          id: l.id,
+          sessionId: l.session_id,
+          areaId: l.sector_id,
+          name: l.modality_name,
+          faceValueCents: Number(l.nominal_price_cents),
+          capacity: l.max_quantity,
+          reservedCount: inv.reservedCount,
+          issuedCount: inv.issuedCount,
+          committedCount: inv.committedCount,
+          availableCount: inv.availableCount,
+          isSoldOut: inv.isSoldOut,
+          occupancyPercent: inv.occupancyPercent,
+          startsAt: l.starts_at ?? ev.sales_starts_at ?? ev.starts_at,
+          endsAt: l.ends_at ?? ev.ends_at ?? ev.starts_at,
+          status:
+            l.status === 'ACTIVE' || l.status === 'ATIVO'
+              ? 'ATIVO'
+              : l.status === 'DRAFT'
+                ? 'RASCUNHO'
+                : l.status === 'SOLD_OUT'
+                  ? 'ESGOTADO'
+                  : l.status,
+        };
+      }),
       channels: channelsRes.rows.map((ch) => ({
         id: ch.id,
         channel: ch.channel_type === 'SITE' ? 'ONLINE' : ch.channel_type,
@@ -1700,10 +1905,13 @@ export class Pacote06Service {
   async decideApproval(
     actor: AuthenticatedActorDto,
     eventId: string,
-    body: { step: ApprovalStep; decision: 'APROVADO' | 'REPROVADO'; reason?: string },
+    body: { step: ApprovalStep | ExtendedApprovalArea; decision: 'APROVADO' | 'REPROVADO'; reason?: string },
     correlationId: string
   ) {
     this.assertNotProducerOnly(actor, 'Produtor não possui alçada para aprovar etapas internas do evento.');
+
+    const rawStep = String(body.step ?? '').trim().toUpperCase() as ExtendedApprovalArea;
+    const canonicalStep = mapAreaToCanonicalApprovalStep(rawStep);
 
     const evRes = await this.db.query<{
       id: string;
@@ -1730,8 +1938,8 @@ export class Pacote06Service {
     }));
 
     assertCanApprove(
-      body.step,
-      this.mapActorToP06Role(actor, body.step),
+      canonicalStep,
+      this.mapActorToP06Role(actor, canonicalStep),
       ev.submitted_by ?? '',
       actor.userId,
       existingRecords
@@ -1741,13 +1949,18 @@ export class Pacote06Service {
       throw new DomainError('MOTIVO_REPROVACAO', 'Reprovação exige motivo registrado.');
     }
 
+    const enrichedNotes =
+      rawStep !== canonicalStep
+        ? `[Área: ${rawStep}] ${body.reason?.trim() ?? 'Aprovado pela área responsável.'}`
+        : body.reason?.trim() ?? null;
+
     const approvalId = randomUUID();
     await this.db.query(
       `INSERT INTO event_approvals (id, event_id, stage, decision, decided_by, notes, decided_at)
        VALUES ($1, $2, $3, $4, $5, $6, NOW())
        ON CONFLICT (event_id, stage)
        DO UPDATE SET decision = EXCLUDED.decision, decided_by = EXCLUDED.decided_by, notes = EXCLUDED.notes, decided_at = NOW()`,
-      [approvalId, eventId, body.step, body.decision, actor.userId, body.reason?.trim() ?? null]
+      [approvalId, eventId, canonicalStep, body.decision, actor.userId, enrichedNotes]
     );
 
     const updatedRes = await this.db.query<{ stage: ApprovalStep; decision: string }>(
@@ -1774,14 +1987,14 @@ export class Pacote06Service {
       actorUserId: actor.userId,
       actorRole: actor.roles.join(','),
       sessionId: actor.sessionId,
-      canonicalAction: `EVENT_APPROVAL_${body.step}_${body.decision}`,
+      canonicalAction: `EVENT_APPROVAL_${rawStep}_${body.decision}`,
       resourceType: 'EventApproval',
       resourceId: approvalId,
       eventId,
       outcome: 'SUCCESS',
-      justification: body.reason ?? null,
+      justification: enrichedNotes,
       correlationId,
-      afterState: { step: body.step, decision: body.decision, eventStatus: nextStatus },
+      afterState: { step: canonicalStep, area: rawStep, decision: body.decision, eventStatus: nextStatus },
     });
 
     return this.getEvent(actor, eventId);
@@ -2033,6 +2246,27 @@ export class Pacote06Service {
       [id, eventId, body.changeType, body.reason.trim(), actor.userId]
     );
 
+    // EVT-002 / ADR-006: Eventos adiados, suspensos ou cancelados saem de exibição/venda pública imediatamente.
+    let updatedEventStatus: string | undefined;
+    if (body.changeType === 'ADIAMENTO') {
+      updatedEventStatus = 'ADIADO';
+    } else if (body.changeType === 'SUSPENSAO') {
+      updatedEventStatus = 'SUSPENSO';
+    } else if (body.changeType === 'CANCELAMENTO') {
+      updatedEventStatus = 'CANCELADO';
+    }
+
+    if (updatedEventStatus) {
+      await this.db.query(
+        `UPDATE events SET status = $1, updated_at = NOW() WHERE id = $2`,
+        [updatedEventStatus, eventId]
+      );
+      await this.db.query(
+        `UPDATE event_sessions SET status = $1 WHERE event_id = $2`,
+        [body.changeType === 'ADIAMENTO' ? 'POSTPONED' : body.changeType === 'CANCELAMENTO' ? 'CANCELLED' : 'PAUSED', eventId]
+      );
+    }
+
     await this.db.query(
       `INSERT INTO outbox_events (
          id, event_name, schema_version, aggregate_type, aggregate_id,
@@ -2043,7 +2277,7 @@ export class Pacote06Service {
         id,
         correlationId,
         eventId,
-        JSON.stringify({ id, eventId, changeType: body.changeType, reason: body.reason.trim() }),
+        JSON.stringify({ id, eventId, changeType: body.changeType, reason: body.reason.trim(), eventStatus: updatedEventStatus }),
       ]
     );
 
@@ -2058,7 +2292,7 @@ export class Pacote06Service {
       outcome: 'SUCCESS',
       justification: body.reason.trim(),
       correlationId,
-      afterState: { id, eventId, changeType: body.changeType, status: 'ABERTO' },
+      afterState: { id, eventId, changeType: body.changeType, status: 'ABERTO', eventStatus: updatedEventStatus },
     });
 
     return {
@@ -2067,7 +2301,317 @@ export class Pacote06Service {
       changeType: body.changeType,
       reason: body.reason.trim(),
       status: 'ABERTO',
+      eventStatus: updatedEventStatus,
+      publiclyVisible: updatedEventStatus ? false : undefined,
       requestedBy: actor.userId,
+    };
+  }
+
+  // ==========================================================================
+  // 4. PACOTE 02 — MAPAS E ASSENTOS NUMERADOS (MAP-001 / MAP-002) E VIRADA DE LOTE (LOT-001)
+  // ==========================================================================
+
+  async generateAreaSeatRow(
+    actor: AuthenticatedActorDto,
+    eventId: string,
+    areaId: string,
+    body: { rowLabel: string; startNumber: number; endNumber: number },
+    correlationId: string
+  ) {
+    this.assertNotProducerOnly(actor, 'Somente equipe interna pode construir filas e poltronas no mapa.');
+    await this.ensureEditableEvent(eventId);
+
+    const areaRes = await this.db.query<{
+      id: string;
+      event_id: string;
+      session_id: string;
+      name: string;
+      area_type: string;
+      capacity: number;
+    }>(`SELECT id, event_id, session_id, name, area_type, capacity FROM event_sectors WHERE id = $1 AND event_id = $2`, [
+      areaId,
+      eventId,
+    ]);
+    if (areaRes.rows.length === 0) {
+      throw new NotFoundException({ code: 'SETOR_NAO_ENCONTRADO', message: 'Setor não encontrado no evento.' });
+    }
+    const area = areaRes.rows[0];
+
+    const generated = generateNumberedRowSeats({
+      rowLabel: body.rowLabel,
+      startNumber: Number(body.startNumber),
+      endNumber: Number(body.endNumber),
+    });
+
+    // Garante que o setor esteja marcado como numerado (SEATED)
+    if (area.area_type !== 'SEATED') {
+      await this.db.query(`UPDATE event_sectors SET area_type = 'SEATED' WHERE id = $1`, [areaId]);
+    }
+
+    const createdSeats: Array<{ id: string; rowLabel: string; seatNumber: string; seatCode: string }> = [];
+    for (const s of generated) {
+      const seatId = randomUUID();
+      const ins = await this.db.query<{ id: string }>(
+        `INSERT INTO event_seats (id, area_id, row_label, seat_number)
+         VALUES ($1, $2, $3, $4)
+         ON CONFLICT (area_id, row_label, seat_number) DO NOTHING
+         RETURNING id`,
+        [seatId, areaId, s.rowLabel, s.seatNumber]
+      );
+      if (ins.rows.length > 0) {
+        await this.db.query(
+          `INSERT INTO seats (id, event_id, session_id, sector_id, seat_code, status)
+           VALUES ($1, $2, $3, $4, $5, 'AVAILABLE')
+           ON CONFLICT (sector_id, seat_code) DO NOTHING`,
+          [seatId, eventId, area.session_id, areaId, s.seatCode]
+        );
+        createdSeats.push({ id: seatId, ...s });
+      }
+    }
+
+    const countRes = await this.db.query<{ cnt: string | number }>(
+      `SELECT COUNT(*) AS cnt FROM event_seats WHERE area_id = $1`,
+      [areaId]
+    );
+    const totalSeats = Number(countRes.rows[0]?.cnt ?? 0);
+    if (totalSeats > area.capacity) {
+      await this.db.query(`UPDATE event_sectors SET capacity = $1 WHERE id = $2`, [totalSeats, areaId]);
+    }
+
+    await this.auditService.record({
+      actorUserId: actor.userId,
+      actorRole: actor.roles.join(','),
+      sessionId: actor.sessionId,
+      canonicalAction: 'EVENT_SEAT_ROW_GENERATED',
+      resourceType: 'EventSeatRow',
+      resourceId: `${areaId}:${body.rowLabel}`,
+      eventId,
+      outcome: 'SUCCESS',
+      correlationId,
+      afterState: { areaId, rowLabel: body.rowLabel, createdCount: createdSeats.length, totalSeats },
+    });
+
+    return {
+      areaId,
+      eventId,
+      rowLabel: body.rowLabel.trim().toUpperCase(),
+      createdCount: createdSeats.length,
+      totalSeatsInArea: totalSeats,
+      seats: createdSeats,
+    };
+  }
+
+  async duplicateArea(
+    actor: AuthenticatedActorDto,
+    eventId: string,
+    areaId: string,
+    body: { newName?: string; targetSessionId?: string },
+    correlationId: string
+  ) {
+    this.assertNotProducerOnly(actor, 'Somente equipe interna pode duplicar setores e mapas.');
+    await this.ensureEditableEvent(eventId);
+
+    const srcRes = await this.db.query<{
+      id: string;
+      event_id: string;
+      session_id: string;
+      name: string;
+      area_type: string;
+      capacity: number;
+    }>(`SELECT id, event_id, session_id, name, area_type, capacity FROM event_sectors WHERE id = $1 AND event_id = $2`, [
+      areaId,
+      eventId,
+    ]);
+    if (srcRes.rows.length === 0) {
+      throw new NotFoundException({ code: 'SETOR_NAO_ENCONTRADO', message: 'Setor de origem não encontrado.' });
+    }
+    const src = srcRes.rows[0];
+    const srcSeatsRes = await this.db.query<{ row_label: string; seat_number: string }>(
+      `SELECT row_label, seat_number FROM event_seats WHERE area_id = $1 ORDER BY row_label ASC, seat_number ASC`,
+      [areaId]
+    );
+
+    const newAreaId = randomUUID();
+    const targetSessionId = body.targetSessionId || src.session_id;
+    const newName = body.newName?.trim() || `${src.name} (Cópia)`;
+    const code = `AREA-${Date.now().toString(36).toUpperCase()}-${Math.floor(Math.random() * 900 + 100)}`;
+
+    await this.db.query(
+      `INSERT INTO event_sectors (id, event_id, session_id, code, name, area_type, capacity, blocked_quantity)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 0)`,
+      [newAreaId, eventId, targetSessionId, code, newName, src.area_type, src.capacity]
+    );
+
+    for (const seat of srcSeatsRes.rows) {
+      const seatId = randomUUID();
+      await this.db.query(
+        `INSERT INTO event_seats (id, area_id, row_label, seat_number) VALUES ($1, $2, $3, $4)`,
+        [seatId, newAreaId, seat.row_label, seat.seat_number]
+      );
+      await this.db.query(
+        `INSERT INTO seats (id, event_id, session_id, sector_id, seat_code, status)
+         VALUES ($1, $2, $3, $4, $5, 'AVAILABLE')
+         ON CONFLICT (sector_id, seat_code) DO NOTHING`,
+        [seatId, eventId, targetSessionId, newAreaId, `${seat.row_label}-${seat.seat_number}`]
+      );
+    }
+
+    await this.auditService.record({
+      actorUserId: actor.userId,
+      actorRole: actor.roles.join(','),
+      sessionId: actor.sessionId,
+      canonicalAction: 'EVENT_AREA_DUPLICATED',
+      resourceType: 'EventArea',
+      resourceId: newAreaId,
+      eventId,
+      outcome: 'SUCCESS',
+      correlationId,
+      afterState: { sourceAreaId: areaId, newAreaId, newName, duplicatedSeats: srcSeatsRes.rows.length },
+    });
+
+    return {
+      id: newAreaId,
+      sourceAreaId: areaId,
+      eventId,
+      sessionId: targetSessionId,
+      name: newName,
+      label: newName,
+      capacity: src.capacity,
+      isNumbered: src.area_type === 'SEATED',
+      duplicatedSeatsCount: srcSeatsRes.rows.length,
+    };
+  }
+
+  async deleteArea(actor: AuthenticatedActorDto, eventId: string, areaId: string, correlationId: string) {
+    this.assertNotProducerOnly(actor, 'Somente equipe interna pode excluir setores de mapa.');
+    await this.ensureEditableEvent(eventId);
+
+    const lotCommitRes = await this.db.query<{ committed: string | number }>(
+      `SELECT COALESCE(SUM(reserved_count + issued_count), 0) AS committed
+       FROM event_price_lots WHERE sector_id = $1`,
+      [areaId]
+    );
+    const occupiedSeatsRes = await this.db.query<{ occupied: string | number }>(
+      `SELECT COUNT(*) AS occupied FROM seats WHERE sector_id = $1 AND status IN ('HELD', 'SOLD')`,
+      [areaId]
+    );
+
+    assertCanDeleteSector({
+      committedLotTickets: Number(lotCommitRes.rows[0]?.committed ?? 0),
+      occupiedSeats: Number(occupiedSeatsRes.rows[0]?.occupied ?? 0),
+    });
+
+    await this.db.query(`DELETE FROM event_sectors WHERE id = $1 AND event_id = $2`, [areaId, eventId]);
+
+    await this.auditService.record({
+      actorUserId: actor.userId,
+      actorRole: actor.roles.join(','),
+      sessionId: actor.sessionId,
+      canonicalAction: 'EVENT_AREA_DELETED',
+      resourceType: 'EventArea',
+      resourceId: areaId,
+      eventId,
+      outcome: 'SUCCESS',
+      correlationId,
+      afterState: { deletedAreaId: areaId },
+    });
+
+    return { deletedAreaId: areaId, eventId };
+  }
+
+  async getEventAvailability(actor: AuthenticatedActorDto, eventId: string) {
+    const full = (await this.getEvent(actor, eventId, false)) as Record<string, any>;
+    const lots = (full.lots as any[]) ?? [];
+    const areas = (full.areas as any[]) ?? [];
+
+    const totalCapacity = lots.reduce((acc, l) => acc + Number(l.capacity ?? 0), 0);
+    const totalReserved = lots.reduce((acc, l) => acc + Number(l.reservedCount ?? 0), 0);
+    const totalIssued = lots.reduce((acc, l) => acc + Number(l.issuedCount ?? 0), 0);
+    const summary = calculateLotAvailability({
+      capacity: totalCapacity,
+      reservedCount: totalReserved,
+      issuedCount: totalIssued,
+    });
+
+    return {
+      eventId,
+      status: full.status,
+      publiclyVisible: full.publiclyVisible,
+      summary,
+      lots,
+      areas: areas.map((a) => ({
+        id: a.id,
+        label: a.label,
+        capacity: a.capacity,
+        isNumbered: a.isNumbered,
+        seatsCount: Array.isArray(a.seats) ? a.seats.length : 0,
+      })),
+    };
+  }
+
+  async processLotProgression(actor: AuthenticatedActorDto, eventId: string, correlationId: string) {
+    this.assertNotProducerOnly(actor, 'Somente equipe interna pode executar processamento de virada de lotes.');
+
+    const lotsRes = await this.db.query<{
+      id: string;
+      lot_number: number;
+      modality_name: string;
+      sector_id: string;
+      max_quantity: number;
+      reserved_count: number;
+      issued_count: number;
+      status: string;
+    }>(
+      `SELECT id, lot_number, modality_name, sector_id, max_quantity,
+              COALESCE(reserved_count, 0) AS reserved_count,
+              COALESCE(issued_count, 0) AS issued_count,
+              status
+       FROM event_price_lots WHERE event_id = $1 ORDER BY lot_number ASC`,
+      [eventId]
+    );
+
+    const decision = evaluateLotProgression(
+      lotsRes.rows.map((l) => ({
+        id: l.id,
+        lotNumber: Number(l.lot_number),
+        modalityName: l.modality_name,
+        sectorId: l.sector_id,
+        capacity: Number(l.max_quantity),
+        reservedCount: Number(l.reserved_count),
+        issuedCount: Number(l.issued_count),
+        status: l.status,
+      }))
+    );
+
+    if (decision.soldOutLotIds.length > 0) {
+      await this.db.query(
+        `UPDATE event_price_lots SET status = 'SOLD_OUT' WHERE id = ANY($1::uuid[])`,
+        [decision.soldOutLotIds]
+      );
+    }
+    if (decision.activatedLotIds.length > 0) {
+      await this.db.query(
+        `UPDATE event_price_lots SET status = 'ACTIVE' WHERE id = ANY($1::uuid[])`,
+        [decision.activatedLotIds]
+      );
+    }
+
+    await this.auditService.record({
+      actorUserId: actor.userId,
+      actorRole: actor.roles.join(','),
+      sessionId: actor.sessionId,
+      canonicalAction: 'EVENT_LOT_PROGRESSION_PROCESSED',
+      resourceType: 'EventPriceLot',
+      resourceId: eventId,
+      eventId,
+      outcome: 'SUCCESS',
+      correlationId,
+      afterState: decision,
+    });
+
+    return {
+      eventId,
+      ...decision,
     };
   }
 }

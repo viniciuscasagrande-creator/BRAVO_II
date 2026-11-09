@@ -36,6 +36,16 @@ export function EventoDetalheClient() {
     endsAt: '',
   });
   const [approval, setApproval] = useState({ step: 'CADASTRAL', decision: 'APROVADO', reason: '' });
+  const [seatRow, setSeatRow] = useState({
+    areaId: '',
+    rowLabel: 'A',
+    startNumber: '1',
+    endNumber: '10',
+  });
+  const [changeCase, setChangeCase] = useState({
+    changeType: 'ADIAMENTO',
+    reason: '',
+  });
 
   const reload = useCallback(async () => {
     if (!id || id === '__dynamic__') return;
@@ -179,59 +189,143 @@ export function EventoDetalheClient() {
           )}
         </Panel>
 
-        <Panel title="2. Áreas e mapa">
+        <Panel title="2. Áreas, construtor de mapas e assentos (MAP-001 / MAP-002)">
           <div className="b6-sublist">
             {event.areas.map((a) => (
-              <div key={a.id}>
-                {a.label} · {a.capacity} lugares · {a.isNumbered ? 'Numerada' : 'Livre'}
+              <div key={a.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <span>
+                  <strong>{a.label}</strong> · {a.capacity} lugares · {a.isNumbered ? 'Numerada' : 'Livre'}
+                  {a.isNumbered && ` (${a.seatsCount ?? a.seats?.length ?? 0} poltronas geradas)`}
+                </span>
+                {editable && (
+                  <span style={{ display: 'inline-flex', gap: 6 }}>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      className="b6-btn b6-btn-secondary"
+                      onClick={() => void act(`areas/${a.id}/duplicar`, { newName: `${a.label} (Cópia)` }, 'Setor e mapa duplicados')}
+                    >
+                      Duplicar setor
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      className="b6-btn b6-btn-secondary"
+                      onClick={() => void act(`areas/${a.id}/excluir`, {}, 'Setor excluído')}
+                    >
+                      Excluir
+                    </button>
+                  </span>
+                )}
               </div>
             ))}
             {!event.areas.length && <Empty message="Nenhuma área configurada" />}
           </div>
           {editable && (
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                void act('areas', { ...area, capacity: Number(area.capacity) }, 'Área adicionada');
-              }}
-              className="b6-stack"
-            >
-              <Field name="Área ou setor">
-                <input
-                  required
-                  value={area.label}
-                  onChange={(e) => setArea((s) => ({ ...s, label: e.target.value }))}
-                />
-              </Field>
-              <Field name="Lotação">
-                <input
-                  required
-                  type="number"
-                  min="1"
-                  value={area.capacity}
-                  onChange={(e) => setArea((s) => ({ ...s, capacity: e.target.value }))}
-                />
-              </Field>
-              <Field name="Tipo de ocupação">
-                <select
-                  value={area.isNumbered ? 'numbered' : 'free'}
-                  onChange={(e) =>
-                    setArea((s) => ({ ...s, isNumbered: e.target.value === 'numbered' }))
-                  }
+            <>
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void act('areas', { ...area, capacity: Number(area.capacity) }, 'Área adicionada');
+                }}
+                className="b6-stack"
+              >
+                <Field name="Área ou setor">
+                  <input
+                    required
+                    value={area.label}
+                    onChange={(e) => setArea((s) => ({ ...s, label: e.target.value }))}
+                  />
+                </Field>
+                <Field name="Lotação">
+                  <input
+                    required
+                    type="number"
+                    min="1"
+                    value={area.capacity}
+                    onChange={(e) => setArea((s) => ({ ...s, capacity: e.target.value }))}
+                  />
+                </Field>
+                <Field name="Tipo de ocupação">
+                  <select
+                    value={area.isNumbered ? 'numbered' : 'free'}
+                    onChange={(e) =>
+                      setArea((s) => ({ ...s, isNumbered: e.target.value === 'numbered' }))
+                    }
+                  >
+                    <option value="free">Lugar livre</option>
+                    <option value="numbered">Assentos numerados</option>
+                  </select>
+                </Field>
+                <button disabled={busy} className="b6-btn">
+                  Adicionar área
+                </button>
+              </form>
+
+              {event.areas.length > 0 && (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const targetArea = seatRow.areaId || event.areas[0]?.id;
+                    if (!targetArea) return;
+                    void act(
+                      `areas/${targetArea}/filas`,
+                      {
+                        rowLabel: seatRow.rowLabel,
+                        startNumber: Number(seatRow.startNumber),
+                        endNumber: Number(seatRow.endNumber),
+                      },
+                      'Fila de poltronas numeradas gerada'
+                    );
+                  }}
+                  className="b6-stack"
+                  style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid #e2e8f0' }}
                 >
-                  <option value="free">Lugar livre</option>
-                  <option value="numbered">Assentos numerados</option>
-                </select>
-              </Field>
-              <button disabled={busy} className="b6-btn">
-                Adicionar área
-              </button>
-            </form>
+                  <strong>Construtor de filas e poltronas numeradas (MAP-001)</strong>
+                  <Field name="Setor do mapa">
+                    <select
+                      value={seatRow.areaId || event.areas[0]?.id || ''}
+                      onChange={(e) => setSeatRow((s) => ({ ...s, areaId: e.target.value }))}
+                    >
+                      {event.areas.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.label}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field name="Identificador da fila (Ex.: A, B, F01)">
+                    <input
+                      required
+                      value={seatRow.rowLabel}
+                      onChange={(e) => setSeatRow((s) => ({ ...s, rowLabel: e.target.value }))}
+                    />
+                  </Field>
+                  <Field name="Poltrona inicial">
+                    <input
+                      required
+                      type="number"
+                      min="1"
+                      value={seatRow.startNumber}
+                      onChange={(e) => setSeatRow((s) => ({ ...s, startNumber: e.target.value }))}
+                    />
+                  </Field>
+                  <Field name="Poltrona final">
+                    <input
+                      required
+                      type="number"
+                      min="1"
+                      value={seatRow.endNumber}
+                      onChange={(e) => setSeatRow((s) => ({ ...s, endNumber: e.target.value }))}
+                    />
+                  </Field>
+                  <button disabled={busy} className="b6-btn b6-btn-secondary">
+                    Gerar fila numerada
+                  </button>
+                </form>
+              )}
+            </>
           )}
-          <p className="b6-muted">
-            Editor de mapa e importação de assentos: integração com módulo transacional de
-            inventário.
-          </p>
         </Panel>
 
         <Panel title="3. Modalidades de ingresso">
@@ -273,15 +367,29 @@ export function EventoDetalheClient() {
           )}
         </Panel>
 
-        <Panel title="4. Lotes e preços">
+        <Panel title="4. Lotes, preços e virada automática (LOT-001)">
           <div className="b6-sublist">
             {event.lots.map((l) => (
               <div key={l.id}>
-                {l.name} · {brl(l.faceValueCents)} · {l.capacity} lugares
+                <strong>{l.name}</strong> · {brl(l.faceValueCents)} · Cap.: {l.capacity} · Reservados:{' '}
+                {l.reservedCount ?? 0} · Emitidos: {l.issuedCount ?? 0} · Disponíveis:{' '}
+                <strong>{l.availableCount ?? Math.max(0, l.capacity - (l.reservedCount ?? 0) - (l.issuedCount ?? 0))}</strong>{' '}
+                · Status: <strong>{l.status}</strong>
               </div>
             ))}
             {!event.lots.length && <Empty message="Nenhum lote definido" />}
           </div>
+          {event.lots.length > 0 && (
+            <button
+              type="button"
+              disabled={busy}
+              className="b6-btn b6-btn-secondary"
+              style={{ marginBottom: 12 }}
+              onClick={() => void act('lotes/processar-virada', {}, 'Virada e disponibilidade de lotes processadas')}
+            >
+              Processar virada automática de lote (LOT-001)
+            </button>
+          )}
           {editable && (
             <form
               onSubmit={(e) => {
@@ -416,16 +524,17 @@ export function EventoDetalheClient() {
           </div>
         </Panel>
 
-        <Panel title="6. Aprovações em 4 etapas e publicação">
+        <Panel title="6. Aprovações multi-área e publicação (EVT-001)">
           <div className="b6-sublist">
-            {(['CADASTRAL', 'COMERCIAL', 'OPERACIONAL', 'PUBLICACAO'] as const).map((step) => (
-              <div key={step}>
-                {step}:{' '}
-                <strong>
-                  {event.approvals.find((a) => a.step === step)?.decision || 'Pendente'}
-                </strong>
-              </div>
-            ))}
+            {(['CADASTRAL', 'COMERCIAL', 'OPERACIONAL', 'PUBLICACAO'] as const).map((step) => {
+              const ap = event.approvals.find((a) => a.step === step);
+              return (
+                <div key={step}>
+                  {step}: <strong>{ap?.decision || 'Pendente'}</strong>
+                  {ap?.reason ? ` — ${ap.reason}` : ''}
+                </div>
+              );
+            })}
           </div>
           {event.status === 'RASCUNHO' || event.status === 'REPROVADO' ? (
             <button
@@ -445,16 +554,24 @@ export function EventoDetalheClient() {
                 void act('aprovacoes', approval, 'Avaliação registrada');
               }}
             >
-              <Field name="Etapa">
+              <Field name="Etapa / Área de liberação (EVT-001)">
                 <select
                   value={approval.step}
                   onChange={(e) => setApproval((s) => ({ ...s, step: e.target.value }))}
                 >
-                  {(['CADASTRAL', 'COMERCIAL', 'OPERACIONAL', 'PUBLICACAO'] as const).map(
-                    (step) => (
-                      <option key={step}>{step}</option>
-                    )
-                  )}
+                  {(
+                    [
+                      'CADASTRAL',
+                      'COMERCIAL',
+                      'CONTRATO',
+                      'OPERACIONAL',
+                      'TECNICA',
+                      'LOCAL',
+                      'PUBLICACAO',
+                    ] as const
+                  ).map((step) => (
+                    <option key={step}>{step}</option>
+                  ))}
                 </select>
               </Field>
               <Field name="Decisão">
@@ -510,6 +627,54 @@ export function EventoDetalheClient() {
               confirmado ainda.
             </p>
           )}
+        </Panel>
+
+        <Panel title="7. Ocorrências, adiamento e visibilidade pública (EVT-002)">
+          <p>
+            <strong>Visibilidade no site público:</strong>{' '}
+            {event.publiclyVisible ? 'Visível para venda' : 'Oculto do público (EVT-002)'}
+          </p>
+          <div className="b6-sublist">
+            {(event.changeCases || []).map((c) => (
+              <div key={c.id}>
+                <strong>{c.changeType}</strong> ({c.status}): {c.reason}
+              </div>
+            ))}
+            {!(event.changeCases || []).length && (
+              <Empty message="Nenhuma ocorrência de adiamento/suspensão aberta" />
+            )}
+          </div>
+          <form
+            className="b6-stack"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void act('ocorrencias', changeCase, 'Ocorrência registrada e visibilidade atualizada');
+              setChangeCase({ changeType: 'ADIAMENTO', reason: '' });
+            }}
+          >
+            <Field name="Tipo de ocorrência">
+              <select
+                value={changeCase.changeType}
+                onChange={(e) => setChangeCase((s) => ({ ...s, changeType: e.target.value }))}
+              >
+                <option value="ADIAMENTO">ADIAMENTO (Oculta evento publicamente — EVT-002)</option>
+                <option value="SUSPENSAO">SUSPENSAO (Suspende vendas)</option>
+                <option value="ALTERACAO">ALTERACAO (Revisão operacional)</option>
+                <option value="CANCELAMENTO">CANCELAMENTO (Cancela evento)</option>
+              </select>
+            </Field>
+            <Field name="Justificativa auditável (mínimo 10 caracteres)">
+              <textarea
+                required
+                minLength={10}
+                value={changeCase.reason}
+                onChange={(e) => setChangeCase((s) => ({ ...s, reason: e.target.value }))}
+              />
+            </Field>
+            <button disabled={busy} className="b6-btn b6-btn-secondary">
+              Registrar ocorrência
+            </button>
+          </form>
         </Panel>
       </div>
       <p className="b6-muted">

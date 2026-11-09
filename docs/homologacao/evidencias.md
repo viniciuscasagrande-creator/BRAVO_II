@@ -19,3 +19,14 @@
    - Todos os 9 pacotes e 5 aplicações compilados com código de saída `0`.
 5. **Confirmação de Segurança Financeira**:
    - Nenhuma operação bancária, captura real, estorno externo ou repasse real foi executado (`ENABLE_REAL_PAYMENTS=false`, `ENABLE_REAL_REFUNDS=false`, `ENABLE_EXTERNAL_PUBLICATION=false`).
+
+## 2. Evidências do Pacote 02 — Núcleo Operacional (Comercial, Produtores, Eventos, Lotes e Mapas)
+
+- **Regras implementadas e testadas**:
+  - **Comercial / Produtores (`FIN-001`)**: Persistência real e listagem de Contratos Comerciais (`contracts`) e Contatos Corporativos/Financeiros (`producer_contacts`) na ficha do produtor (`/v1/comercial/produtores/:id/contratos` e `/v1/comercial/produtores/:id/contatos`).
+  - **Aprovações Multi-Área (`EVT-001` / `ADR-006`)**: Suporte a `CADASTRAL`, `COMERCIAL`, `CONTRATO`, `OPERACIONAL`, `TECNICA`, `LOCAL` e `PUBLICACAO` com segregação maker-checker e trilha auditável.
+  - **Visibilidade Pública de Eventos Adiados/Suspensos (`EVT-002` / `ADR-006`)**: Ocorrências de `ADIAMENTO`, `SUSPENSAO` e `CANCELAMENTO` atualizam o status do evento e marcam `publiclyVisible: false` em `/v1/eventos/:id/projecao-publica`.
+  - **Disponibilidade Consolidada e Virada Automática de Lotes (`LOT-001` / `ADR-002`)**: Cálculo determinístico `availableCount = capacity - reservedCount - issuedCount`, rota `/v1/eventos/:id/disponibilidade` e motor de progressão `/v1/eventos/:id/lotes/processar-virada`.
+  - **Construtor de Mapas, Filas e Poltronas (`MAP-001` / `MAP-002` / `ADR-003`)**: Geração de filas numeradas em lote (`/v1/eventos/:id/areas/:areaId/filas`), duplicação de setor/mapa (`/v1/eventos/:id/areas/:areaId/duplicar`) e exclusão protegida contra setores com vendas ou reservas (`/v1/eventos/:id/areas/:areaId/excluir`).
+- **Suíte de Testes**:
+  - **58/58 testes aprovados** (`node --test tests/*.test.mjs`).

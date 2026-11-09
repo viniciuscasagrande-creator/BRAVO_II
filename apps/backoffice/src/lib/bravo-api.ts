@@ -101,13 +101,21 @@ export type EventFull = {
   id: string;
   name: string;
   status: string;
+  publiclyVisible?: boolean;
   revision: number;
   startsAt: string;
   endsAt: string;
   salesStartAt?: string;
   producers: { producer: { id: string; legalName: string; status: string }; role: string }[];
   sessions: { id: string; name: string; startsAt: string; endsAt: string; capacity: number }[];
-  areas: { id: string; label: string; capacity: number; isNumbered: boolean }[];
+  areas: {
+    id: string;
+    label: string;
+    capacity: number;
+    isNumbered: boolean;
+    seatsCount?: number;
+    seats?: { id: string; rowLabel: string; seatNumber: string }[];
+  }[];
   ticketCategories: { id: string; name: string }[];
   lots: {
     id: string;
@@ -115,9 +123,20 @@ export type EventFull = {
     sessionId: string;
     faceValueCents: number;
     capacity: number;
+    reservedCount?: number;
+    issuedCount?: number;
+    availableCount?: number;
+    occupancyPercent?: number;
     status: string;
     areaId?: string | null;
   }[];
   channels: { channel: string; enabled: boolean }[];
-  approvals: { step: string; decision: string; actorId: string }[];
+  approvals: { step: string; decision: string; actorId: string; reason?: string | null }[];
+  changeCases?: {
+    id: string;
+    changeType: string;
+    reason: string;
+    status: string;
+    createdAt: string;
+  }[];
 };

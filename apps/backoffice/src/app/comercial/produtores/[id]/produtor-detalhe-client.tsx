@@ -28,6 +28,22 @@ type Producer = {
     status: string;
     createdAt?: string;
   }[];
+  contracts?: {
+    id: string;
+    contractNumber: string;
+    title: string;
+    status: string;
+    validFrom: string;
+    validUntil?: string | null;
+  }[];
+  contacts?: {
+    id: string;
+    fullName: string;
+    email: string;
+    phone: string;
+    roleType: string;
+    isPrimary: boolean;
+  }[];
   events: { eventId: string; role: string }[];
 };
 
@@ -45,6 +61,18 @@ export function ProdutorDetalheClient() {
   const [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false);
   const [doc, setDoc] = useState({ documentType: 'CONTRATO_SOCIAL', storageKey: '', checksum: '' });
+  const [contractForm, setContractForm] = useState({
+    contractNumber: '',
+    title: '',
+    status: 'ACTIVE',
+  });
+  const [contactForm, setContactForm] = useState({
+    fullName: '',
+    email: '',
+    phone: '',
+    roleType: 'FINANCIAL',
+    isPrimary: false,
+  });
 
   const reload = useCallback(() => {
     if (!id || id === '__dynamic__') return Promise.resolve();
@@ -171,6 +199,120 @@ export function ProdutorDetalheClient() {
           >
             Aprovar cadastro da produtora
           </button>
+        </Panel>
+        <Panel title="Contratos comerciais">
+          <div className="b6-sublist">
+            {(producer.contracts || []).map((c) => (
+              <div key={c.id}>
+                <strong>{c.contractNumber}</strong> · {c.title} · <span>{c.status}</span>
+              </div>
+            ))}
+            {!(producer.contracts || []).length && (
+              <Empty message="Nenhum contrato comercial registrado" />
+            )}
+          </div>
+          <form
+            className="b6-stack"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void act('contratos', contractForm);
+              setContractForm({ contractNumber: '', title: '', status: 'ACTIVE' });
+            }}
+          >
+            <Field name="Número do contrato (opcional)">
+              <input
+                placeholder="Ex.: CTR-2026-001"
+                value={contractForm.contractNumber}
+                onChange={(e) =>
+                  setContractForm((s) => ({ ...s, contractNumber: e.target.value }))
+                }
+              />
+            </Field>
+            <Field name="Título do instrumento contratual">
+              <input
+                required
+                placeholder="Contrato Guarda-Chuva de Ticketing e Borderô"
+                value={contractForm.title}
+                onChange={(e) => setContractForm((s) => ({ ...s, title: e.target.value }))}
+              />
+            </Field>
+            <Field name="Status contratual">
+              <select
+                value={contractForm.status}
+                onChange={(e) => setContractForm((s) => ({ ...s, status: e.target.value }))}
+              >
+                <option value="ACTIVE">ACTIVE (Vigente)</option>
+                <option value="DRAFT">DRAFT (Minuta)</option>
+                <option value="SUSPENDED">SUSPENDED (Suspenso)</option>
+              </select>
+            </Field>
+            <button disabled={busy} className="b6-btn">
+              Registrar contrato
+            </button>
+          </form>
+        </Panel>
+        <Panel title="Contatos corporativos e financeiros">
+          <div className="b6-sublist">
+            {(producer.contacts || []).map((ct) => (
+              <div key={ct.id}>
+                <strong>{ct.fullName}</strong> ({ct.roleType}) · {ct.email} · {ct.phone}
+              </div>
+            ))}
+            {!(producer.contacts || []).length && (
+              <Empty message="Nenhum contato adicional cadastrado" />
+            )}
+          </div>
+          <form
+            className="b6-stack"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void act('contatos', contactForm);
+              setContactForm({
+                fullName: '',
+                email: '',
+                phone: '',
+                roleType: 'FINANCIAL',
+                isPrimary: false,
+              });
+            }}
+          >
+            <Field name="Nome completo">
+              <input
+                required
+                value={contactForm.fullName}
+                onChange={(e) => setContactForm((s) => ({ ...s, fullName: e.target.value }))}
+              />
+            </Field>
+            <Field name="E-mail">
+              <input
+                required
+                type="email"
+                value={contactForm.email}
+                onChange={(e) => setContactForm((s) => ({ ...s, email: e.target.value }))}
+              />
+            </Field>
+            <Field name="Telefone">
+              <input
+                required
+                value={contactForm.phone}
+                onChange={(e) => setContactForm((s) => ({ ...s, phone: e.target.value }))}
+              />
+            </Field>
+            <Field name="Papel do contato">
+              <select
+                value={contactForm.roleType}
+                onChange={(e) => setContactForm((s) => ({ ...s, roleType: e.target.value }))}
+              >
+                <option value="FINANCIAL">Financeiro / Repasses</option>
+                <option value="COMMERCIAL">Comercial</option>
+                <option value="OPERATIONAL">Operacional / Produção</option>
+                <option value="LEGAL_REPRESENTATIVE">Representante Legal</option>
+              </select>
+            </Field>
+            <button disabled={busy} className="b6-btn">
+              Adicionar contato
+            </button>
+          </form>
         </Panel>
         <Panel title="Eventos relacionados">
           <div className="b6-sublist">

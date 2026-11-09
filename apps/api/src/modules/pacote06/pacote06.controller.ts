@@ -7,6 +7,7 @@ import type {
   ApprovalStep,
   Channel,
   EventDraftInput,
+  ExtendedApprovalArea,
   FeeInput,
   LotInput,
   ProducerInput,
@@ -81,6 +82,42 @@ export class Pacote06Controller {
   ) {
     const correlationId = ensureCorrelationId(req.headers['x-correlation-id']);
     return this.service.verifyProducer(req.actor!, id, body?.decision ?? 'APROVADO', body?.reason, correlationId);
+  }
+
+  @Post(['produtores/:id/contratos', 'comercial/produtores/:id/contratos'])
+  @RequirePermission('commercial:write')
+  createProducerContract(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body()
+    body: {
+      contractNumber?: string;
+      title: string;
+      status?: 'DRAFT' | 'ACTIVE' | 'SUSPENDED' | 'EXPIRED' | 'TERMINATED';
+      validFrom?: string;
+      validUntil?: string;
+    }
+  ) {
+    const correlationId = ensureCorrelationId(req.headers['x-correlation-id']);
+    return this.service.createProducerContract(req.actor!, id, body, correlationId);
+  }
+
+  @Post(['produtores/:id/contatos', 'comercial/produtores/:id/contatos'])
+  @RequirePermission('commercial:write')
+  addProducerContact(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Body()
+    body: {
+      fullName: string;
+      email: string;
+      phone: string;
+      roleType?: 'LEGAL_REPRESENTATIVE' | 'FINANCIAL' | 'OPERATIONAL' | 'COMMERCIAL';
+      isPrimary?: boolean;
+    }
+  ) {
+    const correlationId = ensureCorrelationId(req.headers['x-correlation-id']);
+    return this.service.addProducerContact(req.actor!, id, body, correlationId);
   }
 
   // ==========================================================================
@@ -243,10 +280,58 @@ export class Pacote06Controller {
   decideApproval(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
-    @Body() body: { step: ApprovalStep; decision: 'APROVADO' | 'REPROVADO'; reason?: string }
+    @Body() body: { step: ApprovalStep | ExtendedApprovalArea; decision: 'APROVADO' | 'REPROVADO'; reason?: string }
   ) {
     const correlationId = ensureCorrelationId(req.headers['x-correlation-id']);
     return this.service.decideApproval(req.actor!, id, body, correlationId);
+  }
+
+  @Post(['eventos/:id/areas/:areaId/filas', 'eventos/:id/setores/:areaId/filas'])
+  @RequirePermission('event:write')
+  generateAreaSeatRow(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Param('areaId') areaId: string,
+    @Body() body: { rowLabel: string; startNumber: number; endNumber: number }
+  ) {
+    const correlationId = ensureCorrelationId(req.headers['x-correlation-id']);
+    return this.service.generateAreaSeatRow(req.actor!, id, areaId, body, correlationId);
+  }
+
+  @Post(['eventos/:id/areas/:areaId/duplicar', 'eventos/:id/setores/:areaId/duplicar'])
+  @RequirePermission('event:write')
+  duplicateArea(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Param('areaId') areaId: string,
+    @Body() body: { newName?: string; targetSessionId?: string }
+  ) {
+    const correlationId = ensureCorrelationId(req.headers['x-correlation-id']);
+    return this.service.duplicateArea(req.actor!, id, areaId, body, correlationId);
+  }
+
+  @Post(['eventos/:id/areas/:areaId/excluir', 'eventos/:id/setores/:areaId/excluir'])
+  @RequirePermission('event:write')
+  deleteArea(
+    @Req() req: AuthenticatedRequest,
+    @Param('id') id: string,
+    @Param('areaId') areaId: string
+  ) {
+    const correlationId = ensureCorrelationId(req.headers['x-correlation-id']);
+    return this.service.deleteArea(req.actor!, id, areaId, correlationId);
+  }
+
+  @Get('eventos/:id/disponibilidade')
+  @RequirePermission('event:read')
+  getEventAvailability(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    return this.service.getEventAvailability(req.actor!, id);
+  }
+
+  @Post('eventos/:id/lotes/processar-virada')
+  @RequirePermission('event:write')
+  processLotProgression(@Req() req: AuthenticatedRequest, @Param('id') id: string) {
+    const correlationId = ensureCorrelationId(req.headers['x-correlation-id']);
+    return this.service.processLotProgression(req.actor!, id, correlationId);
   }
 
   @Get('eventos/:id/prontidao-publicacao')
