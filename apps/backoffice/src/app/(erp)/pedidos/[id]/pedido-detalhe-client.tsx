@@ -1,7 +1,7 @@
 'use client';
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, usePathname } from 'next/navigation';
 import { currentSession, get, post } from '../../../../lib/bravo-api';
 import { dateBR, Empty, Head, Notice, Panel } from '../../../../components/bravo-p06';
 
@@ -42,7 +42,12 @@ const real = (cents: number) =>
 
 export function PedidoDetalheClient() {
   const params = useParams<{ id: string }>();
-  const orderId = params?.id || '';
+  const pathname = usePathname() || '';
+  const rawId = params?.id;
+  const orderId =
+    rawId && rawId !== '__dynamic__'
+      ? rawId
+      : pathname.split('/').filter(Boolean)[1] || rawId || '';
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [attempts, setAttempts] = useState<CheckoutAttempt[]>([]);
   const [canManage, setCanManage] = useState(false);

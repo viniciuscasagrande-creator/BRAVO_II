@@ -1,7 +1,7 @@
 'use client';
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, usePathname } from 'next/navigation';
 import { EventFull, get, post } from '../../../lib/bravo-api';
 import { dateBR, Empty, Field, Head, Notice, Panel } from '../../../components/bravo-p06';
 
@@ -24,7 +24,12 @@ export function EventoSubpaginaClient({ modo, codigoMatriz, titulo }: {
   titulo: string;
 }) {
   const params = useParams<{ id: string }>();
-  const eventId = params?.id || '';
+  const pathname = usePathname() || '';
+  const rawId = params?.id;
+  const eventId =
+    rawId && rawId !== '__dynamic__'
+      ? rawId
+      : pathname.split('/').filter(Boolean)[1] || rawId || '';
   const [ev, setEv] = useState<EventFull | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

@@ -40,12 +40,72 @@
       "destination": "/eventos/novo"
     },
     {
+      "source": "/eventos/locais",
+      "destination": "/eventos/locais"
+    },
+    {
+      "source": "/eventos/:id/sessoes",
+      "destination": "/eventos/__dynamic__/sessoes"
+    },
+    {
+      "source": "/eventos/:id/lotes",
+      "destination": "/eventos/__dynamic__/lotes"
+    },
+    {
+      "source": "/eventos/:id/ingressos",
+      "destination": "/eventos/__dynamic__/ingressos"
+    },
+    {
+      "source": "/eventos/:id/cupons",
+      "destination": "/eventos/__dynamic__/cupons"
+    },
+    {
+      "source": "/eventos/:id/cortesias",
+      "destination": "/eventos/__dynamic__/cortesias"
+    },
+    {
+      "source": "/eventos/:id/aprovacoes",
+      "destination": "/eventos/__dynamic__/aprovacoes"
+    },
+    {
+      "source": "/eventos/:id/mapa",
+      "destination": "/eventos/__dynamic__/mapa"
+    },
+    {
+      "source": "/eventos/:id/reservas",
+      "destination": "/eventos/__dynamic__/reservas"
+    },
+    {
       "source": "/eventos/:id",
       "destination": "/eventos/__dynamic__"
     },
     {
+      "source": "/pedidos/novo",
+      "destination": "/pedidos/novo"
+    },
+    {
+      "source": "/pedidos/reservas",
+      "destination": "/pedidos/reservas"
+    },
+    {
+      "source": "/pedidos/transferencias",
+      "destination": "/pedidos/transferencias"
+    },
+    {
+      "source": "/pedidos/:id",
+      "destination": "/pedidos/__dynamic__"
+    },
+    {
       "source": "/comercial/produtores/novo",
       "destination": "/comercial/produtores/novo"
+    },
+    {
+      "source": "/comercial/produtores/contratos",
+      "destination": "/comercial/produtores/contratos"
+    },
+    {
+      "source": "/comercial/produtores/aprovacoes",
+      "destination": "/comercial/produtores/aprovacoes"
     },
     {
       "source": "/comercial/produtores/:id",
@@ -54,6 +114,10 @@
     {
       "source": "/comercial/eventos/:id/taxas",
       "destination": "/comercial/eventos/__dynamic__/taxas"
+    },
+    {
+      "source": "/sac/chamados/estornos",
+      "destination": "/sac/chamados/estornos"
     },
     {
       "source": "/sac/chamados/:id",

@@ -17,7 +17,7 @@ test('Catálogo do vídeo possui 96 telas únicas distribuídas em 15 grupos', (
   assert.equal(cat.groups, 15);
 });
 
-test('Rotas Next.js /financeiro/operacoes e componentes do módulo existem', () => {
+test('Rotas Next.js /financeiro/operacoes e componentes do módulo existem e exportam generateStaticParams para as 96 telas', () => {
   for (const p of [
     'app/financeiro/operacoes/page.tsx',
     'app/financeiro/operacoes/[...slug]/page.tsx',
@@ -28,6 +28,9 @@ test('Rotas Next.js /financeiro/operacoes e componentes do módulo existem', () 
   ]) {
     assert.ok(existsSync(base + '/' + p), p);
   }
+  const slugPage = readFileSync(base + '/app/financeiro/operacoes/[...slug]/page.tsx', 'utf8');
+  assert.match(slugPage, /export function generateStaticParams\(\)/);
+  assert.match(slugPage, /FINANCEIRO_TELAS\.map/);
 });
 
 test('Menu Financeiro possui os 15 módulos individuais ordenados (01 a 15) e Dashboard de Cards sem menu único genérico', () => {
