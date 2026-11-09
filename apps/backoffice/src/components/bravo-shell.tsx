@@ -316,6 +316,17 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
                           </li>
                         );
                       })}
+                      {item.id === 'financeiro' && (
+                        <li>
+                          <Link
+                            href="/financeiro/operacoes"
+                            className={`bravo-nav-sublink${pathname.startsWith('/financeiro/operacoes') ? ' is-active' : ''}`}
+                          >
+                            <span className="bravo-nav-subdot" aria-hidden="true" />
+                            <span>Operação Financeira — Todos os Módulos</span>
+                          </Link>
+                        </li>
+                      )}
                     </ul>
                   )}
                 </li>

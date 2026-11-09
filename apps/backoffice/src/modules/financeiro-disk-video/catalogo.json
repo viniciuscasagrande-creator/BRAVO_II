@@ -1,0 +1,1564 @@
+{
+  "sourceVideo": "20261109-1631-33.8154170.mp4",
+  "durationSeconds": 248.448,
+  "groups": 15,
+  "screenCount": 96,
+  "screens": [
+    {
+      "id": "produtores/produtores",
+      "groupId": "produtores",
+      "group": "Produtores e Eventos",
+      "title": "Produtores",
+      "kind": "list",
+      "columns": [
+        "Produtor",
+        "CNPJ",
+        "Situação",
+        "Conta financeira"
+      ],
+      "anchorSecond": 0,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "produtores/eventos",
+      "groupId": "produtores",
+      "group": "Produtores e Eventos",
+      "title": "Eventos",
+      "kind": "list",
+      "columns": [
+        "Evento",
+        "Produtor",
+        "Sessão",
+        "Situação"
+      ],
+      "anchorSecond": 0,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "produtores/conta-financeira-produtor",
+      "groupId": "produtores",
+      "group": "Produtores e Eventos",
+      "title": "Conta Financeira do Produtor (CNPJ)",
+      "kind": "dashboard",
+      "columns": [
+        "Produtor",
+        "Evento",
+        "Conta",
+        "Saldo"
+      ],
+      "anchorSecond": 0,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "produtores/saldos-produtor",
+      "groupId": "produtores",
+      "group": "Produtores e Eventos",
+      "title": "Saldos por Produtor",
+      "kind": "table",
+      "columns": [
+        "Produtor",
+        "Saldo total",
+        "Disponível",
+        "Reservas"
+      ],
+      "anchorSecond": 0,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "produtores/saldos-evento",
+      "groupId": "produtores",
+      "group": "Produtores e Eventos",
+      "title": "Saldos por Evento",
+      "kind": "table",
+      "columns": [
+        "Evento",
+        "Saldo total",
+        "Disponível",
+        "Bloqueado"
+      ],
+      "anchorSecond": 0,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "solicitacoes/central-solicitacoes",
+      "groupId": "solicitacoes",
+      "group": "Solicitações e Aprovações",
+      "title": "Central de Solicitações",
+      "kind": "workflow",
+      "columns": [
+        "Protocolo",
+        "Produtor",
+        "Evento",
+        "Tipo",
+        "Status"
+      ],
+      "anchorSecond": 0,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "solicitacoes/central-aprovacoes",
+      "groupId": "solicitacoes",
+      "group": "Solicitações e Aprovações",
+      "title": "Central de Aprovações",
+      "kind": "workflow",
+      "columns": [
+        "Solicitação",
+        "Produtor",
+        "Evento",
+        "Valor",
+        "Alçada"
+      ],
+      "anchorSecond": 0,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "solicitacoes/repasses",
+      "groupId": "solicitacoes",
+      "group": "Solicitações e Aprovações",
+      "title": "Repasses",
+      "kind": "workflow",
+      "columns": [
+        "Solicitação",
+        "Evento",
+        "Solicitante",
+        "Valor",
+        "Situação"
+      ],
+      "anchorSecond": 0,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "solicitacoes/politica-repasses",
+      "groupId": "solicitacoes",
+      "group": "Solicitações e Aprovações",
+      "title": "Política de Repasses",
+      "kind": "rules",
+      "columns": [
+        "Condição",
+        "Meta de vendas",
+        "Limite",
+        "Responsável"
+      ],
+      "anchorSecond": 0,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "solicitacoes/antecipacoes",
+      "groupId": "solicitacoes",
+      "group": "Solicitações e Aprovações",
+      "title": "Antecipações",
+      "kind": "workflow",
+      "columns": [
+        "Solicitação",
+        "Produtor",
+        "Evento",
+        "Valor",
+        "Status"
+      ],
+      "anchorSecond": 0,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "solicitacoes/divisao-receitas",
+      "groupId": "solicitacoes",
+      "group": "Solicitações e Aprovações",
+      "title": "Divisão de Receitas",
+      "kind": "table",
+      "columns": [
+        "Evento",
+        "Participante",
+        "Percentual",
+        "Regra"
+      ],
+      "anchorSecond": 0,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "solicitacoes/transferencias-eventos",
+      "groupId": "solicitacoes",
+      "group": "Solicitações e Aprovações",
+      "title": "Transferências entre Eventos",
+      "kind": "workflow",
+      "columns": [
+        "Origem",
+        "Destino",
+        "Produtor",
+        "Valor",
+        "Status"
+      ],
+      "anchorSecond": 0,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "solicitacoes/assinaturas-pendentes",
+      "groupId": "solicitacoes",
+      "group": "Solicitações e Aprovações",
+      "title": "Assinaturas Pendentes",
+      "kind": "workflow",
+      "columns": [
+        "Documento",
+        "Parte",
+        "Tipo",
+        "Status"
+      ],
+      "anchorSecond": 0,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "recebiveis/contas-receber",
+      "groupId": "recebiveis",
+      "group": "Recebíveis e Liquidações",
+      "title": "Contas a Receber",
+      "kind": "dashboard",
+      "columns": [
+        "Vencimento",
+        "Adquirente",
+        "Valor",
+        "Situação"
+      ],
+      "anchorSecond": 0,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "recebiveis/recebiveis",
+      "groupId": "recebiveis",
+      "group": "Recebíveis e Liquidações",
+      "title": "Recebíveis",
+      "kind": "table",
+      "columns": [
+        "Adquirente",
+        "Previsão",
+        "Recebido",
+        "Status"
+      ],
+      "anchorSecond": 0,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "recebiveis/agenda-recebiveis",
+      "groupId": "recebiveis",
+      "group": "Recebíveis e Liquidações",
+      "title": "Agenda de Recebíveis",
+      "kind": "calendar",
+      "columns": [
+        "Data",
+        "Operadora",
+        "Valor previsto",
+        "Status"
+      ],
+      "anchorSecond": 0,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "recebiveis/liquidacoes",
+      "groupId": "recebiveis",
+      "group": "Recebíveis e Liquidações",
+      "title": "Liquidações",
+      "kind": "table",
+      "columns": [
+        "Adquirente",
+        "Transações",
+        "Valor",
+        "Prazo",
+        "Status"
+      ],
+      "anchorSecond": 0,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "recebiveis/agenda-financeira",
+      "groupId": "recebiveis",
+      "group": "Recebíveis e Liquidações",
+      "title": "Agenda Financeira",
+      "kind": "calendar",
+      "columns": [
+        "Data",
+        "Obrigação",
+        "Valor",
+        "Status"
+      ],
+      "anchorSecond": 0,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "gateways/dashboard",
+      "groupId": "gateways",
+      "group": "Gateways e Adquirentes",
+      "title": "Visão Geral de Gateways",
+      "kind": "dashboard",
+      "columns": [
+        "Adquirente",
+        "Volume",
+        "Taxa",
+        "Situação"
+      ],
+      "anchorSecond": 12,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "gateways/cadastro",
+      "groupId": "gateways",
+      "group": "Gateways e Adquirentes",
+      "title": "Cadastro de Adquirentes",
+      "kind": "list",
+      "columns": [
+        "Adquirente",
+        "Modalidade",
+        "Convênio",
+        "Situação"
+      ],
+      "anchorSecond": 12,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "gateways/bandeiras",
+      "groupId": "gateways",
+      "group": "Gateways e Adquirentes",
+      "title": "Bandeiras e Cartões",
+      "kind": "list",
+      "columns": [
+        "Bandeira",
+        "Débito",
+        "Crédito",
+        "Parcelamento"
+      ],
+      "anchorSecond": 12,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "gateways/mdr",
+      "groupId": "gateways",
+      "group": "Gateways e Adquirentes",
+      "title": "MDR e Parcelamento",
+      "kind": "rules",
+      "columns": [
+        "Operadora",
+        "Bandeira",
+        "Modalidade",
+        "MDR",
+        "Prazo"
+      ],
+      "anchorSecond": 12,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "gateways/credenciais",
+      "groupId": "gateways",
+      "group": "Gateways e Adquirentes",
+      "title": "Credenciais e Conexões",
+      "kind": "settings",
+      "columns": [
+        "Adquirente",
+        "Ambiente",
+        "Situação",
+        "Última verificação"
+      ],
+      "anchorSecond": 12,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "gateways/captura",
+      "groupId": "gateways",
+      "group": "Gateways e Adquirentes",
+      "title": "Autorizações e Capturas",
+      "kind": "table",
+      "columns": [
+        "Provedor",
+        "Transação",
+        "Situação",
+        "Valor"
+      ],
+      "anchorSecond": 12,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "gateways/antecipacao-gateway",
+      "groupId": "gateways",
+      "group": "Gateways e Adquirentes",
+      "title": "Antecipação de Recebíveis",
+      "kind": "workflow",
+      "columns": [
+        "Provedor",
+        "Valor",
+        "Taxa",
+        "Prazo"
+      ],
+      "anchorSecond": 12,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "gateways/liquidacoes",
+      "groupId": "gateways",
+      "group": "Gateways e Adquirentes",
+      "title": "Liquidação por Operadora",
+      "kind": "table",
+      "columns": [
+        "Provedor",
+        "Valor",
+        "Prazo",
+        "Status"
+      ],
+      "anchorSecond": 12,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "gateways/conciliacao-gateway",
+      "groupId": "gateways",
+      "group": "Gateways e Adquirentes",
+      "title": "Conciliação Contábil e Ledger",
+      "kind": "table",
+      "columns": [
+        "Transação",
+        "Pedido",
+        "Ledger",
+        "Diferença"
+      ],
+      "anchorSecond": 12,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "gateways/estornos-disputas",
+      "groupId": "gateways",
+      "group": "Gateways e Adquirentes",
+      "title": "Estornos, Chargebacks e Disputas",
+      "kind": "workflow",
+      "columns": [
+        "Transação",
+        "Motivo",
+        "Prazo",
+        "Status"
+      ],
+      "anchorSecond": 12,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "gateways/relatorios",
+      "groupId": "gateways",
+      "group": "Gateways e Adquirentes",
+      "title": "Relatórios por Gateway",
+      "kind": "report",
+      "columns": [
+        "Adquirente",
+        "Vendas",
+        "MDR",
+        "Liquidações"
+      ],
+      "anchorSecond": 12,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "taxas/matriz",
+      "groupId": "taxas",
+      "group": "Taxas e Regras Comerciais",
+      "title": "Matriz de Tarifas MDR",
+      "kind": "rules",
+      "columns": [
+        "Adquirente",
+        "Modalidade",
+        "Bandeira",
+        "MDR",
+        "Spread"
+      ],
+      "anchorSecond": 36,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "taxas/regras",
+      "groupId": "taxas",
+      "group": "Taxas e Regras Comerciais",
+      "title": "Regras Comerciais",
+      "kind": "rules",
+      "columns": [
+        "Regra",
+        "Produtor",
+        "Evento",
+        "Condição",
+        "Validade"
+      ],
+      "anchorSecond": 36,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "taxas/simulador-spread",
+      "groupId": "taxas",
+      "group": "Taxas e Regras Comerciais",
+      "title": "Simulador de Spread",
+      "kind": "simulator",
+      "columns": [
+        "Valor venda",
+        "MDR",
+        "Taxa cobrada",
+        "Spread"
+      ],
+      "anchorSecond": 36,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "taxas/parcelamento",
+      "groupId": "taxas",
+      "group": "Taxas e Regras Comerciais",
+      "title": "Políticas de Parcelamento",
+      "kind": "rules",
+      "columns": [
+        "Parcelas",
+        "Custo",
+        "Responsável",
+        "Prazo"
+      ],
+      "anchorSecond": 36,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "taxas/prazo-liquidacao",
+      "groupId": "taxas",
+      "group": "Taxas e Regras Comerciais",
+      "title": "Prazos de Liquidação",
+      "kind": "rules",
+      "columns": [
+        "Adquirente",
+        "Prazo",
+        "Calendário",
+        "Validade"
+      ],
+      "anchorSecond": 36,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "taxas/taxa-disk-evento",
+      "groupId": "taxas",
+      "group": "Taxas e Regras Comerciais",
+      "title": "Taxa Disk por Evento",
+      "kind": "rules",
+      "columns": [
+        "Evento",
+        "Percentual/Fixa",
+        "Valor",
+        "Aprovação"
+      ],
+      "anchorSecond": 36,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "taxas/spread",
+      "groupId": "taxas",
+      "group": "Taxas e Regras Comerciais",
+      "title": "Spread e Adquirentes",
+      "kind": "dashboard",
+      "columns": [
+        "Regra",
+        "Adquirente",
+        "MDR",
+        "Spread"
+      ],
+      "anchorSecond": 36,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "taxas/rebate",
+      "groupId": "taxas",
+      "group": "Taxas e Regras Comerciais",
+      "title": "Rebate Comercial",
+      "kind": "table",
+      "columns": [
+        "Operadora",
+        "Regra",
+        "Base",
+        "Rebate"
+      ],
+      "anchorSecond": 36,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "taxas/advanced",
+      "groupId": "taxas",
+      "group": "Taxas e Regras Comerciais",
+      "title": "Advanced / Antecipação Comercial",
+      "kind": "workflow",
+      "columns": [
+        "Evento",
+        "Solicitante",
+        "Taxa",
+        "Alçada"
+      ],
+      "anchorSecond": 36,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "taxas/hierarquia",
+      "groupId": "taxas",
+      "group": "Taxas e Regras Comerciais",
+      "title": "Hierarquia de Prioridades",
+      "kind": "settings",
+      "columns": [
+        "Produtor",
+        "Evento",
+        "Adquirente",
+        "Regra"
+      ],
+      "anchorSecond": 36,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "tesouraria/visao-geral",
+      "groupId": "tesouraria",
+      "group": "Tesouraria e Contas Bancárias",
+      "title": "Posição de Caixa",
+      "kind": "dashboard",
+      "columns": [
+        "Conta",
+        "Banco",
+        "Saldo",
+        "Situação"
+      ],
+      "anchorSecond": 92,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "tesouraria/contas",
+      "groupId": "tesouraria",
+      "group": "Tesouraria e Contas Bancárias",
+      "title": "Contas Corporativas",
+      "kind": "list",
+      "columns": [
+        "Banco",
+        "Agência",
+        "Conta",
+        "Saldo",
+        "Status"
+      ],
+      "anchorSecond": 92,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "tesouraria/pix",
+      "groupId": "tesouraria",
+      "group": "Tesouraria e Contas Bancárias",
+      "title": "PIX e Transferências Instantâneas",
+      "kind": "table",
+      "columns": [
+        "Transação",
+        "Favorecido",
+        "Conta",
+        "Valor",
+        "Status"
+      ],
+      "anchorSecond": 92,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "tesouraria/cnab",
+      "groupId": "tesouraria",
+      "group": "Tesouraria e Contas Bancárias",
+      "title": "CNAB 240 / 400 Bancário",
+      "kind": "workflow",
+      "columns": [
+        "Lote",
+        "Banco",
+        "Pagamentos",
+        "Valor",
+        "Situação"
+      ],
+      "anchorSecond": 92,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "tesouraria/contas-pagar",
+      "groupId": "tesouraria",
+      "group": "Tesouraria e Contas Bancárias",
+      "title": "Contas a Pagar",
+      "kind": "table",
+      "columns": [
+        "Fornecedor",
+        "Vencimento",
+        "Valor",
+        "Status"
+      ],
+      "anchorSecond": 92,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "tesouraria/pagamentos-lote",
+      "groupId": "tesouraria",
+      "group": "Tesouraria e Contas Bancárias",
+      "title": "Pagamentos em Lote",
+      "kind": "workflow",
+      "columns": [
+        "Lote",
+        "Banco",
+        "Quantidade",
+        "Valor",
+        "Status"
+      ],
+      "anchorSecond": 92,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "tesouraria/transferencias-contas",
+      "groupId": "tesouraria",
+      "group": "Tesouraria e Contas Bancárias",
+      "title": "Transferências entre Contas",
+      "kind": "workflow",
+      "columns": [
+        "Origem",
+        "Destino",
+        "Valor",
+        "Situação"
+      ],
+      "anchorSecond": 92,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "tesouraria/fluxo-caixa",
+      "groupId": "tesouraria",
+      "group": "Tesouraria e Contas Bancárias",
+      "title": "Fluxo de Caixa",
+      "kind": "dashboard",
+      "columns": [
+        "Período",
+        "Previsto",
+        "Realizado",
+        "Saldo"
+      ],
+      "anchorSecond": 92,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "tesouraria/movimentacoes",
+      "groupId": "tesouraria",
+      "group": "Tesouraria e Contas Bancárias",
+      "title": "Movimentações Bancárias",
+      "kind": "table",
+      "columns": [
+        "Data",
+        "Conta",
+        "Movimentação",
+        "Valor"
+      ],
+      "anchorSecond": 92,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "conciliacao/painel",
+      "groupId": "conciliacao",
+      "group": "Conciliação",
+      "title": "Painel Geral de Conciliação",
+      "kind": "dashboard",
+      "columns": [
+        "Origem",
+        "Valor",
+        "Divergência",
+        "Status"
+      ],
+      "anchorSecond": 120,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "conciliacao/adquirentes",
+      "groupId": "conciliacao",
+      "group": "Conciliação",
+      "title": "Conciliação de Adquirentes",
+      "kind": "table",
+      "columns": [
+        "Operadora",
+        "Pedido",
+        "Gateway",
+        "Diferença"
+      ],
+      "anchorSecond": 120,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "conciliacao/bancaria",
+      "groupId": "conciliacao",
+      "group": "Conciliação",
+      "title": "Conciliação Bancária",
+      "kind": "table",
+      "columns": [
+        "Banco",
+        "Lançamento",
+        "Extrato",
+        "Diferença"
+      ],
+      "anchorSecond": 120,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "conciliacao/ledger",
+      "groupId": "conciliacao",
+      "group": "Conciliação",
+      "title": "Conciliação do Ledger",
+      "kind": "table",
+      "columns": [
+        "Lançamento",
+        "Conta",
+        "Referência",
+        "Status"
+      ],
+      "anchorSecond": 120,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "conciliacao/tratamento",
+      "groupId": "conciliacao",
+      "group": "Conciliação",
+      "title": "Tratamento de Divergências",
+      "kind": "workflow",
+      "columns": [
+        "Ocorrência",
+        "Valor",
+        "Motivo",
+        "Responsável"
+      ],
+      "anchorSecond": 120,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "conciliacao/auditoria",
+      "groupId": "conciliacao",
+      "group": "Conciliação",
+      "title": "Auditoria de Conciliação",
+      "kind": "report",
+      "columns": [
+        "Ação",
+        "Usuário",
+        "Data",
+        "Evidência"
+      ],
+      "anchorSecond": 120,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "estornos/central",
+      "groupId": "estornos",
+      "group": "Estornos e Cancelamentos",
+      "title": "Centro de Controle de Estornos",
+      "kind": "dashboard",
+      "columns": [
+        "Pedido",
+        "Cliente",
+        "Evento",
+        "Valor",
+        "Situação"
+      ],
+      "anchorSecond": 140,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "estornos/fila-aprovacao",
+      "groupId": "estornos",
+      "group": "Estornos e Cancelamentos",
+      "title": "Fila de Aprovações",
+      "kind": "workflow",
+      "columns": [
+        "Pedido",
+        "Solicitante",
+        "Valor",
+        "Aprovadores",
+        "Status"
+      ],
+      "anchorSecond": 140,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "estornos/motor-regras",
+      "groupId": "estornos",
+      "group": "Estornos e Cancelamentos",
+      "title": "Motor de Regras de Estorno",
+      "kind": "rules",
+      "columns": [
+        "Motivo",
+        "Tipo",
+        "Prazo",
+        "Alçada"
+      ],
+      "anchorSecond": 140,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "estornos/chargebacks",
+      "groupId": "estornos",
+      "group": "Estornos e Cancelamentos",
+      "title": "Chargebacks e Contestações",
+      "kind": "workflow",
+      "columns": [
+        "Disputa",
+        "Pedido",
+        "Provedor",
+        "Valor",
+        "Prazo"
+      ],
+      "anchorSecond": 140,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "estornos/impacto-financeiro",
+      "groupId": "estornos",
+      "group": "Estornos e Cancelamentos",
+      "title": "Impactos Financeiros e Reservas",
+      "kind": "dashboard",
+      "columns": [
+        "Evento",
+        "Valor estornado",
+        "Reserva",
+        "Saldo"
+      ],
+      "anchorSecond": 140,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "estornos/historico",
+      "groupId": "estornos",
+      "group": "Estornos e Cancelamentos",
+      "title": "Histórico de Estornos",
+      "kind": "table",
+      "columns": [
+        "Pedido",
+        "Provedor",
+        "Valor",
+        "Status"
+      ],
+      "anchorSecond": 140,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "fechamentos/fechamento-eventos",
+      "groupId": "fechamentos",
+      "group": "Fechamentos e Borderôs",
+      "title": "Fechamento por Evento",
+      "kind": "workflow",
+      "columns": [
+        "Evento",
+        "Data",
+        "Receita",
+        "Despesas",
+        "Situação"
+      ],
+      "anchorSecond": 156,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "fechamentos/borderos",
+      "groupId": "fechamentos",
+      "group": "Fechamentos e Borderôs",
+      "title": "Borderôs e Fechamentos",
+      "kind": "report",
+      "columns": [
+        "Evento",
+        "Produtor",
+        "Receita",
+        "Repasse"
+      ],
+      "anchorSecond": 156,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "fechamentos/dossies",
+      "groupId": "fechamentos",
+      "group": "Fechamentos e Borderôs",
+      "title": "Dossiês Financeiros",
+      "kind": "report",
+      "columns": [
+        "Evento",
+        "Documento",
+        "Situação",
+        "Assinaturas"
+      ],
+      "anchorSecond": 156,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "fechamentos/documentos",
+      "groupId": "fechamentos",
+      "group": "Fechamentos e Borderôs",
+      "title": "Documentos e Comprovantes",
+      "kind": "list",
+      "columns": [
+        "Documento",
+        "Evento",
+        "Responsável",
+        "Status"
+      ],
+      "anchorSecond": 156,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "controladoria/orcamentos",
+      "groupId": "controladoria",
+      "group": "Controladoria e Planejamento",
+      "title": "Controle Orçamentário",
+      "kind": "table",
+      "columns": [
+        "Centro de custo",
+        "Previsto",
+        "Realizado",
+        "Variação"
+      ],
+      "anchorSecond": 168,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "controladoria/projecoes",
+      "groupId": "controladoria",
+      "group": "Controladoria e Planejamento",
+      "title": "Projeções de Caixa",
+      "kind": "dashboard",
+      "columns": [
+        "Período",
+        "Entradas",
+        "Saídas",
+        "Saldo"
+      ],
+      "anchorSecond": 168,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "controladoria/dre-evento",
+      "groupId": "controladoria",
+      "group": "Controladoria e Planejamento",
+      "title": "DRE por Evento",
+      "kind": "report",
+      "columns": [
+        "Evento",
+        "Receita",
+        "Custos",
+        "Resultado"
+      ],
+      "anchorSecond": 168,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "controladoria/dre-disk",
+      "groupId": "controladoria",
+      "group": "Controladoria e Planejamento",
+      "title": "DRE DiskIngressos",
+      "kind": "report",
+      "columns": [
+        "Período",
+        "Receita própria",
+        "Despesas",
+        "Resultado"
+      ],
+      "anchorSecond": 168,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "controladoria/centros-custo",
+      "groupId": "controladoria",
+      "group": "Controladoria e Planejamento",
+      "title": "Centros de Custo",
+      "kind": "list",
+      "columns": [
+        "Centro",
+        "Responsável",
+        "Orçamento",
+        "Situação"
+      ],
+      "anchorSecond": 168,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "controladoria/rentabilidade",
+      "groupId": "controladoria",
+      "group": "Controladoria e Planejamento",
+      "title": "Rentabilidade de Eventos",
+      "kind": "dashboard",
+      "columns": [
+        "Evento",
+        "Receita",
+        "Custo",
+        "Margem"
+      ],
+      "anchorSecond": 168,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "fornecedores/cadastro",
+      "groupId": "fornecedores",
+      "group": "Fornecedores e Contratos",
+      "title": "Gestão de Fornecedores e Contratos",
+      "kind": "list",
+      "columns": [
+        "Fornecedor",
+        "CNPJ",
+        "Categoria",
+        "Contrato",
+        "Status"
+      ],
+      "anchorSecond": 176,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "fornecedores/vencimentos",
+      "groupId": "fornecedores",
+      "group": "Fornecedores e Contratos",
+      "title": "Vencimentos Contratuais",
+      "kind": "calendar",
+      "columns": [
+        "Contrato",
+        "Fornecedor",
+        "Vencimento",
+        "Situação"
+      ],
+      "anchorSecond": 176,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "fornecedores/pedidos",
+      "groupId": "fornecedores",
+      "group": "Fornecedores e Contratos",
+      "title": "Pedidos de Compras",
+      "kind": "workflow",
+      "columns": [
+        "Pedido",
+        "Fornecedor",
+        "Valor",
+        "Aprovação"
+      ],
+      "anchorSecond": 176,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "ledger/lancamentos",
+      "groupId": "ledger",
+      "group": "Ledger Financeiro",
+      "title": "Lançamentos Contábeis",
+      "kind": "table",
+      "columns": [
+        "Data",
+        "Conta débito",
+        "Conta crédito",
+        "Valor",
+        "Status"
+      ],
+      "anchorSecond": 180,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "ledger/razao",
+      "groupId": "ledger",
+      "group": "Ledger Financeiro",
+      "title": "Razão e Balancete",
+      "kind": "report",
+      "columns": [
+        "Conta",
+        "Débitos",
+        "Créditos",
+        "Saldo"
+      ],
+      "anchorSecond": 180,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "ledger/trilha",
+      "groupId": "ledger",
+      "group": "Ledger Financeiro",
+      "title": "Trilha de Auditoria do Ledger",
+      "kind": "report",
+      "columns": [
+        "Lançamento",
+        "Usuário",
+        "Origem",
+        "Data"
+      ],
+      "anchorSecond": 180,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "relatorios/por-produtor",
+      "groupId": "relatorios",
+      "group": "Relatórios Financeiros",
+      "title": "Relatórios por Produtor",
+      "kind": "report",
+      "columns": [
+        "Produtor",
+        "Evento",
+        "Valor",
+        "Receita",
+        "Repasse"
+      ],
+      "anchorSecond": 188,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "relatorios/por-evento",
+      "groupId": "relatorios",
+      "group": "Relatórios Financeiros",
+      "title": "Relatórios por Evento",
+      "kind": "report",
+      "columns": [
+        "Evento",
+        "Vendas",
+        "Taxas",
+        "Custos",
+        "Saldo"
+      ],
+      "anchorSecond": 188,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "relatorios/repasses",
+      "groupId": "relatorios",
+      "group": "Relatórios Financeiros",
+      "title": "Relatório de Repasses",
+      "kind": "report",
+      "columns": [
+        "Produtor",
+        "Evento",
+        "Valor",
+        "Situação"
+      ],
+      "anchorSecond": 188,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "relatorios/antecipacoes",
+      "groupId": "relatorios",
+      "group": "Relatórios Financeiros",
+      "title": "Relatório de Antecipações",
+      "kind": "report",
+      "columns": [
+        "Produtor",
+        "Evento",
+        "Valor",
+        "Status"
+      ],
+      "anchorSecond": 188,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "relatorios/extrato",
+      "groupId": "relatorios",
+      "group": "Relatórios Financeiros",
+      "title": "Extrato Financeiro",
+      "kind": "report",
+      "columns": [
+        "Data",
+        "Lançamento",
+        "Débito",
+        "Crédito"
+      ],
+      "anchorSecond": 188,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "assinaturas/central",
+      "groupId": "assinaturas",
+      "group": "Central de Assinaturas",
+      "title": "Central de Assinaturas",
+      "kind": "dashboard",
+      "columns": [
+        "Documento",
+        "Parte",
+        "Valor",
+        "Situação"
+      ],
+      "anchorSecond": 196,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "assinaturas/documentos",
+      "groupId": "assinaturas",
+      "group": "Central de Assinaturas",
+      "title": "Documentos para Assinatura",
+      "kind": "list",
+      "columns": [
+        "Documento",
+        "Tipo",
+        "Produtor",
+        "Status"
+      ],
+      "anchorSecond": 196,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "assinaturas/autentique",
+      "groupId": "assinaturas",
+      "group": "Central de Assinaturas",
+      "title": "Autentique / Assinaturas",
+      "kind": "settings",
+      "columns": [
+        "Provedor",
+        "Status OAuth",
+        "Último envio"
+      ],
+      "anchorSecond": 196,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "assinaturas/conta-azul",
+      "groupId": "assinaturas",
+      "group": "Central de Assinaturas",
+      "title": "Integração Conta Azul",
+      "kind": "settings",
+      "columns": [
+        "Recurso",
+        "Fonte",
+        "Destino",
+        "Status"
+      ],
+      "anchorSecond": 196,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "assinaturas/sincronizacoes",
+      "groupId": "assinaturas",
+      "group": "Central de Assinaturas",
+      "title": "Sincronizações",
+      "kind": "table",
+      "columns": [
+        "Data",
+        "Recurso",
+        "Resultado",
+        "Usuário"
+      ],
+      "anchorSecond": 196,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "assinaturas/logs",
+      "groupId": "assinaturas",
+      "group": "Central de Assinaturas",
+      "title": "Logs de Integração",
+      "kind": "report",
+      "columns": [
+        "Data",
+        "Evento",
+        "Status",
+        "Referência"
+      ],
+      "anchorSecond": 196,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "governanca/visao-geral",
+      "groupId": "governanca",
+      "group": "Governança Financeira",
+      "title": "Governança — Visão Geral",
+      "kind": "dashboard",
+      "columns": [
+        "Política",
+        "Aplicação",
+        "Situação",
+        "Risco"
+      ],
+      "anchorSecond": 212,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "governanca/usuarios",
+      "groupId": "governanca",
+      "group": "Governança Financeira",
+      "title": "Usuários Financeiros",
+      "kind": "list",
+      "columns": [
+        "Usuário",
+        "Perfil",
+        "Escopo",
+        "Situação"
+      ],
+      "anchorSecond": 212,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "governanca/perfis",
+      "groupId": "governanca",
+      "group": "Governança Financeira",
+      "title": "Perfis e Permissões (RBAC)",
+      "kind": "settings",
+      "columns": [
+        "Perfil",
+        "Permissões",
+        "Alçada",
+        "Escopo"
+      ],
+      "anchorSecond": 212,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "governanca/alcadas",
+      "groupId": "governanca",
+      "group": "Governança Financeira",
+      "title": "Alçadas de Aprovação",
+      "kind": "rules",
+      "columns": [
+        "Operação",
+        "Valor limite",
+        "Aprovador",
+        "Condição"
+      ],
+      "anchorSecond": 212,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "governanca/segregacao",
+      "groupId": "governanca",
+      "group": "Governança Financeira",
+      "title": "Segregação de Funções (SoD)",
+      "kind": "settings",
+      "columns": [
+        "Função",
+        "Conflito",
+        "Política",
+        "Status"
+      ],
+      "anchorSecond": 212,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "governanca/operacoes-criticas",
+      "groupId": "governanca",
+      "group": "Governança Financeira",
+      "title": "Operações Sensíveis e Críticas",
+      "kind": "workflow",
+      "columns": [
+        "Operação",
+        "Risco",
+        "Aprovação",
+        "Auditoria"
+      ],
+      "anchorSecond": 212,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "governanca/bloqueios",
+      "groupId": "governanca",
+      "group": "Governança Financeira",
+      "title": "Bloqueios e Exceções",
+      "kind": "table",
+      "columns": [
+        "Usuário",
+        "Operação",
+        "Motivo",
+        "Data"
+      ],
+      "anchorSecond": 212,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "governanca/auditoria",
+      "groupId": "governanca",
+      "group": "Governança Financeira",
+      "title": "Auditoria de Acessos",
+      "kind": "report",
+      "columns": [
+        "Usuário",
+        "Ação",
+        "Data",
+        "Recurso"
+      ],
+      "anchorSecond": 212,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    },
+    {
+      "id": "governanca/configuracoes",
+      "groupId": "governanca",
+      "group": "Governança Financeira",
+      "title": "Configurações de Governança",
+      "kind": "settings",
+      "columns": [
+        "Política",
+        "Notificações",
+        "Limite",
+        "Status"
+      ],
+      "anchorSecond": 212,
+      "evidence": "menu/tela visível ou grupo relacionado no vídeo; validar nomenclatura específica na homologação",
+      "status": "interface-a-integrar"
+    }
+  ]
+}
