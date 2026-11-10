@@ -4,13 +4,15 @@ import {readFileSync,existsSync} from 'node:fs';
 import {createHash,timingSafeEqual} from 'node:crypto';
 const read=(p)=>readFileSync(p,'utf8');
 test('projetos Vercel separados e configuração válida',()=>{
-  for(const f of ['apps/api/vercel.json','apps/backoffice/vercel.json']){
+  for(const f of ['apps/api/vercel.json','apps/backoffice/vercel.json','apps/producer-portal/vercel.json']){
     const v=JSON.parse(read(f));assert.ok(v.installCommand);assert.ok(v.buildCommand);
   }
 });
 test('BFF apresenta proteção de origem, corpo, chave interna e cookies de sessão',()=>{
-  const bff=read('apps/backoffice/src/app/v1/[...path]/route.ts');
-  for(const term of ['browserOrigin!==ownOrigin','MAX_JSON_BYTES','BRAVO_PROXY_KEY','getSetCookie','no-store','redirect:\'manual\''])assert.ok(bff.includes(term),term);
+  for(const bffPath of ['apps/backoffice/src/app/v1/[...path]/route.ts','apps/producer-portal/src/app/v1/[...path]/route.ts']){
+    const bff=read(bffPath);
+    for(const term of ['browserOrigin!==ownOrigin','MAX_JSON_BYTES','BRAVO_PROXY_KEY','getSetCookie','no-store','redirect:\'manual\''])assert.ok(bff.includes(term),`${bffPath}: ${term}`);
+  }
 });
 test('backend recusa chave ausente e verifica assinatura com tempo constante',()=>{
   const guard=read('apps/api/src/core/security/proxy-guard.ts');
@@ -31,8 +33,13 @@ test('referência original financeira e RH preservada',()=>{
   const f=read('reference/catalogo-149-original.json');assert.ok(f.includes('Financeiro'));assert.ok(f.includes('RH'));
 });
 test('não expor secrets no frontend',()=>{
-  const bff=read('apps/backoffice/src/app/v1/[...path]/route.ts');
-  assert.ok(bff.includes('process.env.BRAVO_PROXY_KEY'));
-  assert.equal(existsSync('apps/backoffice/src/app/v1/[...path]/page.tsx'),false);
-  const client=read('apps/backoffice/src/lib/bravo-api.ts');assert.equal(client.includes('BRAVO_PROXY_KEY'),false);
+  for(const [bffPath,pagePath,clientPath] of [
+    ['apps/backoffice/src/app/v1/[...path]/route.ts','apps/backoffice/src/app/v1/[...path]/page.tsx','apps/backoffice/src/lib/bravo-api.ts'],
+    ['apps/producer-portal/src/app/v1/[...path]/route.ts','apps/producer-portal/src/app/v1/[...path]/page.tsx','apps/producer-portal/src/lib/bravo-api.ts'],
+  ]){
+    const bff=read(bffPath);
+    assert.ok(bff.includes('process.env.BRAVO_PROXY_KEY'));
+    assert.equal(existsSync(pagePath),false);
+    const client=read(clientPath);assert.equal(client.includes('BRAVO_PROXY_KEY'),false);
+  }
 });

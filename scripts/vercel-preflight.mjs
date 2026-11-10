@@ -3,11 +3,14 @@ import { createHash } from 'node:crypto';
 
 const required = [
   'apps/backoffice/vercel.json',
+  'apps/producer-portal/vercel.json',
   'apps/api/vercel.json',
   'apps/backoffice/src/app/v1/[...path]/route.ts',
+  'apps/producer-portal/src/app/v1/[...path]/route.ts',
   'apps/api/src/core/security/proxy-guard.ts',
   'apps/api/src/main.ts',
   'apps/backoffice/next.config.mjs',
+  'apps/producer-portal/next.config.mjs',
   'prisma/schema.prisma',
   'pnpm-lock.yaml',
   'reference/matriz-149-original.csv',
@@ -19,7 +22,7 @@ for (const f of required) {
   if (!existsSync(f)) errors.push('Ausente: ' + f);
 }
 
-for (const f of ['apps/backoffice/vercel.json', 'apps/api/vercel.json']) {
+for (const f of ['apps/backoffice/vercel.json', 'apps/producer-portal/vercel.json', 'apps/api/vercel.json']) {
   try {
     const conf = JSON.parse(readFileSync(f, 'utf8'));
     if (!conf.buildCommand || !conf.installCommand) {
