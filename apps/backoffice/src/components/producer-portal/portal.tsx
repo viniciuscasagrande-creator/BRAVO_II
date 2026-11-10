@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { EventSummaryViewDto, EventBuilderFullViewDto } from '@bravo-ii/contracts';
 import { currentSession, get, post } from '../../lib/bravo-api';
 import { campaignLink } from './marketing.mjs';
+import { ProducerFinance } from './finance';
 import './portal.css';
 
 type Area =
@@ -690,6 +691,7 @@ export function ProducerPortal() {
                 {/* ÁREA 3: FINANCEIRO DO EVENTO (DISTINÇÃO CLARA ENTRE VENDAS, RECEBIDOS, RETENÇÕES E DISPONÍVEL) */}
                 {area === 'Financeiro' && (
                   <>
+                    <ProducerFinance key={selected} eventId={selected} />
                     <div className="metrics">
                       <article>
                         <small>1. Vendas realizadas (bruto)</small>

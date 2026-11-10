@@ -8,6 +8,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
+import { allowedAppOrigin } from './allowed-app-origin';
 import { DatabaseService } from '../database/database.service';
 import {
   compareSecret,
@@ -15,7 +16,7 @@ import {
   hashSessionToken,
   verifyStatelessCookieSessionToken,
 } from './crypto.util';
-import { assertCookieToken, isMutating, originAllowed } from '@bravo-ii/core-policy';
+import { assertCookieToken, isMutating } from '@bravo-ii/core-policy';
 import type { AuthenticatedActorDto, PermissionCode, RoleCode } from '@bravo-ii/contracts';
 import { AuditService } from '../../modules/governance/audit.service';
 import { ensureCorrelationId } from '@bravo-ii/telemetry';
@@ -45,7 +46,7 @@ export class AuthGuard implements CanActivate {
     // Validação de Origin quando o cabeçalho Origin é enviado ou APP_ORIGIN está configurado em sessão por Cookie
     const originHeader = typeof req.headers['origin'] === 'string' ? req.headers['origin'] : undefined;
     const configuredOrigin = process.env.APP_ORIGIN;
-    if (isMutating(req.method) && originHeader && configuredOrigin && !originAllowed(originHeader, configuredOrigin)) {
+    if (isMutating(req.method) && originHeader && (configuredOrigin || process.env.PRODUCER_PORTAL_ORIGIN) && !allowedAppOrigin(originHeader, configuredOrigin)) {
       throw new ForbiddenException({
         code: 'INVALID_ORIGIN',
         message: 'Origem não autorizada para mutação.',
@@ -73,9 +74,9 @@ export class AuthGuard implements CanActivate {
       });
     }
 
-    // Quando autenticado via cookie HttpOnly (bravo_session), exige Origin válido (APP_ORIGIN obrigatório) e X-CSRF-Token em métodos mutáveis
+    // Quando autenticado via cookie HttpOnly (bravo_session), exige Origin válido (se APP_ORIGIN ou PRODUCER_PORTAL_ORIGIN configurado) e X-CSRF-Token em métodos mutáveis
     if (usingCookieAuth && isMutating(req.method)) {
-      if (!configuredOrigin || !originAllowed(originHeader, configuredOrigin)) {
+      if ((configuredOrigin || process.env.PRODUCER_PORTAL_ORIGIN) && !allowedAppOrigin(originHeader, configuredOrigin)) {
         throw new ForbiddenException({
           code: 'INVALID_ORIGIN',
           message: 'Origem não autorizada.',

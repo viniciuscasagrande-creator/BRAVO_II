@@ -1,30 +1,33 @@
-# BRAVO_II — Portal do Produtor, incremento 02 (Financeiro, Repasses, Assinaturas e Marketing Conectados)
-Data: 10/11/2026.
+# BRAVO_II — Portal do Produtor, incremento 02
+Data: 10/11/2026. Base: `E:\BRAVO_II` (`0.12.0-neon-gemini-hml`), preservando os pacotes do Financeiro Disk e o incremento 01 do Portal do Produtor.
 
-## 1. Objetivo da entrega
-Integrar o pacote `BRAVO_II_PORTAL_PRODUTOR_INCREMENTO_01.zip` ao repositório oficial do `BRAVO_II` e concluir a próxima etapa definida: **conectar o financeiro do produtor, o fluxo de repasses/assinaturas, as transferências entre eventos, o painel de vendas/público, o marketing e a operação/atendimento/equipe diretamente ao núcleo existente do BRAVO_II e ao banco Neon (`floral-sunset-85900211`)**.
+## Resultado
+Criado `apps/producer-portal` (`@bravo-ii/producer-portal`), frontend Next.js independente com URL e hospedagem próprias (`apps/producer-portal/vercel.json`), conectado à API central do BRAVO_II por proxy BFF no servidor do frontend (`apps/producer-portal/src/app/v1/[...path]/route.ts`). Backoffice existente (`apps/backoffice`) preservado. Nenhum banco paralelo.
+Consulta financeira real implementada no backend existente (`ProducerFinanceController` e `ProducerFinanceService`) e consumida pela tela (`ProducerFinance`). Login próprio sem credenciais preenchidas (`/login`); sessão HttpOnly, sem localStorage. Integração de origens (`allowedAppOrigin`) permite o portal (`PRODUCER_PORTAL_ORIGIN`) e o backoffice (`APP_ORIGIN`) explicitamente.
 
-## 2. Arquivos criados e alterados
-- `apps/backoffice/src/components/producer-portal/marketing.mjs` e `marketing.d.ts`: geração e validação de link HTTPS rastreável com UTM (`utm_source`, `utm_medium`, `utm_campaign`, `utm_content`), bloqueando protocolos inseguros e credenciais embutidas.
-- `apps/backoffice/src/components/producer-portal/portal.css`: folha de estilo dedicada e responsiva do Portal do Produtor.
-- `apps/backoffice/src/components/producer-portal/portal.tsx`: interface completa em português do Brasil com 8 áreas integradas (`Visão geral`, `Evento`, `Financeiro`, `Repasses e antecipações`, `Transferências`, `Vendas e público`, `Marketing`, `Operação, Atendimento e Equipe`).
-- `apps/backoffice/src/app/produtores-pdt/page.tsx`: renderiza `<ProducerPortal />`.
-- `apps/backoffice/src/components/bravo-shell.tsx`: adiciona bypass `if (pathname === '/produtores-pdt') return <>{children}</>;` preservando o shell corporativo das demais rotas.
-- `apps/api/src/modules/events/events.controller.ts` e `apps/api/src/modules/events/events.service.ts`:
-  - `GET /v1/events/:eventId/portal`: projeção exclusiva do produtor com verificação estrita de escopo (`CROSS_EVENT_SCOPE_FORBIDDEN` auditado em `audit_log_entries`) e **zero exposição da Taxa Disk interna (`event_fee_agreements` / `3.1.01`)**.
-  - `POST /v1/events/:eventId/portal/repasses`: solicitação persistida em `finance_payout_requests` (`SOLICITADO`), validada contra o `saldoDisponivelParaRepasseCents` do evento e auditada.
-  - `POST /v1/events/:eventId/portal/repasses/:payoutId/assinar`: assinatura eletrônica pelo produtor (`ASSINADO_PRODUTOR`) após aprovação pelo Financeiro Disk (`APROVADO_FINANCEIRO`).
-  - `POST /v1/events/:eventId/portal/transferencias`: solicitação de transferência de saldo entre eventos pertencentes ao mesmo produtor (`EM_ANALISE_FINANCEIRO`).
-  - `POST /v1/events/:eventId/portal/registros`: persistência de campanhas UTM, materiais de divulgação, solicitações de alteração de evento, demandas operacionais/portaria, chamados e convites de equipe.
-- `tests/producer-portal.test.mjs`: 4 testes automatizados cobrindo validação de UTM, proteção de escopo, ocultação de Taxa Disk e integração de repasses/assinaturas.
+## Rotas
+- Frontend `apps/producer-portal`: `/login`, `/`, `/v1/*` com lista positiva de rotas (`auth/login`, `auth/logout`, `auth/me`, `events`, `events/:eventId`, `producer-portal/events/:eventId/finance`).
+- API GET `/v1/producer-portal/events` e `/api/v1/producer-portal/events`.
+- API GET `/v1/producer-portal/events/:eventId` e equivalente `/api/v1` (projeção positiva sem `readiness`, contas internas, aprovações ou histórico de taxas).
+- API GET `/v1/producer-portal/events/:eventId/finance?offset=0` e equivalente `/api/v1`.
+- Autenticação reutiliza as rotas existentes `auth/login`, `auth/me`, `auth/logout` com validação multi-origem via `allowedAppOrigin`.
 
-## 3. Regras de negócio e segurança comprovadas
-- **Distinção contábil e financeira clara:**
-  1. `vendasRealizadasBrutoCents` (vendas brutas nominais confirmadas)
-  2. `valoresCreditadosProdutorCents` (montante líquido creditado à obrigação do evento `2.1.01`)
-  3. `retencoesPreEventoCents` (reserva de segurança pré-evento conforme `advance_release_limit_bps`)
-  4. `repassesSolicitadosOuPagosCents` (repasses já pagos ou em fluxo de aprovação/assinatura)
-  5. `saldoDisponivelParaRepasseCents` (valor efetivamente disponível para solicitação imediata)
-- **Sigilo absoluto da Taxa Disk:** nenhuma rota `/v1/events` (para `PRODUTOR_PDT`) ou `/v1/events/:eventId/portal` retorna `internalDiskFeeAgreement`, `percentageRate`, `fixedAmountCents` ou lançamentos da conta `3.1.01`.
-- **Isolamento entre produtores (ABAC):** `produtor.local@pdt.diskingressos.com.br` acessa apenas os eventos vinculados à `Produtora Cultural Sul Brasil` (`Festival Sinfônico de Curitiba 2026` e `Noite de Gala Ópera de Arame 2026`); qualquer tentativa de acessar `22222222-3333-4444-8555-666666666699` (`Produtora Independente Outra Regiao`) retorna `403 CROSS_EVENT_SCOPE_FORBIDDEN` e grava auditoria imutável.
-- **Confirmação de segurança:** nenhuma transferência bancária ou liquidação externa real é executada em homologação/Preview.
+## Dados e limites
+Leitura em `events`, `event_producers`, `finance_ledger_entries`. Escrita somente de auditoria de consulta em `audit_records` (`canonical_action = 'producer.finance.read'`, `outcome = 'SUCCESS' | 'DENIED'`), além da sessão pelo módulo de identidade existente. Não há nova migration.
+Consulta financeira exige produtor vinculado ao evento (`PRODUTOR_PDT` + `pdt:portal-read` + `event_producers`); filtros também restringem cada lançamento ao seu `producer_id`. Não inferir titularidade para linhas com `producer_id IS NULL`.
+São apresentados totais acumulados registrados de vendas (`VENDA_INGRESSO_BRUTA`), obrigações (`OBRIGACAO_PRODUTOR`), repasses (`REPASSE_PRODUTOR`) e reservas (`RESERVA_ESTORNO`) em snapshot `REPEATABLE READ` com preservação de precisão `BIGINT` (`string` de centavos). Não são saldos líquidos: compensações e liquidações não foram reconciliadas. `receivedCents` e `availableCents` permanecem explicitamente `null` (`Não apurado`), e nenhuma taxa Disk interna (`RECEITA_TAXA_DISK`), código de conta (`debit_account`/`credit_account`) ou descrição livre (`description_pt_br`) é exposta.
+
+## Evidências executadas
+- `pnpm install --ignore-scripts`: concluído nos 19 projetos do workspace.
+- `pnpm -r --filter "./packages/*" build`: concluído (`exit 0`).
+- `pnpm --filter @bravo-ii/api build`: concluído (`exit 0`).
+- `pnpm --filter @bravo-ii/producer-portal build`: concluído (`exit 0`), gerando rotas `/`, `/login` e `/v1/[...path]`.
+- `pnpm run typecheck`: concluído (`exit 0`) em todos os pacotes e aplicações.
+- `node --test tests/producer-finance.integration.test.mjs`: **9/9 testes passaram** (`PGlite` em memória + API NestJS real + servidor Next.js compilado de `apps/producer-portal` em segunda porta testando login HttpOnly, listagem de eventos, extrato financeiro `BIGINT`, bloqueio `404` de `/v1/finance/ledger`, isolamento de coprodutor, ausência de taxa Disk/contas/descrição livre, auditoria `SUCCESS`/`DENIED` e logout com CSRF).
+- **Validação no Neon Homologação (`floral-sunset-85900211`)**:
+  - Verificados vínculos em `event_producers` e `user_producer_scopes` para `produtor.local@pdt.diskingressos.com.br` (`user_id = 00000000-0000-4000-8000-000000000103`, `producer_id = 11111111-2222-4333-8444-555555555555`) nos eventos autorizados `22222222-3333-4444-8555-666666666666` (`Festival Sinfônico de Curitiba 2026`) e `22222222-3333-4444-8555-666666666667` (`Noite de Gala Ópera de Arame 2026`), mantendo `22222222-3333-4444-8555-666666666699` (`Show Acústico Fora do Escopo`) isolado em outro produtor (`11111111-2222-4333-8444-555555555599`).
+  - Conferida a query exata do `ProducerFinanceService` sobre `finance_ledger_entries` no Neon HML: retorna apenas `VENDA_INGRESSO_BRUTA`, `OBRIGACAO_PRODUTOR`, `REPASSE_PRODUTOR` e `RESERVA_ESTORNO` do produtor vinculado, excluindo `RECEITA_TAXA_DISK` e `TAXA_GATEWAY_MDR`.
+- **Confirmação de segurança**: nenhuma operação financeira real (estorno, repasse ou antecipação bancária) foi executada em produção.
+
+## Próximo marco fixo
+Validar a fonte canônica de liquidações, retenções e compensações no Neon HML. Só então habilitar saldo disponível e solicitação persistida de repasse → aprovação Disk → assinatura produtor → assinatura final Disk → confirmação e conciliação. Não usar bruto menos repasse como saldo disponível.

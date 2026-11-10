@@ -1,0 +1,1 @@
+{"buildCommand":"cd ../.. && pnpm --filter @bravo-ii/contracts build && pnpm --filter @bravo-ii/producer-portal build","installCommand":"cd ../.. && pnpm install --frozen-lockfile --ignore-scripts","framework":"nextjs"}

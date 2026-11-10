@@ -11,10 +11,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import { allowedAppOrigin } from '../../common/auth/allowed-app-origin';
 import { IdentityService } from './identity.service';
 import { AuthGuard, type AuthenticatedRequest, RequirePermission } from '../../common/auth/auth.guard';
 import { csrfForToken } from '../../common/auth/crypto.util';
-import { normalizeRoleForPolicy, originAllowed } from '@bravo-ii/core-policy';
+import { normalizeRoleForPolicy } from '@bravo-ii/core-policy';
 import { ensureCorrelationId } from '@bravo-ii/telemetry';
 
 const SESSION_COOKIE_NAME = 'bravo_session';
@@ -55,7 +56,7 @@ export class IdentityController {
   async login(@Body() body: unknown, @Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const originHeader = typeof req.headers['origin'] === 'string' ? req.headers['origin'] : undefined;
     const configuredOrigin = process.env.APP_ORIGIN || 'http://localhost:3000';
-    if (originHeader && !originAllowed(originHeader, configuredOrigin)) {
+    if (originHeader && !allowedAppOrigin(originHeader, configuredOrigin)) {
       throw new ForbiddenException({
         code: 'INVALID_ORIGIN',
         message: 'Origem não autorizada para autenticação.',
