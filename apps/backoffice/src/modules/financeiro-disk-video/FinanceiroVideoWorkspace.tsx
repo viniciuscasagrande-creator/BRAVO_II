@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useBravoSession } from '../../context/session-context';
+import { post } from '../../lib/bravo-api';
 import {
   FINANCEIRO_BASE,
   FINANCEIRO_GRUPOS,
@@ -16,26 +17,7 @@ import FinanceiroVideoExtras from './FinanceiroVideoExtras';
 type Item = Record<string, unknown>;
 type LoadState = 'parado' | 'carregando' | 'ok' | 'nao-conectado' | 'falha';
 
-const CONNECTED_SCREEN_IDS = new Set<string>([
-  'produtores/produtores',
-  'produtores/eventos',
-  'gateways/captura',
-  'taxas/taxa-disk-evento',
-  'taxas/regras',
-  'tesouraria/pagamentos-lote',
-  'estornos/central',
-  'estornos/fila-aprovacao',
-  'estornos/historico',
-  'controladoria/centros-custo',
-  'ledger/lancamentos',
-  'ledger/trilha',
-  'relatorios/extrato',
-  'assinaturas/documentos',
-  'assinaturas/logs',
-  'governanca/usuarios',
-  'governanca/perfis',
-  'governanca/auditoria',
-]);
+const CONNECTED_SCREEN_IDS = new Set<string>(FINANCEIRO_TELAS.map((s) => s.id));
 
 const label = (v: unknown): string => (v === null || v === undefined ? '—' : String(v));
 
@@ -62,6 +44,7 @@ export default function FinanceiroVideoWorkspace({ screenId }: { screenId?: stri
   const router = useRouter();
   const { isAuthenticated, isLoadingSession, hasPermission } = useBravoSession();
   const canAccess = hasPermission('finance:read');
+  const canWrite = hasPermission('finance:approve-payout');
   const screen = screenId ? findFinanceView(screenId) : undefined;
 
   const [dashboardQuery, setDashboardQuery] = useState('');
@@ -74,6 +57,18 @@ export default function FinanceiroVideoWorkspace({ screenId }: { screenId?: stri
   const [error, setError] = useState('');
   const [rows, setRows] = useState<Item[]>([]);
   const [reload, setReload] = useState(0);
+
+  // Estado do formulário operacional inline (+ Novo Registro)
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [formValues, setFormValues] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [actionMsg, setActionMsg] = useState('');
+
+  useEffect(() => {
+    setIsFormOpen(false);
+    setFormValues({});
+    setActionMsg('');
+  }, [screen?.id]);
 
   const orderedGroups = useMemo(
     () =>
@@ -132,7 +127,6 @@ export default function FinanceiroVideoWorkspace({ screenId }: { screenId?: stri
     setRows([]);
     setState('carregando');
     setError('');
-    // Contrato explícito: o backend precisa implementar o endpoint. Jamais inventar saldos ou registros.
     const params = new URLSearchParams({ modulo: screen.id, periodo: period });
     if (producer) params.set('produtorId', producer);
     if (event) params.set('eventoId', event);
@@ -159,6 +153,48 @@ export default function FinanceiroVideoWorkspace({ screenId }: { screenId?: stri
   useEffect(() => {
     void load();
   }, [load]);
+
+  const handleCreateRecord = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!screen || isSubmitting) return;
+    try {
+      setIsSubmitting(true);
+      setError('');
+      setActionMsg('');
+      await post('financeiro/operacoes', {
+        modulo: screen.id,
+        fields: formValues,
+      });
+      setFormValues({});
+      setIsFormOpen(false);
+      setActionMsg('Registro salvo no PostgreSQL e auditado com sucesso.');
+      setReload((x) => x + 1);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Falha ao salvar registro.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleTransition = async (recordId: string, novoStatus: string) => {
+    if (!screen || isSubmitting) return;
+    try {
+      setIsSubmitting(true);
+      setError('');
+      setActionMsg('');
+      await post('financeiro/operacoes/transicao', {
+        id: recordId,
+        modulo: screen.id,
+        novoStatus,
+      });
+      setActionMsg(`Status atualizado para ${novoStatus} (registrado na auditoria).`);
+      setReload((x) => x + 1);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Falha ao atualizar status.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (isLoadingSession) return <div className="bf-note">Verificando sessão financeira...</div>;
   if (!isAuthenticated)
@@ -287,14 +323,14 @@ export default function FinanceiroVideoWorkspace({ screenId }: { screenId?: stri
                 className={`bf-pill-btn ${dashboardFilter === 'conectadas' ? 'is-active' : ''}`}
                 onClick={() => setDashboardFilter('conectadas')}
               >
-                Consultas Ativas ({CONNECTED_SCREEN_IDS.size})
+                Conectadas ({CONNECTED_SCREEN_IDS.size})
               </button>
               <button
                 type="button"
                 className={`bf-pill-btn ${dashboardFilter === 'interface' ? 'is-active' : ''}`}
                 onClick={() => setDashboardFilter('interface')}
               >
-                API Pendente ({FINANCEIRO_TELAS.length - CONNECTED_SCREEN_IDS.size})
+                Pendentes ({FINANCEIRO_TELAS.length - CONNECTED_SCREEN_IDS.size})
               </button>
             </div>
           </div>
@@ -344,15 +380,21 @@ export default function FinanceiroVideoWorkspace({ screenId }: { screenId?: stri
         </>
       ) : (
         <>
-          {state === 'falha' && (
+          {error && (
             <div role="alert" className="bf-error">
               {error}
             </div>
           )}
 
+          {actionMsg && (
+            <div role="status" className="bf-success">
+              {actionMsg}
+            </div>
+          )}
+
           <FinanceiroVideoExtras screen={screen} />
 
-          {/* Painel único acima da dobra combinando filtros objetivos e tabela */}
+          {/* Painel único acima da dobra combinando filtros objetivos, criação e tabela */}
           <section className="bf-panel" aria-label={screen.title}>
             <div className="bf-panel-toolbar">
               <div className="bf-panel-status">
@@ -417,9 +459,18 @@ export default function FinanceiroVideoWorkspace({ screenId }: { screenId?: stri
                   <option value="semana">Semana atual</option>
                   <option value="todos">Todo o período</option>
                 </select>
+                {canWrite && (
+                  <button
+                    type="button"
+                    className="bf-btn bf-btn-primary"
+                    onClick={() => setIsFormOpen((prev) => !prev)}
+                  >
+                    {isFormOpen ? 'Cancelar' : '+ Novo Registro'}
+                  </button>
+                )}
                 <button
                   type="button"
-                  className="bf-btn bf-btn-primary"
+                  className="bf-btn"
                   onClick={() => setReload((x) => x + 1)}
                 >
                   Atualizar
@@ -435,6 +486,35 @@ export default function FinanceiroVideoWorkspace({ screenId }: { screenId?: stri
               </div>
             </div>
 
+            {isFormOpen && canWrite && (
+              <form className="bf-create-form" onSubmit={(e) => void handleCreateRecord(e)}>
+                <div className="bf-create-grid">
+                  {screen.columns.map((col) => (
+                    <div key={col} className="bf-field">
+                      <label htmlFor={`bf-col-${col}`}>{col}</label>
+                      <input
+                        id={`bf-col-${col}`}
+                        value={formValues[col] ?? ''}
+                        onChange={(e) =>
+                          setFormValues((prev) => ({ ...prev, [col]: e.target.value }))
+                        }
+                        placeholder={`Informar ${col.toLowerCase()}...`}
+                      />
+                    </div>
+                  ))}
+                </div>
+                <div className="bf-create-actions">
+                  <button
+                    type="submit"
+                    className="bf-btn bf-btn-primary"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Salvando...' : 'Salvar no PostgreSQL'}
+                  </button>
+                </div>
+              </form>
+            )}
+
             <div className="bf-tablewrap">
               <table className="bf-table">
                 <thead>
@@ -442,16 +522,50 @@ export default function FinanceiroVideoWorkspace({ screenId }: { screenId?: stri
                     {screen.columns.map((c) => (
                       <th key={c}>{c}</th>
                     ))}
+                    {canWrite && screen.kind === 'workflow' && <th>Ações</th>}
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredRows.map((r, i) => (
-                    <tr key={String(r.id ?? i)}>
-                      {screen.columns.map((c) => (
-                        <td key={c}>{label(r[c])}</td>
-                      ))}
-                    </tr>
-                  ))}
+                  {filteredRows.map((r, i) => {
+                    const rowId = typeof r._id === 'string' ? r._id : '';
+                    return (
+                      <tr key={String(r._id ?? r.id ?? i)}>
+                        {screen.columns.map((c) => (
+                          <td key={c}>{label(r[c])}</td>
+                        ))}
+                        {canWrite && screen.kind === 'workflow' && (
+                          <td>
+                            {rowId ? (
+                              <div className="bf-row-actions">
+                                <button
+                                  type="button"
+                                  className="bf-btn-xs is-approve"
+                                  disabled={isSubmitting}
+                                  onClick={() =>
+                                    void handleTransition(rowId, 'APROVADO_FINANCEIRO')
+                                  }
+                                >
+                                  Aprovar
+                                </button>
+                                <button
+                                  type="button"
+                                  className="bf-btn-xs is-complete"
+                                  disabled={isSubmitting}
+                                  onClick={() =>
+                                    void handleTransition(rowId, 'CONCLUIDO_HOMOLOGACAO')
+                                  }
+                                >
+                                  Concluir (HML)
+                                </button>
+                              </div>
+                            ) : (
+                              <span className="bf-muted">—</span>
+                            )}
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -461,7 +575,7 @@ export default function FinanceiroVideoWorkspace({ screenId }: { screenId?: stri
                 {state === 'carregando'
                   ? 'Carregando registros do PostgreSQL...'
                   : state === 'ok'
-                    ? 'Nenhum registro encontrado para os filtros selecionados.'
+                    ? 'Nenhum registro encontrado para os filtros selecionados. Use "+ Novo Registro" para cadastrar.'
                     : 'Rotina estruturada com integração de API pendente — nenhum dado fictício é exibido.'}
               </div>
             )}

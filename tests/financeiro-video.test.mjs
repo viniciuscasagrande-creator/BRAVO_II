@@ -66,10 +66,19 @@ test('Menu Financeiro possui os 15 módulos individuais ordenados (01 a 15) e Da
   }
 });
 
-test('FinanceiroVideoController protege rota com AuthGuard, finance:read, bloqueio PDT e trilha de auditoria', () => {
+test('FinanceiroVideoController protege rota com AuthGuard, finance:read, bloqueio PDT, trilha de auditoria e conecta todas as 96 telas', () => {
   assert.match(controller, /@UseGuards\(AuthGuard\)/);
   assert.match(controller, /@RequirePermission\('finance:read'\)/);
+  assert.match(controller, /@RequirePermission\('finance:approve-payout'\)/);
   assert.match(controller, /PRODUTOR_PDT/);
   assert.match(controller, /ROTINA_EM_IMPLANTACAO/);
   assert.match(controller, /financeiro\.operacoes\.read/);
+  assert.match(controller, /financeiro\.operacoes\.create/);
+  assert.match(controller, /financeiro\.operacoes\.transition/);
+  for (const screen of cat.screens) {
+    assert.ok(
+      controller.includes(`'${screen.id}':`),
+      `Tela do Financeiro não conectada em SOURCES: ${screen.id}`
+    );
+  }
 });
