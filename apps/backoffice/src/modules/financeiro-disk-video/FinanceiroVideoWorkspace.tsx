@@ -296,6 +296,8 @@ export default function FinanceiroVideoWorkspace({ screenId }: { screenId?: stri
         )}
       </header>
 
+      <FinanceiroVideoExtras screen={screen} />
+
       {!screen ? (
         <>
           {/* Barra compacta de busca e filtro no Dashboard */}
@@ -391,8 +393,6 @@ export default function FinanceiroVideoWorkspace({ screenId }: { screenId?: stri
               {actionMsg}
             </div>
           )}
-
-          <FinanceiroVideoExtras screen={screen} />
 
           {/* Painel único acima da dobra combinando filtros objetivos, criação e tabela */}
           <section className="bf-panel" aria-label={screen.title}>

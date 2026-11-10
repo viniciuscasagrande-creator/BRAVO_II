@@ -19,6 +19,8 @@ import {
   WorkspaceHeader,
 } from '@bravo-ii/ui';
 import { useBravoSession } from '../../context/session-context';
+import '../../modules/financeiro-disk-video/financeiro-video.css';
+import FinanceiroVideoExtras from '../../modules/financeiro-disk-video/FinanceiroVideoExtras';
 
 type FinanceTabKey = 'visao' | 'saldos' | 'tesouraria' | 'razao' | 'catalogo';
 
@@ -429,6 +431,8 @@ export default function FinanceiroDiskPage() {
           onRetry={() => void loadFinanceData()}
         />
       )}
+
+      {isAuthenticated && <FinanceiroVideoExtras />}
 
       {/* Navegação Interna em Abas BankOS */}
       <div className="bravo-tabs" role="tablist" aria-label="Subáreas do Financeiro Disk">

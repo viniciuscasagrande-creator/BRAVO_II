@@ -10,6 +10,8 @@ import {
   WorkspaceHeader,
 } from '@bravo-ii/ui';
 import { useBravoSession } from '../context/session-context';
+import '../modules/financeiro-disk-video/financeiro-video.css';
+import FinanceiroVideoExtras from '../modules/financeiro-disk-video/FinanceiroVideoExtras';
 import { BravoApiClient } from '@bravo-ii/sdk';
 import {
   CANONICAL_ROLES,
@@ -431,6 +433,7 @@ export default function HomeCentralOperacionalPage() {
       {/* Estado 4: Autenticado com dados reais da API */}
       {connState === 'AUTHENTICATED_LIVE' && liveOverview && (
         <>
+          {hasPermission('finance:read') && <FinanceiroVideoExtras />}
           <div
             style={{
               display: 'grid',

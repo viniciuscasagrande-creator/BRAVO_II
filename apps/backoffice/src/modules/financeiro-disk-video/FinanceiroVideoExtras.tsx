@@ -1,17 +1,10 @@
 'use client';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { get, post } from '../../lib/bravo-api';
 import type { ScreenConfig } from './catalogo';
 
 const brl = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const centsToBrl = (c: number) => brl((c || 0) / 100);
-
-function readCsrfCookie(): string {
-  if (typeof document === 'undefined') return '';
-  const match = document.cookie
-    .split('; ')
-    .find((entry) => entry.startsWith('bravo_csrf='));
-  return match ? decodeURIComponent(match.split('=')[1] ?? '') : '';
-}
 
 interface DashboardData {
   kpis: {
@@ -142,8 +135,9 @@ function defaultTabForScreen(screenId: string): HubTab {
   return 'PAINEL';
 }
 
-export default function FinanceiroVideoExtras({ screen }: { screen: ScreenConfig }) {
-  const [activeTab, setActiveTab] = useState<HubTab>(() => defaultTabForScreen(screen.id));
+export default function FinanceiroVideoExtras({ screen }: { screen?: ScreenConfig }) {
+  const screenId = screen?.id ?? 'dashboard';
+  const [activeTab, setActiveTab] = useState<HubTab>(() => defaultTabForScreen(screenId));
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
@@ -177,20 +171,14 @@ export default function FinanceiroVideoExtras({ screen }: { screen: ScreenConfig
   const [filterArea5w, setFilterArea5w] = useState('TODAS');
 
   useEffect(() => {
-    setActiveTab(defaultTabForScreen(screen.id));
-  }, [screen.id]);
+    setActiveTab(defaultTabForScreen(screenId));
+  }, [screenId]);
 
   const loadDashboard = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch('/v1/financeiro/painel-executivo', {
-        credentials: 'include',
-        headers: { Accept: 'application/json' },
-      });
-      if (res.ok) {
-        const body = (await res.json()) as DashboardData;
-        setData(body);
-      }
+      const body = await get<DashboardData>('financeiro/painel-executivo');
+      setData(body);
     } catch {
       // Silencioso em caso de carregamento inicial
     } finally {
@@ -222,22 +210,7 @@ export default function FinanceiroVideoExtras({ screen }: { screen: ScreenConfig
   const postJson = async (url: string, payload: Record<string, unknown>, okText: string) => {
     setFeedback(null);
     try {
-      const csrf = readCsrfCookie();
-      const res = await fetch(url, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          ...(csrf ? { 'x-csrf-token': csrf } : {}),
-        },
-        body: JSON.stringify(payload),
-      });
-      const body = (await res.json().catch(() => ({}))) as { message?: string };
-      if (!res.ok) {
-        setFeedback({ type: 'err', text: body.message || `Falha HTTP ${res.status}` });
-        return;
-      }
+      await post(url.replace(/^\/v1\//, ''), payload);
       setFeedback({ type: 'ok', text: okText });
       await loadDashboard();
     } catch (e) {
@@ -395,9 +368,63 @@ export default function FinanceiroVideoExtras({ screen }: { screen: ScreenConfig
     riscosCriticosAltos: 0,
   };
 
-  const isSim = screen.kind === 'simulator';
-  const isWorkflow = screen.kind === 'workflow';
-  const isSettings = screen.kind === 'settings' || screen.kind === 'rules';
+  const isSim = screen?.kind === 'simulator';
+  const isWorkflow = screen?.kind === 'workflow';
+  const isSettings = screen?.kind === 'settings' || screen?.kind === 'rules';
+
+  const handleExportCsv = () => {
+    const lines: string[] = [];
+    if (activeTab === 'RAZAO' || activeTab === 'PAINEL') {
+      lines.push('Numero;Tipo;Debito;Credito;Valor_BRL;Historico;Data');
+      for (const l of data?.lancamentos ?? []) {
+        lines.push(
+          `${l.entryNumber};${l.entryType};${l.debitAccount};${l.creditAccount};${(l.amountCents / 100).toFixed(2)};"${(l.description || '').replaceAll('"', '""')}";${l.occurredAt}`
+        );
+      }
+    } else if (activeTab === 'REPASSES') {
+      lines.push('Protocolo;Tipo;Valor_BRL;Status;Solicitante;Data');
+      for (const r of data?.repasses ?? []) {
+        lines.push(
+          `${r.protocol};${r.requestType};${(r.amountCents / 100).toFixed(2)};${r.status};${r.requestedBy};${r.createdAt}`
+        );
+      }
+    } else if (activeTab === 'CONCILIACAO') {
+      lines.push('Transacao;Bruto_Gateway;Taxa_Gateway;Bruto_Razao;Taxa_Esperada;Dif_Taxa;Situacao');
+      for (const c of data?.conciliacoes ?? []) {
+        lines.push(
+          `${c.externalTxId};${(c.grossCents / 100).toFixed(2)};${(c.gatewayFeeCents / 100).toFixed(2)};${(c.expectedGrossCents / 100).toFixed(2)};${(c.expectedFeeCents / 100).toFixed(2)};${(c.diffFeeCents / 100).toFixed(2)};${c.status}`
+        );
+      }
+    } else if (activeTab === 'RISCOS') {
+      lines.push('Risco;Categoria;Probabilidade;Impacto;Nivel;Controle;Responsavel;Status');
+      for (const rk of data?.riscos ?? []) {
+        lines.push(
+          `"${rk.title.replaceAll('"', '""')}";${rk.category};${rk.probability};${rk.impact};${rk.level};"${(rk.control_description || '').replaceAll('"', '""')}";${rk.owner_name};${rk.status}`
+        );
+      }
+    } else if (activeTab === 'ATENDIMENTO') {
+      lines.push('Protocolo;Tipo;Assunto;Valor_BRL;Status;Atrasado;Criado_Em');
+      for (const ch of data?.chamados ?? []) {
+        lines.push(
+          `${ch.protocol};${ch.kind};"${ch.subject.replaceAll('"', '""')}";${(ch.amountCents / 100).toFixed(2)};${ch.status};${ch.overdue ? 'SIM' : 'NAO'};${ch.createdAt}`
+        );
+      }
+    } else {
+      lines.push('Codigo;Area;Prioridade;O_Que;Por_Que;Quem;Como;Status');
+      for (const p of data?.plano5w2h ?? []) {
+        lines.push(
+          `${p.planCode};${p.areaName};${p.priority};"${p.whatText.replaceAll('"', '""')}";"${p.whyText.replaceAll('"', '""')}";${p.whoName};"${p.howText.replaceAll('"', '""')}";${p.status}`
+        );
+      }
+    }
+    const blob = new Blob(['\uFEFF' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `bravo-ii-${activeTab.toLowerCase()}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 14 }}>
@@ -435,7 +462,10 @@ export default function FinanceiroVideoExtras({ screen }: { screen: ScreenConfig
               </button>
             ))}
             <button type="button" className="bf-btn bf-btn-ghost" onClick={() => void loadDashboard()}>
-              ↻ Atualizar Indicadores
+              ↻ Atualizar
+            </button>
+            <button type="button" className="bf-btn bf-btn-ghost" onClick={handleExportCsv}>
+              ⬇ Exportar CSV
             </button>
           </div>
         </div>
@@ -1183,9 +1213,160 @@ export default function FinanceiroVideoExtras({ screen }: { screen: ScreenConfig
           </div>
         )}
 
-        {/* ABA 7: PLANO DE AÇÃO 5W2H (Fase 1) */}
+        {/* ABA 7: PLANO DE AÇÃO 5W2H (Fase 1 + T7 Dashboard por Status, Área e Responsável) */}
         {activeTab === 'PLANO_5W2H' && (
           <div style={{ marginTop: 12 }}>
+            {/* T7: Dashboard 5W2H por Status, Área e Responsável */}
+            <div
+              className="bf-sim-metrics"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))',
+                gap: 10,
+                marginBottom: 12,
+              }}
+            >
+              <div className="bf-sim-metric">
+                <small>Total de Ações 5W2H</small>
+                <strong>{(data?.plano5w2h ?? []).length}</strong>
+              </div>
+              <div className="bf-sim-metric">
+                <small>Concluídas</small>
+                <strong style={{ color: '#16a34a' }}>
+                  {(data?.plano5w2h ?? []).filter((x) => x.status === 'Concluído').length}
+                </strong>
+              </div>
+              <div className="bf-sim-metric">
+                <small>Em Andamento</small>
+                <strong style={{ color: '#2563eb' }}>
+                  {(data?.plano5w2h ?? []).filter((x) => x.status === 'Em andamento').length}
+                </strong>
+              </div>
+              <div className="bf-sim-metric">
+                <small>Não Iniciadas / Atrasadas</small>
+                <strong style={{ color: '#dc2626' }}>
+                  {
+                    (data?.plano5w2h ?? []).filter(
+                      (x) =>
+                        x.status === 'Pendente' ||
+                        x.status === 'Atrasado' ||
+                        x.status === 'Não iniciado'
+                    ).length
+                  }
+                </strong>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+                gap: 12,
+                marginBottom: 14,
+              }}
+            >
+              <div className="bf-panel" style={{ padding: 12 }}>
+                <strong style={{ display: 'block', marginBottom: 8 }}>
+                  Distribuição 5W2H por Área
+                </strong>
+                {[
+                  'FINANCEIRO',
+                  'SUPORTE',
+                  'SAC',
+                  'ESTORNO',
+                  'COMERCIAL',
+                  'DIRETORIA',
+                  'MKT',
+                ].map((area) => {
+                  const totalArea = (data?.plano5w2h ?? []).filter((p) => p.areaName === area).length;
+                  const doneArea = (data?.plano5w2h ?? []).filter(
+                    (p) => p.areaName === area && p.status === 'Concluído'
+                  ).length;
+                  const pct = Math.min(
+                    100,
+                    Math.round((totalArea / Math.max(1, (data?.plano5w2h ?? []).length)) * 100)
+                  );
+                  return (
+                    <div key={area} style={{ marginBottom: 6 }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          fontSize: 12,
+                          marginBottom: 2,
+                        }}
+                      >
+                        <span>{area}</span>
+                        <span>
+                          {totalArea} ação(ões) · {doneArea} concluída(s)
+                        </span>
+                      </div>
+                      <div style={{ background: '#e2e8f0', height: 7, borderRadius: 4 }}>
+                        <div
+                          style={{
+                            width: `${pct}%`,
+                            background: '#2563eb',
+                            height: 7,
+                            borderRadius: 4,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="bf-panel" style={{ padding: 12 }}>
+                <strong style={{ display: 'block', marginBottom: 8 }}>
+                  Distribuição por Responsável (Who)
+                </strong>
+                {Array.from(
+                  new Set((data?.plano5w2h ?? []).map((p) => p.whoName || 'Equipe Financeira'))
+                )
+                  .slice(0, 7)
+                  .map((who) => {
+                    const countWho = (data?.plano5w2h ?? []).filter(
+                      (p) => (p.whoName || 'Equipe Financeira') === who
+                    ).length;
+                    const doneWho = (data?.plano5w2h ?? []).filter(
+                      (p) =>
+                        (p.whoName || 'Equipe Financeira') === who && p.status === 'Concluído'
+                    ).length;
+                    const pct = Math.min(
+                      100,
+                      Math.round((countWho / Math.max(1, (data?.plano5w2h ?? []).length)) * 100)
+                    );
+                    return (
+                      <div key={who} style={{ marginBottom: 6 }}>
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            fontSize: 12,
+                            marginBottom: 2,
+                          }}
+                        >
+                          <span>{who}</span>
+                          <span>
+                            {countWho} ação(ões) · {doneWho} concluída(s)
+                          </span>
+                        </div>
+                        <div style={{ background: '#e2e8f0', height: 7, borderRadius: 4 }}>
+                          <div
+                            style={{
+                              width: `${pct}%`,
+                              background: '#059669',
+                              height: 7,
+                              borderRadius: 4,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            </div>
+
             <div className="bf-panel-toolbar" style={{ flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
               <strong>Nova Ação 5W2H:</strong>
               <div className="bf-inline-filters" style={{ flexWrap: 'wrap' }}>
@@ -1391,7 +1572,7 @@ export default function FinanceiroVideoExtras({ screen }: { screen: ScreenConfig
       {isSettings && (
         <div className="bf-workflow-bar">
           <span className="bf-workflow-label">
-            {screen.kind === 'rules' ? 'Política / Regra:' : 'Parâmetros da rotina:'}
+            {screen?.kind === 'rules' ? 'Política / Regra:' : 'Parâmetros da rotina:'}
           </span>
           <button
             type="button"
