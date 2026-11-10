@@ -1137,4 +1137,505 @@ export class EventsService {
 
     return this.getEventById(eventId, actor, correlationId);
   }
+
+  private async verifyProducerEventAccess(
+    eventId: string,
+    actor: AuthenticatedActorDto,
+    correlationId: string
+  ): Promise<{
+    id: string;
+    code: string;
+    title: string;
+    starts_at: string | Date;
+    advance_release_limit_bps: number;
+    producer_id: string | null;
+  }> {
+    const res = await this.db.query<{
+      id: string;
+      code: string;
+      title: string;
+      starts_at: string | Date;
+      advance_release_limit_bps: number | null;
+    }>(
+      `SELECT id, code, title, starts_at, COALESCE(advance_release_limit_bps, 7000) AS advance_release_limit_bps
+       FROM events
+       WHERE id = $1`,
+      [eventId]
+    );
+
+    if (res.rows.length === 0) {
+      throw new NotFoundException({
+        code: 'EVENT_NOT_FOUND',
+        message: 'Evento não encontrado.',
+      });
+    }
+
+    const producerLinks = await this.db.query<{ producer_id: string }>(
+      `SELECT producer_id FROM event_producers WHERE event_id = $1 ORDER BY created_at ASC`,
+      [eventId]
+    );
+    const eventProducerIds = producerLinks.rows.map((p) => p.producer_id);
+
+    if (this.isExternalProducerOnly(actor)) {
+      const hasEventScope = actor.eventScopeIds.includes(eventId);
+      const hasProducerScope = eventProducerIds.some((pid) => actor.producerScopeIds.includes(pid));
+      if (!hasEventScope && !hasProducerScope) {
+        await this.auditService.record({
+          actorUserId: actor.userId,
+          actorRole: actor.roles.join(','),
+          sessionId: actor.sessionId,
+          canonicalAction: 'event.access.denied_cross_scope',
+          resourceType: 'Event',
+          resourceId: eventId,
+          eventId,
+          outcome: 'DENIED',
+          justification: 'Tentativa bloqueada de acesso cruzado (IDOR) no Portal do Produtor.',
+          origin: 'PDT',
+          correlationId,
+        });
+        throw new ForbiddenException({
+          code: 'CROSS_EVENT_SCOPE_FORBIDDEN',
+          message: 'Acesso negado: este evento não pertence ao escopo autorizado do produtor.',
+        });
+      }
+    }
+
+    return {
+      id: res.rows[0].id,
+      code: res.rows[0].code,
+      title: res.rows[0].title,
+      starts_at: res.rows[0].starts_at,
+      advance_release_limit_bps: Number(res.rows[0].advance_release_limit_bps ?? 7000),
+      producer_id: eventProducerIds[0] ?? null,
+    };
+  }
+
+  private async computeProducerEventFinancials(eventMeta: {
+    id: string;
+    starts_at: string | Date;
+    advance_release_limit_bps: number;
+  }) {
+    const ordersGrossRes = await this.db
+      .query<{ gross_cents: string; orders_count: string }>(
+        `SELECT
+           COALESCE(SUM(total_amount_cents), 0)::text AS gross_cents,
+           COUNT(*)::text AS orders_count
+         FROM p08_sale_orders
+         WHERE event_id = $1 AND status IN ('PAID', 'CAPTURED', 'ISSUED', 'CONFIRMED')`,
+        [eventMeta.id]
+      )
+      .catch(() => ({ rows: [{ gross_cents: '0', orders_count: '0' }] }));
+
+    const ledgerGrossRes = await this.db
+      .query<{ gross_cents: string }>(
+        `SELECT COALESCE(SUM(amount_cents), 0)::text AS gross_cents
+         FROM finance_ledger_entries
+         WHERE (event_id = $1 OR event_id IS NULL)
+           AND debit_account LIKE '1.1.02%'`,
+        [eventMeta.id]
+      )
+      .catch(() => ({ rows: [{ gross_cents: '0' }] }));
+
+    const ledgerCreditedRes = await this.db
+      .query<{ credited_cents: string; settled_debit_cents: string }>(
+        `SELECT
+           COALESCE(SUM(CASE WHEN credit_account LIKE '2.1.01%' THEN amount_cents ELSE 0 END), 0)::text AS credited_cents,
+           COALESCE(SUM(CASE WHEN debit_account LIKE '2.1.01%' THEN amount_cents ELSE 0 END), 0)::text AS settled_debit_cents
+         FROM finance_ledger_entries
+         WHERE event_id = $1 OR event_id IS NULL`,
+        [eventMeta.id]
+      )
+      .catch(() => ({ rows: [{ credited_cents: '0', settled_debit_cents: '0' }] }));
+
+    const payoutsRes = await this.db
+      .query<{ reserved_or_paid_cents: string }>(
+        `SELECT COALESCE(SUM(amount_cents), 0)::text AS reserved_or_paid_cents
+         FROM finance_payout_requests
+         WHERE (event_id = $1 OR event_id IS NULL)
+           AND status NOT IN ('REJEITADO', 'CANCELADO')`,
+        [eventMeta.id]
+      )
+      .catch(() => ({ rows: [{ reserved_or_paid_cents: '0' }] }));
+
+    const ticketsRes = await this.db
+      .query<{ emitted: string; checked_in: string; cortesias: string }>(
+        `SELECT
+           COUNT(*)::text AS emitted,
+           COUNT(*) FILTER (WHERE status = 'USED')::text AS checked_in,
+           0::text AS cortesias
+         FROM ticket_credentials
+         WHERE event_id = $1`,
+        [eventMeta.id]
+      )
+      .catch(() => ({ rows: [{ emitted: '0', checked_in: '0', cortesias: '0' }] }));
+
+    const ordersGrossCents = Number(ordersGrossRes.rows[0]?.gross_cents || '0');
+    const ledgerGrossCents = Number(ledgerGrossRes.rows[0]?.gross_cents || '0');
+    const vendasRealizadasBrutoCents = Math.max(ordersGrossCents, ledgerGrossCents);
+    const valoresCreditadosProdutorCents = Number(ledgerCreditedRes.rows[0]?.credited_cents || '0');
+    const repassesSolicitadosOuPagosCents = Math.max(
+      Number(payoutsRes.rows[0]?.reserved_or_paid_cents || '0'),
+      Number(ledgerCreditedRes.rows[0]?.settled_debit_cents || '0')
+    );
+
+    const startsAtMs = new Date(eventMeta.starts_at).getTime();
+    const eventoJaRealizado = Number.isFinite(startsAtMs) && startsAtMs <= Date.now();
+    const releaseBps = eventoJaRealizado ? 10000 : eventMeta.advance_release_limit_bps;
+    const valorBrutoLiberadoPelaRegraCents = Math.round(
+      (valoresCreditadosProdutorCents * releaseBps) / 10000
+    );
+    const retencoesPreEventoCents = Math.max(
+      0,
+      valoresCreditadosProdutorCents - valorBrutoLiberadoPelaRegraCents
+    );
+    const saldoDisponivelParaRepasseCents = Math.max(
+      0,
+      valorBrutoLiberadoPelaRegraCents - repassesSolicitadosOuPagosCents
+    );
+
+    return {
+      vendasRealizadasBrutoCents,
+      valoresCreditadosProdutorCents,
+      retencoesPreEventoCents,
+      repassesSolicitadosOuPagosCents,
+      saldoDisponivelParaRepasseCents,
+      eventoJaRealizado,
+      percentualLiberacaoPreEvento: Math.round(eventMeta.advance_release_limit_bps / 100),
+      pedidosConfirmadosCount: Number(ordersGrossRes.rows[0]?.orders_count || '0'),
+      ingressosEmitidosCount: Number(ticketsRes.rows[0]?.emitted || '0'),
+      ingressosValidadosPortariaCount: Number(ticketsRes.rows[0]?.checked_in || '0'),
+      cortesiasEmitidasCount: Number(ticketsRes.rows[0]?.cortesias || '0'),
+    };
+  }
+
+  async getProducerEventPortal(
+    eventId: string,
+    actor: AuthenticatedActorDto,
+    correlationId: string
+  ) {
+    const eventMeta = await this.verifyProducerEventAccess(eventId, actor, correlationId);
+    const resumoFinanceiro = await this.computeProducerEventFinancials(eventMeta);
+
+    const repassesRes = await this.db
+      .query<{
+        id: string;
+        protocol: string;
+        request_type: string;
+        amount_cents: string;
+        status: string;
+        requested_by: string;
+        approved_at: string | null;
+        paid_at: string | null;
+        notes: string | null;
+        created_at: string;
+      }>(
+        `SELECT id::text, protocol, request_type, amount_cents::text, status, requested_by,
+                approved_at::text, paid_at::text, notes, created_at::text
+         FROM finance_payout_requests
+         WHERE event_id = $1 OR event_id IS NULL
+         ORDER BY created_at DESC
+         LIMIT 30`,
+        [eventId]
+      )
+      .catch(() => ({ rows: [] }));
+
+    const recordsRes = await this.db
+      .query<{
+        id: string;
+        modulo: string;
+        titulo: string;
+        subtitulo: string;
+        responsavel: string;
+        valor_cents: string;
+        status: string;
+        created_at: string;
+      }>(
+        `SELECT id::text, modulo, titulo, subtitulo, responsavel, valor_cents::text, status, created_at::text
+         FROM finance_operational_records
+         WHERE evento_id = $1 OR modulo LIKE 'produtor/%'
+         ORDER BY created_at DESC
+         LIMIT 60`,
+        [eventId]
+      )
+      .catch(() => ({ rows: [] }));
+
+    const filterMod = (m: string) =>
+      recordsRes.rows
+        .filter((r) => r.modulo === m)
+        .map((r) => ({
+          id: r.id,
+          titulo: r.titulo,
+          detalhe: r.subtitulo,
+          responsavel: r.responsavel,
+          valorCents: Number(r.valor_cents || '0'),
+          status: r.status,
+          createdAt: r.created_at,
+        }));
+
+    return {
+      eventId: eventMeta.id,
+      eventCode: eventMeta.code,
+      eventTitle: eventMeta.title,
+      resumoFinanceiro,
+      repasses: repassesRes.rows.map((r) => ({
+        id: r.id,
+        protocol: r.protocol,
+        requestType: r.request_type,
+        amountCents: Number(r.amount_cents || '0'),
+        status: r.status,
+        requestedBy: r.requested_by,
+        approvedAt: r.approved_at,
+        paidAt: r.paid_at,
+        notes: r.notes,
+        createdAt: r.created_at,
+      })),
+      transferencias: filterMod('produtor/transferencia-eventos'),
+      campanhasMarketing: filterMod('produtor/marketing-campanha'),
+      materiaisDivulgacao: filterMod('produtor/marketing-material'),
+      solicitacoesAlteracao: filterMod('produtor/alteracao-evento'),
+      operacaoDemandas: filterMod('produtor/operacao-evento'),
+      chamadosAtendimento: filterMod('produtor/atendimento-evento'),
+      equipeAcessos: filterMod('produtor/equipe-acessos'),
+    };
+  }
+
+  async requestProducerPayout(
+    eventId: string,
+    body: {
+      requestType?: 'REPASSE' | 'ANTECIPACAO';
+      amountCents?: number;
+      notes?: string;
+    },
+    actor: AuthenticatedActorDto,
+    correlationId: string
+  ) {
+    const eventMeta = await this.verifyProducerEventAccess(eventId, actor, correlationId);
+    const resumo = await this.computeProducerEventFinancials(eventMeta);
+
+    const amountCents = Math.round(Number(body.amountCents || 0));
+    if (!Number.isInteger(amountCents) || amountCents <= 0) {
+      throw new BadRequestException('Informe um valor positivo em centavos para a solicitação.');
+    }
+    if (amountCents > resumo.saldoDisponivelParaRepasseCents) {
+      throw new BadRequestException(
+        `O valor solicitado excede o saldo disponível para repasse neste momento (R$ ${(resumo.saldoDisponivelParaRepasseCents / 100).toFixed(2).replace('.', ',')}).`
+      );
+    }
+
+    const requestType = body.requestType === 'ANTECIPACAO' ? 'ANTECIPACAO' : 'REPASSE';
+    const id = randomUUID();
+    const protocol = `${requestType === 'ANTECIPACAO' ? 'ANT' : 'REP'}-PDT-${Date.now().toString().slice(-6)}`;
+
+    await this.db.query(
+      `INSERT INTO finance_payout_requests (
+         id, protocol, request_type, producer_id, event_id, amount_cents, fee_rate_bps,
+         status, requested_by, requested_by_user_id, notes
+       ) VALUES ($1, $2, $3, $4, $5, $6, 0, 'SOLICITADO', $7, $8, $9)`,
+      [
+        id,
+        protocol,
+        requestType,
+        eventMeta.producer_id,
+        eventMeta.id,
+        amountCents,
+        actor.email,
+        actor.userId || null,
+        (body.notes || 'Solicitação aberta pelo Portal do Produtor').trim(),
+      ]
+    );
+
+    await this.auditService.record({
+      actorUserId: actor.userId,
+      actorRole: actor.roles.join(','),
+      sessionId: actor.sessionId,
+      canonicalAction: 'payout.producer.requested',
+      resourceType: 'FinancePayoutRequest',
+      resourceId: id,
+      eventId: eventMeta.id,
+      outcome: 'SUCCESS',
+      origin: 'PDT',
+      correlationId,
+      afterState: { protocol, requestType, amountCents, status: 'SOLICITADO' },
+    });
+
+    return { id, protocol, requestType, amountCents, status: 'SOLICITADO' };
+  }
+
+  async signProducerPayout(
+    eventId: string,
+    payoutId: string,
+    actor: AuthenticatedActorDto,
+    correlationId: string
+  ) {
+    const eventMeta = await this.verifyProducerEventAccess(eventId, actor, correlationId);
+    const rowRes = await this.db.query<{
+      id: string;
+      protocol: string;
+      status: string;
+      notes: string | null;
+    }>(
+      `SELECT id::text, protocol, status, notes
+       FROM finance_payout_requests
+       WHERE id::text = $1 AND (event_id = $2 OR event_id IS NULL)`,
+      [payoutId, eventMeta.id]
+    );
+
+    if (rowRes.rows.length === 0) {
+      throw new NotFoundException('Solicitação de repasse não encontrada para este evento.');
+    }
+
+    const current = rowRes.rows[0];
+    if (current.status !== 'APROVADO_FINANCEIRO' && current.status !== 'EM_ANALISE') {
+      throw new BadRequestException(
+        `A assinatura do produtor requer aprovação prévia do Financeiro Disk (status atual: ${current.status}).`
+      );
+    }
+
+    const signatureStamp = `Assinado eletronicamente pelo Produtor (${actor.email}) em ${new Date().toISOString()}`;
+    const nextNotes = current.notes ? `${current.notes} · ${signatureStamp}` : signatureStamp;
+
+    await this.db.query(
+      `UPDATE finance_payout_requests
+       SET status = 'ASSINADO_PRODUTOR', notes = $1, updated_at = NOW()
+       WHERE id::text = $2`,
+      [nextNotes, payoutId]
+    );
+
+    await this.auditService.record({
+      actorUserId: actor.userId,
+      actorRole: actor.roles.join(','),
+      sessionId: actor.sessionId,
+      canonicalAction: 'payout.producer.signed',
+      resourceType: 'FinancePayoutRequest',
+      resourceId: payoutId,
+      eventId: eventMeta.id,
+      outcome: 'SUCCESS',
+      origin: 'PDT',
+      correlationId,
+      beforeState: { status: current.status },
+      afterState: { status: 'ASSINADO_PRODUTOR', signatureStamp },
+    });
+
+    return { id: payoutId, protocol: current.protocol, status: 'ASSINADO_PRODUTOR', signatureStamp };
+  }
+
+  async requestProducerEventTransfer(
+    eventId: string,
+    body: { targetEventId?: string; amountCents?: number; reason?: string },
+    actor: AuthenticatedActorDto,
+    correlationId: string
+  ) {
+    const sourceMeta = await this.verifyProducerEventAccess(eventId, actor, correlationId);
+    const targetEventId = (body.targetEventId || '').trim();
+    if (!targetEventId || targetEventId === eventId) {
+      throw new BadRequestException('Selecione um evento de destino distinto pertencente ao seu escopo.');
+    }
+    const targetMeta = await this.verifyProducerEventAccess(targetEventId, actor, correlationId);
+    const resumo = await this.computeProducerEventFinancials(sourceMeta);
+
+    const amountCents = Math.round(Number(body.amountCents || 0));
+    if (!Number.isInteger(amountCents) || amountCents <= 0) {
+      throw new BadRequestException('Informe um valor válido em centavos para a transferência.');
+    }
+    if (amountCents > resumo.saldoDisponivelParaRepasseCents) {
+      throw new BadRequestException('O valor solicitado para transferência excede o saldo disponível do evento de origem.');
+    }
+
+    const id = randomUUID();
+    await this.db.query(
+      `INSERT INTO finance_operational_records (id, modulo, evento_id, produtor_id, titulo, subtitulo, responsavel, valor_cents, status)
+       VALUES ($1, 'produtor/transferencia-eventos', $2, $3, $4, $5, $6, $7, 'EM_ANALISE_FINANCEIRO')`,
+      [
+        id,
+        sourceMeta.id,
+        sourceMeta.producer_id,
+        `Transferência: ${sourceMeta.title} → ${targetMeta.title}`,
+        (body.reason || 'Transferência entre eventos do mesmo produtor').trim(),
+        actor.email,
+        amountCents,
+      ]
+    );
+
+    await this.auditService.record({
+      actorUserId: actor.userId,
+      actorRole: actor.roles.join(','),
+      sessionId: actor.sessionId,
+      canonicalAction: 'event.transfer.requested',
+      resourceType: 'EventTransferRequest',
+      resourceId: id,
+      eventId: sourceMeta.id,
+      outcome: 'SUCCESS',
+      origin: 'PDT',
+      correlationId,
+      afterState: { sourceEventId: sourceMeta.id, targetEventId: targetMeta.id, amountCents },
+    });
+
+    return { id, status: 'EM_ANALISE_FINANCEIRO', amountCents, targetEventTitle: targetMeta.title };
+  }
+
+  async createProducerPortalItem(
+    eventId: string,
+    body: {
+      category?:
+        | 'MARKETING_CAMPANHA'
+        | 'MARKETING_MATERIAL'
+        | 'ALTERACAO_EVENTO'
+        | 'OPERACAO_EVENTO'
+        | 'ATENDIMENTO_EVENTO'
+        | 'EQUIPE_ACESSOS';
+      title?: string;
+      detail?: string;
+    },
+    actor: AuthenticatedActorDto,
+    correlationId: string
+  ) {
+    const eventMeta = await this.verifyProducerEventAccess(eventId, actor, correlationId);
+    const title = (body.title || '').trim();
+    if (!title) {
+      throw new BadRequestException('Preencha o título ou identificação do registro.');
+    }
+
+    const mapCategory: Record<string, { modulo: string; defaultStatus: string }> = {
+      MARKETING_CAMPANHA: { modulo: 'produtor/marketing-campanha', defaultStatus: 'ATIVA' },
+      MARKETING_MATERIAL: { modulo: 'produtor/marketing-material', defaultStatus: 'EM_APROVACAO_MKT' },
+      ALTERACAO_EVENTO: { modulo: 'produtor/alteracao-evento', defaultStatus: 'AGUARDANDO_APROVACAO' },
+      OPERACAO_EVENTO: { modulo: 'produtor/operacao-evento', defaultStatus: 'REGISTRADO' },
+      ATENDIMENTO_EVENTO: { modulo: 'produtor/atendimento-evento', defaultStatus: 'ABERTO' },
+      EQUIPE_ACESSOS: { modulo: 'produtor/equipe-acessos', defaultStatus: 'CONVITE_ATIVO' },
+    };
+
+    const chosen = mapCategory[body.category || 'MARKETING_CAMPANHA'] ?? mapCategory.MARKETING_CAMPANHA;
+    const id = randomUUID();
+
+    await this.db.query(
+      `INSERT INTO finance_operational_records (id, modulo, evento_id, produtor_id, titulo, subtitulo, responsavel, valor_cents, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 0, $8)`,
+      [
+        id,
+        chosen.modulo,
+        eventMeta.id,
+        eventMeta.producer_id,
+        title,
+        (body.detail || 'Registrado no Portal do Produtor').trim(),
+        actor.email,
+        chosen.defaultStatus,
+      ]
+    );
+
+    await this.auditService.record({
+      actorUserId: actor.userId,
+      actorRole: actor.roles.join(','),
+      sessionId: actor.sessionId,
+      canonicalAction: `portal.${chosen.modulo.replace('/', '.')}`,
+      resourceType: 'ProducerPortalRecord',
+      resourceId: id,
+      eventId: eventMeta.id,
+      outcome: 'SUCCESS',
+      origin: 'PDT',
+      correlationId,
+      afterState: { title, modulo: chosen.modulo, status: chosen.defaultStatus },
+    });
+
+    return { id, status: chosen.defaultStatus, title };
+  }
 }

@@ -212,6 +212,9 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
     setExpandedGroups((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
+  // O portal possui navegação própria; a API continua responsável pela autorização.
+  if (pathname === '/produtores-pdt') return <>{children}</>;
+
   return (
     <div className={`bravo-app-shell${isCollapsed ? ' is-collapsed' : ''}`}>
       {/* Sidebar Corporativa BankOS */}
