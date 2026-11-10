@@ -19,7 +19,7 @@ PostgreSQL gerenciado EXCLUSIVO bravo_ii_hml (URL pooler)
 
 **NÃO usar** localhost nem Docker como banco do Vercel. O PostgreSQL deve ser gerenciado fora do sistema de arquivos efêmero das Functions. Para a API, configurar URLs do pooler. Para migrations, usar conexão direta **somente** na máquina autorizada.
 
-## Dois projetos Vercel no MESMO repositório Git
+## Três projetos Vercel no MESMO repositório Git
 
 ### Projeto 1: `bravo-ii-api`
 - Framework: NestJS (detecção automática). Root Directory: `apps/api`.
@@ -30,7 +30,7 @@ PostgreSQL gerenciado EXCLUSIVO bravo_ii_hml (URL pooler)
 - A Vercel detecta `apps/api/src/main.ts` e o executa como uma Vercel Function NestJS. A chave `BRAVO_PROXY_KEY` impede acesso HTTP direto não autenticado pelo BFF.
 - Desabilitar deployment de produção no fluxo de Git; além disso, o código bloqueia VERCEL_ENV=production.
 
-### Projeto 2: `bravo-ii-web`
+### Projeto 2: `bravo-ii-web` (Backoffice ERP)
 - Framework: Next.js. Root Directory: `apps/backoffice`.
 - **Include source files outside Root Directory = ON**.
 - Build Command: `cd ../.. && pnpm run build:vercel:web`.
@@ -39,6 +39,13 @@ PostgreSQL gerenciado EXCLUSIVO bravo_ii_hml (URL pooler)
 - Habilitar **Deployment Protection / Vercel Authentication** para o Preview (atentar à proteção dos links individuais).
 - Escolher um **URL Preview estável de branch** para `APP_ORIGIN` da API. Se acessar por URL Preview diferente, o backend recusará POST devido à verificação de origem. Configurar o URL exato e fazer novo deploy da API.
 - O frontend **não** precisa de `DATABASE_URL`, apenas o backend. Não configurar segredos com prefixo `NEXT_PUBLIC_`.
+
+### Projeto 3: `bravo-ii-producer-portal` (Portal do Produtor — PDT)
+- Framework: Next.js. Root Directory: `apps/producer-portal`.
+- **Include source files outside Root Directory = ON**.
+- Build Command: `cd ../.. && pnpm run build:portal`.
+- Install Command: `cd ../.. && pnpm install --frozen-lockfile`.
+- Env: configurar `BRAVO_API_URL`, `BRAVO_PROXY_KEY`, `PORTAL_PUBLIC_ORIGIN` e `BRAVO_API_VERCEL_BYPASS_TOKEN` em **Preview**, e adicionar a origem correspondente em `PRODUCER_PORTAL_ORIGIN` na API.
 
 > Ordem prática: criar banco e migrations, configurar e subir API em Preview (deve responder 403 sem chave), configurar o Backoffice com URL da API, atualizar APP_ORIGIN da API com URL estável do Backoffice e republicar **somente Preview**.
 

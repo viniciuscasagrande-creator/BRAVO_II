@@ -1,12 +1,13 @@
 # BRAVO_II — Arquitetura final Vercel + Neon + Gemini
 
 ## Objetivo e status real
-- **Ponto de partida:** base integrada dos Pacotes 01 a 10, sem reescrever P06–P10.
+- **Ponto de partida:** base integrada dos Pacotes 01 a 12, sem reescrever P06–P10.
 - Backoffice `apps/backoffice` (Next.js) em `bravo-ii-web` na Vercel **Preview**.
+- Portal do Produtor `apps/producer-portal` (Next.js) em `bravo-ii-producer-portal` na Vercel **Preview**.
 - API `apps/api` (NestJS) em `bravo-ii-api` na Vercel **Preview**.
-- PostgreSQL no Neon, banco **`bravo_ii_hml` exclusivo para homologação**. O ERP mantém seu único `prisma/schema.prisma`.
+- PostgreSQL no Neon, banco **`bravo_ii_hml` exclusivo para homologação** (11 migrations SQL `0001`..`0011` e 55 modelos Prisma). O ERP mantém seu único `prisma/schema.prisma`.
 - Gemini Developer API como IA de **orientação interna**: apenas leitura, sem acesso a dados pessoais ou comandos de alteração.
-- Financeiro Disk e RH: os **149 itens do inventário original (104+45)** permanecem em `reference/`; não foram migrados automaticamente para o backend.
+- Financeiro Disk e RH: os **149 itens do inventário original (104+45)** permanecem preservados em `reference/`, além das 96 telas operacionais do Financeiro Disk conectadas à migration `0011`.
 
 ```mermaid
 flowchart TB

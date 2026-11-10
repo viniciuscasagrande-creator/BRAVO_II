@@ -1,5 +1,5 @@
 import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
-import { hasAnyRole, normalizeRoleForPolicy } from '@bravo-ii/core-policy';
+import { canExecuteInternalOperation, hasAnyRole, normalizeRoleForPolicy } from '@bravo-ii/core-policy';
 import type { AuthenticatedActorDto } from '@bravo-ii/contracts';
 
 export type Actor = AuthenticatedActorDto;
@@ -10,7 +10,7 @@ export function requireInternal(actor: Actor | undefined, ...allowed: string[]):
   }
   const normalizedRoles = actor.roles.map(normalizeRoleForPolicy);
   const isProducerOnly = normalizedRoles.length > 0 && normalizedRoles.every((r) => r === 'PRODUTOR');
-  if (isProducerOnly || !hasAnyRole(actor.roles, allowed)) {
+  if (isProducerOnly || !canExecuteInternalOperation(actor.roles, allowed) || !hasAnyRole(actor.roles, allowed)) {
     throw new ForbiddenException({
       code: 'PERMISSAO_INSUFICIENTE_P10',
       message: 'Perfil sem alçada para executar esta operação.',

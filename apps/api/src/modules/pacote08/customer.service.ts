@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { createHmac, randomUUID } from 'node:crypto';
 import { CustomerInput, SalesRuleError, validateCustomer } from '@bravo-ii/domain-p08';
-import { hasAnyRole } from '@bravo-ii/core-policy';
+import { canExecuteInternalOperation, hasAnyRole } from '@bravo-ii/core-policy';
 import type { AuthenticatedActorDto } from '@bravo-ii/contracts';
 import { DatabaseService } from '../../common/database/database.service';
 import { AuditService } from '../governance/audit.service';
@@ -17,7 +17,7 @@ export function assertInternalRole(actor: AuthenticatedActorDto | undefined, ...
     throw new ForbiddenException({ code: 'ACESSO_NEGADO', message: 'Ator não autenticado.' });
   }
   const isProducerOnly = actor.roles.every((r: string) => r === 'PRODUTOR_PDT' || r === 'PRODUTOR');
-  if (isProducerOnly || !hasAnyRole(actor.roles, allowed)) {
+  if (isProducerOnly || !canExecuteInternalOperation(actor.roles, allowed) || !hasAnyRole(actor.roles, allowed)) {
     throw new ForbiddenException({
       code: 'PERMISSAO_INSUFICIENTE_P08',
       message: 'Perfil sem alçada para executar esta operação.',

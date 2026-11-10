@@ -8,10 +8,11 @@ O **BRAVO_II** é o núcleo interno e modular da operação **DiskIngressos** (s
 
 | Camada | Diretório | Tecnologia | Responsabilidade |
 | :--- | :--- | :--- | :--- |
-| **Backoffice + BFF** | `apps/backoffice` | Next.js 15 (React 19, App Router) | Login, 36 rotas RBAC em pt-BR, Route Handler BFF (`/v1/[...path]/route.ts`) com `X-Bravo-Proxy-Key` |
-| **API Operacional** | `apps/api` | NestJS 10 + PostgreSQL (`pg`) | Identidade, RBAC/ABAC, Comercial, Produtores PJ, Event Builder, Vendas, Ingressos (8 dígitos + QR), Checkout, PDV, SAC, Pós-Venda, Dupla Aprovação de Estornos, Catálogo Financeiro/RH (149) e Assistente Gemini (`/v1/ia/*`) |
+| **Backoffice + BFF** | `apps/backoffice` | Next.js 15 (React 19, App Router) | Login, 36 rotas RBAC em pt-BR, 53 telas funcionais da Matriz Operacional, 96 telas de Operações Financeiras, Route Handler BFF (`/v1/[...path]/route.ts`) com `X-Bravo-Proxy-Key` |
+| **Portal do Produtor + BFF** | `apps/producer-portal` | Next.js 15 (React 19, App Router) | Frontend isolado do Produtor PJ (`PRODUTOR_PDT`), consulta de eventos autorizados, extrato do Ledger (`finance_ledger_entries`), repasses, assinaturas e marketing com ocultação estrita da Taxa Disk |
+| **API Operacional** | `apps/api` | NestJS 10 + PostgreSQL (`pg` / `PGlite`) | Identidade, RBAC/ABAC, Comercial, Produtores PJ, Event Builder, Vendas, Ingressos (8 dígitos + QR), Checkout, PDV, SAC, Pós-Venda, Dupla Aprovação de Estornos, Motor Financeiro Disk (15 módulos / 96 telas), Catálogo Financeiro/RH (149) e Assistente Gemini (`/v1/ia/*`) |
 | **Pacotes de Domínio** | `packages/*` | TypeScript (`NodeNext`) | `core-policy`, `contracts`, `config`, `telemetry`, `ui`, `sdk`, `testing`, `domain-p06`, `domain-p08`, `domain-p09`, `domain-p10`, `domain-ia` |
-| **Banco de Dados** | `database/migrations` + `prisma/schema.prisma` | PostgreSQL 18 (Neon `bravo_ii_hml`) | 10 migrations SQL versionadas (`0001`..`0010`) e 55 modelos Prisma mapeados (`@@map`) para o mesmo schema físico |
+| **Banco de Dados** | `database/migrations` + `prisma/schema.prisma` | PostgreSQL 18 (Neon `bravo_ii_hml`) | 11 migrations SQL versionadas (`0001`..`0011`) e 55 modelos Prisma mapeados (`@@map`) para as 77 tabelas físicas do Core |
 | **Catálogo Preservado** | `reference/` | CSV + JSON imutáveis | 104 funções do Financeiro Disk + 45 funções de RH e DP (`149` funções catalogadas como `EM_IMPLANTACAO`) |
 
 ---

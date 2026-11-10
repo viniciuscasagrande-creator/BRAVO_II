@@ -9,6 +9,11 @@ import { randomUUID } from 'node:crypto';
 import { DatabaseService } from '../../common/database/database.service';
 import { AuditService } from '../governance/audit.service';
 import {
+  assertProducerPayoutRequestAllowed,
+  calculateProducerEventFinancialSummary,
+  DomainError,
+} from '@bravo-ii/domain-p06';
+import {
   CreateEventPriceLotRequestSchema,
   CreateEventRequestSchema,
   CreateEventSalesChannelRequestSchema,
@@ -1271,41 +1276,25 @@ export class EventsService {
 
     const ordersGrossCents = Number(ordersGrossRes.rows[0]?.gross_cents || '0');
     const ledgerGrossCents = Number(ledgerGrossRes.rows[0]?.gross_cents || '0');
-    const vendasRealizadasBrutoCents = Math.max(ordersGrossCents, ledgerGrossCents);
     const valoresCreditadosProdutorCents = Number(ledgerCreditedRes.rows[0]?.credited_cents || '0');
-    const repassesSolicitadosOuPagosCents = Math.max(
-      Number(payoutsRes.rows[0]?.reserved_or_paid_cents || '0'),
-      Number(ledgerCreditedRes.rows[0]?.settled_debit_cents || '0')
-    );
-
+    const payoutsReservedOrPaidCents = Number(payoutsRes.rows[0]?.reserved_or_paid_cents || '0');
+    const settledDebitCents = Number(ledgerCreditedRes.rows[0]?.settled_debit_cents || '0');
     const startsAtMs = new Date(eventMeta.starts_at).getTime();
-    const eventoJaRealizado = Number.isFinite(startsAtMs) && startsAtMs <= Date.now();
-    const releaseBps = eventoJaRealizado ? 10000 : eventMeta.advance_release_limit_bps;
-    const valorBrutoLiberadoPelaRegraCents = Math.round(
-      (valoresCreditadosProdutorCents * releaseBps) / 10000
-    );
-    const retencoesPreEventoCents = Math.max(
-      0,
-      valoresCreditadosProdutorCents - valorBrutoLiberadoPelaRegraCents
-    );
-    const saldoDisponivelParaRepasseCents = Math.max(
-      0,
-      valorBrutoLiberadoPelaRegraCents - repassesSolicitadosOuPagosCents
-    );
 
-    return {
-      vendasRealizadasBrutoCents,
+    return calculateProducerEventFinancialSummary({
+      ordersGrossCents,
+      ledgerGrossCents,
       valoresCreditadosProdutorCents,
-      retencoesPreEventoCents,
-      repassesSolicitadosOuPagosCents,
-      saldoDisponivelParaRepasseCents,
-      eventoJaRealizado,
-      percentualLiberacaoPreEvento: Math.round(eventMeta.advance_release_limit_bps / 100),
-      pedidosConfirmadosCount: Number(ordersGrossRes.rows[0]?.orders_count || '0'),
-      ingressosEmitidosCount: Number(ticketsRes.rows[0]?.emitted || '0'),
-      ingressosValidadosPortariaCount: Number(ticketsRes.rows[0]?.checked_in || '0'),
-      cortesiasEmitidasCount: Number(ticketsRes.rows[0]?.cortesias || '0'),
-    };
+      payoutsReservedOrPaidCents,
+      settledDebitCents,
+      startsAtMs,
+      nowMs: Date.now(),
+      advanceReleaseLimitBps: eventMeta.advance_release_limit_bps,
+      ordersCount: Number(ordersGrossRes.rows[0]?.orders_count || '0'),
+      ticketsEmittedCount: Number(ticketsRes.rows[0]?.emitted || '0'),
+      ticketsCheckedInCount: Number(ticketsRes.rows[0]?.checked_in || '0'),
+      cortesiasCount: Number(ticketsRes.rows[0]?.cortesias || '0'),
+    });
   }
 
   async getProducerEventPortal(
@@ -1413,13 +1402,13 @@ export class EventsService {
     const resumo = await this.computeProducerEventFinancials(eventMeta);
 
     const amountCents = Math.round(Number(body.amountCents || 0));
-    if (!Number.isInteger(amountCents) || amountCents <= 0) {
-      throw new BadRequestException('Informe um valor positivo em centavos para a solicitação.');
-    }
-    if (amountCents > resumo.saldoDisponivelParaRepasseCents) {
-      throw new BadRequestException(
-        `O valor solicitado excede o saldo disponível para repasse neste momento (R$ ${(resumo.saldoDisponivelParaRepasseCents / 100).toFixed(2).replace('.', ',')}).`
-      );
+    try {
+      assertProducerPayoutRequestAllowed(amountCents, resumo.saldoDisponivelParaRepasseCents);
+    } catch (err) {
+      if (err instanceof DomainError) {
+        throw new BadRequestException(err.message);
+      }
+      throw err;
     }
 
     const requestType = body.requestType === 'ANTECIPACAO' ? 'ANTECIPACAO' : 'REPASSE';

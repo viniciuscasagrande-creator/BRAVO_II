@@ -533,3 +533,75 @@ export function assertCanDeleteSector(input: {
     );
   }
 }
+
+export interface ProducerEventFinancialCalculationInput {
+  ordersGrossCents: number;
+  ledgerGrossCents: number;
+  valoresCreditadosProdutorCents: number;
+  payoutsReservedOrPaidCents: number;
+  settledDebitCents: number;
+  startsAtMs: number;
+  nowMs: number;
+  advanceReleaseLimitBps: number;
+  ordersCount: number;
+  ticketsEmittedCount: number;
+  ticketsCheckedInCount: number;
+  cortesiasCount: number;
+}
+
+export function calculateProducerEventFinancialSummary(
+  input: ProducerEventFinancialCalculationInput
+) {
+  const vendasRealizadasBrutoCents = Math.max(input.ordersGrossCents, input.ledgerGrossCents);
+  const valoresCreditadosProdutorCents = input.valoresCreditadosProdutorCents;
+  const repassesSolicitadosOuPagosCents = Math.max(
+    input.payoutsReservedOrPaidCents,
+    input.settledDebitCents
+  );
+
+  const eventoJaRealizado = Number.isFinite(input.startsAtMs) && input.startsAtMs <= input.nowMs;
+  const releaseBps = eventoJaRealizado ? 10000 : input.advanceReleaseLimitBps;
+  const valorBrutoLiberadoPelaRegraCents = Math.round(
+    (valoresCreditadosProdutorCents * releaseBps) / 10000
+  );
+  const retencoesPreEventoCents = Math.max(
+    0,
+    valoresCreditadosProdutorCents - valorBrutoLiberadoPelaRegraCents
+  );
+  const saldoDisponivelParaRepasseCents = Math.max(
+    0,
+    valorBrutoLiberadoPelaRegraCents - repassesSolicitadosOuPagosCents
+  );
+
+  return {
+    vendasRealizadasBrutoCents,
+    valoresCreditadosProdutorCents,
+    retencoesPreEventoCents,
+    repassesSolicitadosOuPagosCents,
+    saldoDisponivelParaRepasseCents,
+    eventoJaRealizado,
+    percentualLiberacaoPreEvento: Math.round(input.advanceReleaseLimitBps / 100),
+    pedidosConfirmadosCount: input.ordersCount,
+    ingressosEmitidosCount: input.ticketsEmittedCount,
+    ingressosValidadosPortariaCount: input.ticketsCheckedInCount,
+    cortesiasEmitidasCount: input.cortesiasCount,
+  };
+}
+
+export function assertProducerPayoutRequestAllowed(
+  amountCents: number,
+  saldoDisponivelParaRepasseCents: number
+): void {
+  if (!Number.isInteger(amountCents) || amountCents <= 0) {
+    throw new DomainError(
+      'REPASSE_VALOR_INVALIDO',
+      'Informe um valor positivo em centavos para a solicitação.'
+    );
+  }
+  if (amountCents > saldoDisponivelParaRepasseCents) {
+    throw new DomainError(
+      'REPASSE_ACIMA_SALDO',
+      `O valor solicitado excede o saldo disponível para repasse neste momento (R$ ${(saldoDisponivelParaRepasseCents / 100).toFixed(2).replace('.', ',')}).`
+    );
+  }
+}

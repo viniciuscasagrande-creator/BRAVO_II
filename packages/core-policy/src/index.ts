@@ -77,6 +77,20 @@ export function hasAnyRole(actorRoles: readonly string[], permitted: readonly st
   return normalized.some((role) => permitted.includes(role)) || actorRoles.some((role) => permitted.includes(role));
 }
 
+export function isProducerOnlyActor(actorRoles: readonly string[]): boolean {
+  if (!Array.isArray(actorRoles) || actorRoles.length === 0) return false;
+  return actorRoles.every((role) => normalizeRoleForPolicy(role) === 'PRODUTOR');
+}
+
+export function canExecuteInternalOperation(
+  actorRoles: readonly string[] | undefined,
+  permittedRoles: readonly string[]
+): boolean {
+  if (!Array.isArray(actorRoles) || actorRoles.length === 0) return false;
+  if (isProducerOnlyActor(actorRoles)) return false;
+  return hasAnyRole(actorRoles, permittedRoles);
+}
+
 export function menuForRoles(actorRoles: readonly string[]): MenuItem[] {
   if (!Array.isArray(actorRoles)) return [];
   return MENU.filter((item) => hasAnyRole(actorRoles, item.roles)).map((x) => ({ ...x }));

@@ -16,7 +16,11 @@ import {
   hashSessionToken,
   verifyStatelessCookieSessionToken,
 } from './crypto.util';
-import { assertCookieToken, isMutating } from '@bravo-ii/core-policy';
+import {
+  assertCookieToken,
+  isMutating,
+  originAllowed,
+} from '@bravo-ii/core-policy';
 import type { AuthenticatedActorDto, PermissionCode, RoleCode } from '@bravo-ii/contracts';
 import { AuditService } from '../../modules/governance/audit.service';
 import { ensureCorrelationId } from '@bravo-ii/telemetry';
@@ -43,10 +47,14 @@ export class AuthGuard implements CanActivate {
     const req = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const correlationId = ensureCorrelationId(req.headers['x-correlation-id']);
 
-    // Validação de Origin quando o cabeçalho Origin é enviado ou APP_ORIGIN está configurado em sessão por Cookie
+    // Validação de Origin (via originAllowed / allowedAppOrigin) quando o cabeçalho Origin é enviado ou APP_ORIGIN está configurado em sessão por Cookie
     const originHeader = typeof req.headers['origin'] === 'string' ? req.headers['origin'] : undefined;
     const configuredOrigin = process.env.APP_ORIGIN;
-    if (isMutating(req.method) && originHeader && (configuredOrigin || process.env.PRODUCER_PORTAL_ORIGIN) && !allowedAppOrigin(originHeader, configuredOrigin)) {
+    const isOriginPermitted = (origin: string | undefined) =>
+      (configuredOrigin ? originAllowed(origin, configuredOrigin) : false) ||
+      allowedAppOrigin(origin, configuredOrigin);
+
+    if (isMutating(req.method) && originHeader && (configuredOrigin || process.env.PRODUCER_PORTAL_ORIGIN) && !isOriginPermitted(originHeader)) {
       throw new ForbiddenException({
         code: 'INVALID_ORIGIN',
         message: 'Origem não autorizada para mutação.',
@@ -76,7 +84,7 @@ export class AuthGuard implements CanActivate {
 
     // Quando autenticado via cookie HttpOnly (bravo_session), exige Origin válido (se APP_ORIGIN ou PRODUCER_PORTAL_ORIGIN configurado) e X-CSRF-Token em métodos mutáveis
     if (usingCookieAuth && isMutating(req.method)) {
-      if ((configuredOrigin || process.env.PRODUCER_PORTAL_ORIGIN) && !allowedAppOrigin(originHeader, configuredOrigin)) {
+      if ((configuredOrigin || process.env.PRODUCER_PORTAL_ORIGIN) && !isOriginPermitted(originHeader)) {
         throw new ForbiddenException({
           code: 'INVALID_ORIGIN',
           message: 'Origem não autorizada.',
