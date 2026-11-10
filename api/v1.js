@@ -107,8 +107,19 @@ module.exports = async function bravoRootVercelApiHandler(req, res) {
     const proto = (req.headers['x-forwarded-proto'] || 'https').split(',')[0].trim();
     const ownOrigin = `${proto}://${host}`;
     const browserOrigin = req.headers.origin;
+    const configuredPortalOrigin = cleanEnvUrl(process.env.PRODUCER_PORTAL_ORIGIN).replace(/\/+$/, '');
+    const providedProxyKey = cleanEnvUrl(req.headers['x-bravo-proxy-key']);
+    const expectedProxyKey = cleanEnvUrl(process.env.BRAVO_PROXY_KEY) || RUNTIME_BFF_KEY;
+    const hasTrustedProxyKey =
+      providedProxyKey.length >= 32 &&
+      expectedProxyKey.length >= 32 &&
+      providedProxyKey === expectedProxyKey;
+    const isAllowedPortalOrigin =
+      Boolean(browserOrigin) &&
+      ((configuredPortalOrigin && browserOrigin === configuredPortalOrigin) ||
+        (hasTrustedProxyKey && /^https:\/\/[^/\s?#]+$/.test(browserOrigin)));
 
-    if (mutating && browserOrigin && browserOrigin !== ownOrigin) {
+    if (mutating && browserOrigin && browserOrigin !== ownOrigin && !isAllowedPortalOrigin) {
       sendJson(res, 403, { statusCode: 403, message: 'Origem não autorizada' });
       return;
     }
@@ -221,6 +232,8 @@ module.exports = async function bravoRootVercelApiHandler(req, res) {
           : ownOrigin;
     if (browserOrigin && browserOrigin === ownOrigin) {
       req.headers.origin = process.env.APP_ORIGIN;
+    } else if (isAllowedPortalOrigin && browserOrigin) {
+      process.env.PRODUCER_PORTAL_ORIGIN = browserOrigin;
     }
 
     if (!process.env.CPF_HASH_PEPPER || process.env.CPF_HASH_PEPPER.length < 32) {

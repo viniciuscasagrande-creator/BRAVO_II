@@ -7,15 +7,18 @@ const MAX_JSON_BYTES=1024*1024;
 function failure(status:number,message:string):Response {
   return Response.json({statusCode:status,message},{status,headers:{'Cache-Control':'no-store'}});
 }
+function cleanEnv(val:string|undefined):string {
+  return (val||'').trim().replace(/^['"]+|['"]+$/g,'');
+}
 function getUpstream():URL {
-  const raw=process.env.BRAVO_API_URL||'http://127.0.0.1:4100';
+  const raw=cleanEnv(process.env.BRAVO_API_URL).replace(/\/v1\/?$/i,'').replace(/\/+$/,'')||'http://127.0.0.1:4100';
   const target=new URL(raw);
   if(target.username||target.password||target.pathname!=='/'||target.search||target.hash)throw new Error('BRAVO_API_URL deve conter apenas a origem da API');
   if(process.env.VERCEL==='1'){
-
     if(target.protocol!=='https:'||['localhost','127.0.0.1'].includes(target.hostname))throw new Error('BRAVO_API_URL deve apontar para API HTTPS da Vercel');
   }else if(!['http:','https:'].includes(target.protocol))throw new Error('BRAVO_API_URL inválida');
-  if(!process.env.BRAVO_PROXY_KEY||process.env.BRAVO_PROXY_KEY.length<32)throw new Error('BRAVO_PROXY_KEY não configurada');
+  const proxyKey=cleanEnv(process.env.BRAVO_PROXY_KEY);
+  if(!proxyKey||proxyKey.length<32)throw new Error('BRAVO_PROXY_KEY não configurada');
   return target;
 }
 async function handler(req:NextRequest,ctx:{params:Promise<{path:string[]}>}):Promise<Response>{
@@ -29,18 +32,19 @@ async function handler(req:NextRequest,ctx:{params:Promise<{path:string[]}>}):Pr
   const backendPath=route==='events'||route.startsWith('events/') ? ['producer-portal',...path] : path;
   const mutating=!['GET','HEAD','OPTIONS'].includes(method);
   const browserOrigin=req.headers.get('origin');
+  const reqOrigin=new URL(req.url).origin;
   let ownOrigin:string;
-  try{ownOrigin=new URL(process.env.PORTAL_PUBLIC_ORIGIN || req.url).origin;}catch{return failure(503,'Configuração do portal indisponível');}
-  if(process.env.VERCEL==='1' && !process.env.PORTAL_PUBLIC_ORIGIN)return failure(503,'Configuração do portal indisponível');
-  if(mutating&&browserOrigin!==ownOrigin)return failure(403,'Origem não autorizada');
+  try{ownOrigin=new URL(cleanEnv(process.env.PORTAL_PUBLIC_ORIGIN) || reqOrigin).origin;}catch{return failure(503,'Configuração do portal indisponível');}
+  if(process.env.VERCEL==='1' && !cleanEnv(process.env.PORTAL_PUBLIC_ORIGIN) && !process.env.VERCEL_URL)return failure(503,'Configuração do portal indisponível');
+  if(mutating&&browserOrigin!==ownOrigin&&browserOrigin!==reqOrigin)return failure(403,'Origem não autorizada');
   const declared=Number(req.headers.get('content-length')||0);
   if(mutating&&declared>MAX_JSON_BYTES)return failure(413,'Corpo da requisição acima do limite');
   try{
     const upstream=getUpstream();
     const target=new URL(`/v1/${backendPath.map(encodeURIComponent).join('/')}${new URL(req.url).search}`,upstream);
-    const headers=new Headers({Accept:'application/json','X-Bravo-Proxy-Key':process.env.BRAVO_PROXY_KEY!});
+    const headers=new Headers({Accept:'application/json','X-Bravo-Proxy-Key':cleanEnv(process.env.BRAVO_PROXY_KEY)});
     // Se a API estiver com Vercel Deployment Protection, usar segredo separado para bypass servidor-servidor.
-    const protectionBypass=process.env.BRAVO_API_VERCEL_BYPASS_TOKEN;
+    const protectionBypass=cleanEnv(process.env.BRAVO_API_VERCEL_BYPASS_TOKEN);
     if(protectionBypass)headers.set('x-vercel-protection-bypass',protectionBypass);
     const cookie=req.headers.get('cookie');if(cookie)headers.set('Cookie',cookie);
     const auth=req.headers.get('authorization');if(auth)headers.set('Authorization',auth);
