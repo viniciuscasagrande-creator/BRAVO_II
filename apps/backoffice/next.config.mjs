@@ -7,6 +7,7 @@ if(process.env.VERCEL==='1'&&process.env.VERCEL_ENV!=='preview'&&process.env.BRA
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 export default {
   outputFileTracingRoot:root,
+  experimental:{cpus:2,workerThreads:false},
   transpilePackages:[
     '@bravo-ii/contracts',
     '@bravo-ii/core-policy',
