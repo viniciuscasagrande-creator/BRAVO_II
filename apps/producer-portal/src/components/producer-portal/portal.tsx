@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import type { EventSummaryViewDto, EventBuilderFullViewDto } from '@bravo-ii/contracts';
+import type { EventSummaryViewDto, EventBuilderFullViewDto } from './contracts';
 import { currentSession, get } from '../../lib/bravo-api';
 import { campaignLink } from './marketing.mjs';
 import './portal.css';
