@@ -787,21 +787,626 @@ body {
 .b6-sublist{display:flex;flex-direction:column;gap:8px;margin-bottom:16px;font-size:13px}.b6-sublist>div{background:#f8fafc;border:1px solid #e2e8f0;padding:12px;border-radius:9px}.b6-channel{display:flex;justify-content:space-between;gap:10px;align-items:center}.b6-channel button,.b6-fee button{border:1px solid #bfdbfe;border-radius:8px;padding:7px 10px;color:#1d4ed8;background:#fff;cursor:pointer}
 .b6-fee{display:flex;flex-direction:column;align-items:flex-start;gap:6px}.b6-fee span,.b6-muted{font-size:12px;color:#64748b;line-height:1.6}
 
-@media (max-width: 960px) {
+/* ============================================================================
+   PADRÃO MOBILE FIRST — NAVEGAÇÃO DRAWER, BARRA INFERIOR, GRÁFICOS E CARDS
+   ============================================================================ */
+
+.bravo-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.bravo-mobile-menu-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 6px 12px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.bravo-drawer-close-btn {
+  display: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--bravo-sidebar-border);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.bravo-drawer-backdrop {
+  display: none;
+}
+
+/* Central de Notificações Topbar */
+.bravo-notif-wrap {
+  position: relative;
+}
+
+.bravo-notif-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  border: 1px solid var(--bravo-border);
+  background: #f8fafc;
+  color: #0f172a;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.bravo-notif-btn:hover {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.bravo-notif-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #ffffff;
+}
+
+.bravo-notif-popover {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(360px, calc(100vw - 24px));
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 14px;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+  z-index: 90;
+  overflow: hidden;
+}
+
+.bravo-notif-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #0f172a;
+  color: #ffffff;
+  font-size: 13px;
+}
+
+.bravo-notif-close {
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: transparent;
+  color: #e2e8f0;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.bravo-notif-list {
+  display: flex;
+  flex-direction: column;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.bravo-notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  text-decoration: none;
+  color: #0f172a;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background-color 0.15s ease;
+}
+
+.bravo-notif-item:hover {
+  background: #f8fafc;
+}
+
+.bravo-notif-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+.bravo-notif-dot.is-warn {
+  background: #f59e0b;
+}
+
+.bravo-notif-dot.is-info {
+  background: #2563eb;
+}
+
+.bravo-notif-dot.is-ok {
+  background: #10b981;
+}
+
+.bravo-notif-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.bravo-notif-cat {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #2563eb;
+}
+
+.bravo-notif-body strong {
+  font-size: 13px;
+  color: #0f172a;
+}
+
+.bravo-notif-body p {
+  margin: 0;
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+/* Dashboard Mobile-First: Gráficos, Feed de Alertas e 8 Módulos */
+.bravo-mobile-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+}
+
+.bravo-chart-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bravo-chart-row {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.bravo-chart-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.bravo-chart-row-title {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.bravo-chart-row-val {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.bravo-chart-track {
+  width: 100%;
+  height: 9px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+}
+
+.bravo-chart-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.35s ease;
+}
+
+.bravo-chart-caption {
+  font-size: 11px;
+  color: #64748b;
+}
+
+.bravo-mobile-notif-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.bravo-mobile-notif-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  text-decoration: none;
+  color: #0f172a;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.bravo-mobile-notif-card:hover {
+  border-color: #93c5fd;
+  background: #eff6ff;
+}
+
+.bravo-notif-pill {
+  align-self: flex-start;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.bravo-notif-pill.is-warn {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.bravo-notif-pill.is-info {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.bravo-notif-pill.is-ok {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.bravo-mobile-notif-card strong {
+  font-size: 13.5px;
+  color: #0f172a;
+}
+
+.bravo-mobile-notif-card p {
+  margin: 0;
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.45;
+}
+
+.bravo-mobile-modules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 12px;
+}
+
+.bravo-mobile-module-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 15px;
+  border-radius: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  text-decoration: none;
+  color: #0f172a;
+  min-height: 128px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.bravo-mobile-module-card:hover {
+  border-color: #93c5fd;
+  background: #ffffff;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+}
+
+.bravo-mobile-module-code {
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.bravo-mobile-module-title {
+  font-size: 14.5px;
+  font-weight: 800;
+  color: #0f172a;
+  margin-top: 5px;
+}
+
+.bravo-mobile-module-desc {
+  font-size: 12px;
+  color: #475569;
+  line-height: 1.45;
+  margin: 6px 0 10px;
+}
+
+.bravo-mobile-module-cta {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #1d4ed8;
+}
+
+/* Barra de Navegação Inferior (oculta no Desktop, fixa no Mobile/Tablet) */
+.bravo-mobile-bottom-nav {
+  display: none;
+}
+
+/* ============================================================================
+   BREAKPOINT TABLET & MOBILE (< 1024px) — DRAWER DESLIZANTE & BOTTOM NAV
+   ============================================================================ */
+@media (max-width: 1024px) {
   .bravo-app-shell,
   .bravo-app-shell.is-collapsed {
     grid-template-columns: 1fr;
   }
-  .bravo-sidebar {
-    position: relative;
-    height: auto;
+
+  .bravo-mobile-menu-btn {
+    display: inline-flex;
   }
+
+  .bravo-collapse-btn {
+    display: none;
+  }
+
+  .bravo-drawer-close-btn {
+    display: inline-flex;
+  }
+
+  .bravo-drawer-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(11, 17, 32, 0.62);
+    backdrop-filter: blur(3px);
+    z-index: 95;
+  }
+
+  .bravo-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: min(310px, 86vw);
+    height: 100dvh;
+    z-index: 100;
+    transform: translateX(-105%);
+    transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: 12px 0 36px rgba(11, 17, 32, 0.45);
+  }
+
+  .bravo-sidebar.is-mobile-open {
+    transform: translateX(0);
+  }
+
+  .bravo-topbar {
+    padding: 0 14px;
+    height: 58px;
+  }
+
+  .bravo-env-pill {
+    display: none;
+  }
+
   .bravo-workspace,
   .bravo-workspace-content {
-    padding: 20px 16px 36px;
+    padding: 18px 14px calc(92px + env(safe-area-inset-bottom, 0px));
   }
-  .b6-grid,
+
+  .bravo-mobile-bottom-nav {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    min-height: 64px;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+    background: rgba(11, 17, 32, 0.97);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid rgba(148, 163, 184, 0.22);
+    z-index: 88;
+    box-shadow: 0 -6px 24px rgba(11, 17, 32, 0.24);
+  }
+
+  .bravo-bottom-nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 48px;
+    border: none;
+    background: transparent;
+    color: #94a3b8;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-decoration: none;
+    border-radius: 10px;
+    cursor: pointer;
+    padding: 4px 2px;
+    transition: color 0.15s ease, background-color 0.15s ease;
+  }
+
+  .bravo-bottom-nav-item.is-active {
+    color: #ffffff;
+    background: rgba(37, 99, 235, 0.28);
+  }
+
+  .b6-grid {
+    grid-template-columns: 1fr;
+  }
+
   .b6-statrow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ============================================================================
+   BREAKPOINT CELULARES (< 768px) — TABELAS EM CARDS, TOUCH 44PX+ E FORMS
+   ============================================================================ */
+@media (max-width: 768px) {
+  .bravo-user-meta {
+    display: none;
+  }
+
+  .bravo-breadcrumbs {
+    font-size: 12px;
+    max-width: 48vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .bravo-mobile-dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bravo-mobile-modules-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .b6-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .b6-statrow {
+    grid-template-columns: 1fr;
+  }
+
+  .bravo-panel,
+  .p06-card,
+  .b6-panel {
+    padding: 15px;
+    border-radius: 12px;
+  }
+
+  /* Botões e Campos adequados ao toque (Android / iPhone) */
+  input,
+  select,
+  textarea,
+  .b6-field input,
+  .b6-field select,
+  .b6-field textarea {
+    font-size: 16px !important;
+    min-height: 44px;
+  }
+
+  button,
+  .b6-btn,
+  .bravo-tab,
+  .bravo-tab-btn {
+    min-height: 42px;
+  }
+
+  .b6-btn {
+    width: 100%;
+  }
+
+  .bravo-tabs {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .bravo-tab,
+  .bravo-tab-btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* Conversão automática de tabelas (.p06-table e .b6 table) em Cards Mobile */
+  .p06-table,
+  .p06-table tbody,
+  .b6 table,
+  .b6 tbody {
+    display: block;
+    width: 100%;
+  }
+
+  .p06-table thead,
+  .b6 thead {
+    display: none;
+  }
+
+  .p06-table tbody tr,
+  .b6 tbody tr {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
+  }
+
+  .p06-table td,
+  .b6 td {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 5px 0;
+    border-bottom: 1px dashed #e2e8f0;
+    font-size: 13px;
+    word-break: break-word;
+  }
+
+  .p06-table td:last-child,
+  .b6 td:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .p06-table td[data-label]::before,
+  .b6 td[data-label]::before {
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #64748b;
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .bravo-mobile-modules-grid {
     grid-template-columns: 1fr;
   }
 }

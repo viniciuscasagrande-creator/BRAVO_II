@@ -98,6 +98,98 @@ export default function HomeCentralOperacionalPage() {
   }, [loadExecutiveDashboard]);
 
   const ledgerVolumeCents = ledgerEntries.reduce((acc, item) => acc + item.amountCents, 0);
+  const diskFeeRevenueCents = ledgerEntries
+    .filter(
+      (item) =>
+        item.creditAccount.includes('RECEITA') ||
+        item.creditAccount.includes('TAXA_DISK') ||
+        item.descriptionPtBr.toLowerCase().includes('taxa disk')
+    )
+    .reduce((acc, item) => acc + item.amountCents, 0);
+  const producerLiabilityCents = ledgerEntries
+    .filter(
+      (item) =>
+        item.creditAccount.includes('PRODUTOR') ||
+        item.creditAccount.includes('OBRIGACAO') ||
+        Boolean(item.producerId)
+    )
+    .reduce((acc, item) => acc + item.amountCents, 0);
+  const grossCustodyCents = ledgerEntries
+    .filter(
+      (item) =>
+        item.debitAccount.includes('CUSTODIA') ||
+        item.debitAccount.includes('CAIXA') ||
+        item.debitAccount.includes('GATEWAY') ||
+        Boolean(item.eventId)
+    )
+    .reduce((acc, item) => acc + item.amountCents, 0);
+
+  const chartMaxCents = Math.max(
+    ledgerVolumeCents,
+    grossCustodyCents,
+    producerLiabilityCents,
+    diskFeeRevenueCents,
+    100
+  );
+
+  const mobileModuleCards = [
+    {
+      code: '01 · DASHBOARD',
+      title: 'Dashboard Executivo',
+      desc: 'Indicadores financeiros, gráficos em tempo real e central de notificações.',
+      href: '/',
+      accent: '#1d4ed8',
+    },
+    {
+      code: '02 · MENU MOBILE & DRAWER',
+      title: 'Navegação Adaptativa',
+      desc: 'Menu lateral recolhível no desktop, drawer deslizante e barra inferior mobile.',
+      href: '/governanca',
+      accent: '#0f172a',
+    },
+    {
+      code: '03 · FINANCEIRO',
+      title: 'Contas a Pagar, Receber & Bancos',
+      desc: 'Tesouraria, caixa, contas bancárias, centros de custo e liquidações.',
+      href: '/financeiro/operacoes',
+      accent: '#047857',
+    },
+    {
+      code: '04 · CONTABILIDADE',
+      title: 'Lançamentos, Razão & Conciliação',
+      desc: 'Partidas dobradas, balancete por evento e conciliação de extrato gateway.',
+      href: '/financeiro',
+      accent: '#0369a1',
+    },
+    {
+      code: '05 · RECURSOS HUMANOS (RH)',
+      title: 'Funcionários, Folha & Ponto',
+      desc: 'Quadro de pessoal, ponto eletrônico REP-P e lotes enviados ao Financeiro.',
+      href: '/rh',
+      accent: '#6d28d9',
+    },
+    {
+      code: '06 · PRODUTORES',
+      title: 'Saldos, Eventos, Repasses & Antecipações',
+      desc: 'Contratos PJ, Taxa Disk por evento, solicitações e Portal do Produtor.',
+      href: '/comercial',
+      accent: '#b45309',
+    },
+    {
+      code: '07 · RELATÓRIOS',
+      title: 'Tabelas Adaptáveis & Exportações',
+      desc: 'Relatórios gerenciais convertidos em cards no celular e exportação CSV.',
+      href: '/relatorios',
+      accent: '#0f766e',
+    },
+    {
+      code: '08 · CADASTROS',
+      title: 'Formulários Mobile Touch',
+      desc: 'Cadastros de eventos, lotes, produtores e colaboradores adaptados ao toque.',
+      href: '/eventos/novo',
+      accent: '#be123c',
+    },
+  ];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -692,6 +784,138 @@ export default function HomeCentralOperacionalPage() {
           </div>
         </>
       )}
+
+      {/* Gráficos Visuais, KPIs e Central de Notificações Mobile-First */}
+      <div className="bravo-mobile-dashboard-grid">
+        <ActionPanel
+          title="Gráfico de Composição Financeira (Livro Razão)"
+          subtitle="Proporção contábil segregada entre Custódia Bruta, Obrigação do Produtor e Receita Taxa Disk."
+          rightSlot={
+            <Link
+              href="/financeiro/operacoes"
+              style={{ fontSize: '12px', fontWeight: 700, color: '#1d4ed8', textDecoration: 'none' }}
+            >
+              Abrir Financeiro →
+            </Link>
+          }
+        >
+          <div className="bravo-chart-stack">
+            {[
+              {
+                label: 'Movimentação Total no Razão',
+                cents: ledgerVolumeCents,
+                pct: ledgerVolumeCents > 0 ? 100 : 12,
+                color: '#1d4ed8',
+                caption: `${ledgerEntries.length} lançamento(s) auditado(s)`,
+              },
+              {
+                label: 'Custódia Bruta Gateway / Vendas',
+                cents: grossCustodyCents,
+                pct:
+                  ledgerVolumeCents > 0
+                    ? Math.max(8, Math.round((grossCustodyCents / chartMaxCents) * 100))
+                    : 24,
+                color: '#0284c7',
+                caption: 'Ingressos liquidados no cofre transacional',
+              },
+              {
+                label: 'Obrigação Líquida de Produtores',
+                cents: producerLiabilityCents,
+                pct:
+                  ledgerVolumeCents > 0
+                    ? Math.max(8, Math.round((producerLiabilityCents / chartMaxCents) * 100))
+                    : 18,
+                color: '#059669',
+                caption: 'Passivo segregado por evento e produtor',
+              },
+              {
+                label: 'Receita Reconhecida Taxa Disk',
+                cents: diskFeeRevenueCents,
+                pct:
+                  ledgerVolumeCents > 0
+                    ? Math.max(8, Math.round((diskFeeRevenueCents / chartMaxCents) * 100))
+                    : 14,
+                color: '#7c3aed',
+                caption: 'Receita operacional exclusiva DiskIngressos',
+              },
+            ].map((bar) => (
+              <div key={bar.label} className="bravo-chart-row">
+                <div className="bravo-chart-row-head">
+                  <span className="bravo-chart-row-title">{bar.label}</span>
+                  <strong className="bravo-chart-row-val">
+                    {isAuthenticated ? formatBrlCents(bar.cents) : 'Autenticar para ver saldo'}
+                  </strong>
+                </div>
+                <div className="bravo-chart-track" role="progressbar" aria-valuenow={bar.pct} aria-valuemin={0} aria-valuemax={100}>
+                  <div
+                    className="bravo-chart-fill"
+                    style={{ width: `${Math.min(100, bar.pct)}%`, backgroundColor: bar.color }}
+                  />
+                </div>
+                <div className="bravo-chart-caption">{bar.caption}</div>
+              </div>
+            ))}
+          </div>
+        </ActionPanel>
+
+        <ActionPanel
+          title="Notificações & Alertas Operacionais"
+          subtitle="Avisos prioritários de Contas a Pagar/Receber, Conciliação, RH, Produtores e SAC."
+          rightSlot={
+            <Link
+              href="/relatorios"
+              style={{ fontSize: '12px', fontWeight: 700, color: '#1d4ed8', textDecoration: 'none' }}
+            >
+              Exportar Relatórios →
+            </Link>
+          }
+        >
+          <div className="bravo-mobile-notif-feed">
+            <Link href="/financeiro/operacoes" className="bravo-mobile-notif-card">
+              <span className="bravo-notif-pill is-warn">Contabilidade & Gateway</span>
+              <strong>Conciliação de Extrato e Partidas Dobradas</strong>
+              <p>
+                Compare vendas lançadas no razão com o extrato do gateway e lance ajustes automáticos de taxa.
+              </p>
+            </Link>
+            <Link href="/comercial" className="bravo-mobile-notif-card">
+              <span className="bravo-notif-pill is-info">Produtores & Repasses</span>
+              <strong>Saldos por Evento, Repasses e Antecipações</strong>
+              <p>
+                Gerencie contratos PJ, Taxa Disk por evento e acompanhe o Portal do Produtor dedicado.
+              </p>
+            </Link>
+            <Link href="/rh" className="bravo-mobile-notif-card">
+              <span className="bravo-notif-pill is-ok">RH, Folha & Ponto</span>
+              <strong>Colaboradores, Ponto REP-P e Lotes de Folha</strong>
+              <p>
+                {rhBatches.length > 0
+                  ? `${rhBatches.length} lote(s) de folha sincronizado(s) com o Financeiro Disk.`
+                  : 'Registre admissões, batidas de ponto e envie lotes de pagamento para aprovação.'}
+              </p>
+            </Link>
+          </div>
+        </ActionPanel>
+      </div>
+
+      {/* 8 Módulos Adaptados — Padrão Mobile First */}
+      <ActionPanel
+        title="Arquitetura Mobile First — 8 Módulos Adaptados"
+        subtitle="Interface responsiva única para celulares (Android e iPhone), tablets e computadores, com toque otimizado e conversão automática de tabelas em cards."
+      >
+        <div className="bravo-mobile-modules-grid">
+          {mobileModuleCards.map((mod) => (
+            <Link key={mod.code} href={mod.href} className="bravo-mobile-module-card">
+              <div className="bravo-mobile-module-code" style={{ color: mod.accent }}>
+                {mod.code}
+              </div>
+              <div className="bravo-mobile-module-title">{mod.title}</div>
+              <p className="bravo-mobile-module-desc">{mod.desc}</p>
+              <span className="bravo-mobile-module-cta">Acessar módulo →</span>
+            </Link>
+          ))}
+        </div>
+      </ActionPanel>
 
       {/* Grade de Navegação Direta por Departamento (sempre visível) */}
       <ActionPanel

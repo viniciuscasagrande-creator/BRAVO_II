@@ -531,10 +531,12 @@ export default function FinanceiroVideoWorkspace({ screenId }: { screenId?: stri
                     return (
                       <tr key={String(r._id ?? r.id ?? i)}>
                         {screen.columns.map((c) => (
-                          <td key={c}>{label(r[c])}</td>
+                          <td key={c} data-label={c}>
+                            {label(r[c])}
+                          </td>
                         ))}
                         {canWrite && screen.kind === 'workflow' && (
-                          <td>
+                          <td data-label="Ações">
                             {rowId ? (
                               <div className="bf-row-actions">
                                 <button

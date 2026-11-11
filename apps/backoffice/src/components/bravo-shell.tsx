@@ -128,14 +128,56 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
   } = useBravoSession();
 
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [moduleSearch, setModuleSearch] = useState('');
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   const activeRoleCode = actor.roles[0] ?? 'FINANCEIRO_DISK';
   const roleInfo = CANONICAL_ROLES[activeRoleCode];
 
-  // Auto-expand active module group when pathname changes
+  const shellNotifications = useMemo(
+    () => [
+      {
+        id: 'notif-fin-conciliacao',
+        category: 'Contabilidade & Gateway',
+        title: 'Conciliação de extrato gateway disponível',
+        detail: 'Verifique divergências de taxa e liquidações no módulo Contabilidade.',
+        href: '/financeiro/operacoes',
+        tone: 'warn' as const,
+      },
+      {
+        id: 'notif-produtores-repasse',
+        category: 'Produtores & Repasses',
+        title: 'Alçadas de repasse e antecipação monitoradas',
+        detail: 'Saldos de eventos, retenções e assinaturas disponíveis em Comercial e Financeiro.',
+        href: '/comercial',
+        tone: 'info' as const,
+      },
+      {
+        id: 'notif-sac-estornos',
+        category: 'SAC & Estornos',
+        title: 'Fila segregada SAC → Financeiro ativa',
+        detail: 'Solicitações de estorno aguardando dupla checagem financeira.',
+        href: '/estornos',
+        tone: 'ok' as const,
+      },
+      {
+        id: 'notif-rh-folha',
+        category: 'RH & Folha',
+        title: 'Lotes de pagamento e ponto eletrônico',
+        detail: 'Acompanhe colaboradores, diárias operacionais e aprovação de lotes.',
+        href: '/rh',
+        tone: 'info' as const,
+      },
+    ],
+    []
+  );
+
+  // Auto-expand active module group & close mobile drawer when pathname changes
   useEffect(() => {
+    setIsMobileDrawerOpen(false);
+    setIsNotifOpen(false);
     const matched = CANONICAL_NAVIGATION_MENU.find(
       (item) =>
         item.href !== '/' &&
@@ -147,6 +189,19 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
       setExpandedGroups((prev) => ({ ...prev, [matched.id]: true }));
     }
   }, [pathname]);
+
+  // Close mobile drawer on Escape key
+  useEffect(() => {
+    if (!isMobileDrawerOpen && !isNotifOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMobileDrawerOpen(false);
+        setIsNotifOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isMobileDrawerOpen, isNotifOpen]);
 
   const filteredNavItems = useMemo(() => {
     const q = moduleSearch.trim().toLowerCase();
@@ -215,10 +270,39 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
   // O portal possui navegação própria; a API continua responsável pela autorização.
   if (pathname === '/produtores-pdt') return <>{children}</>;
 
+  const isHomeActive = pathname === '/';
+  const isFinanceActive = pathname.startsWith('/financeiro') || pathname.startsWith('/estornos');
+  const isEventsActive = pathname.startsWith('/eventos') || pathname.startsWith('/ingressos');
+  const isProducersActive = pathname.startsWith('/comercial');
+
   return (
-    <div className={`bravo-app-shell${isCollapsed ? ' is-collapsed' : ''}`}>
-      {/* Sidebar Corporativa BankOS */}
-      <aside className="bravo-sidebar" aria-label="Navegação Principal BRAVO_II">
+    <div
+      className={`bravo-app-shell${isCollapsed ? ' is-collapsed' : ''}${
+        isMobileDrawerOpen ? ' is-mobile-open is-mobile-drawer-open' : ''
+      }`}
+    >
+      {/* Backdrop do Drawer Mobile */}
+      <button
+        type="button"
+        className="bravo-mobile-backdrop"
+        aria-label="Fechar menu de navegação"
+        tabIndex={isMobileDrawerOpen ? 0 : -1}
+        onClick={() => setIsMobileDrawerOpen(false)}
+      />
+      {isMobileDrawerOpen && (
+        <div
+          className="bravo-drawer-backdrop"
+          onClick={() => setIsMobileDrawerOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar Corporativa BankOS (Desktop Recolhível + Drawer Mobile) */}
+      <aside
+        className={`bravo-sidebar${isMobileDrawerOpen ? ' is-mobile-open' : ''}`}
+        id="bravo-primary-navigation"
+        aria-label="Navegação Principal BRAVO_II"
+      >
         <div className="bravo-sidebar-brand">
           <div className="bravo-brand-mark" aria-hidden="true">
             B2
@@ -226,9 +310,18 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
           {!isCollapsed && (
             <div className="bravo-brand-copy">
               <div className="bravo-brand-title">BRAVO_II</div>
-              <div className="bravo-brand-subtitle">ERP Corporativo · DiskIngressos</div>
+              <div className="bravo-brand-subtitle">ERP Mobile First · DiskIngressos</div>
             </div>
           )}
+          <button
+            type="button"
+            className="bravo-mobile-close bravo-drawer-close-btn"
+            onClick={() => setIsMobileDrawerOpen(false)}
+            title="Fechar menu mobile"
+            aria-label="Fechar menu"
+          >
+            ×
+          </button>
           <button
             type="button"
             className="bravo-collapse-btn"
@@ -389,26 +482,104 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
       {/* Área Principal BankOS */}
       <div className="bravo-main-column">
         <header className="bravo-topbar">
-          <div className="bravo-breadcrumbs" aria-label="Localização na plataforma">
-            {activeBreadcrumbs.map((crumb, idx) => (
-              <React.Fragment key={`${crumb.href}-${idx}`}>
-                {idx > 0 && <span className="bravo-breadcrumb-sep">/</span>}
-                <Link
-                  href={crumb.href}
-                  className={`bravo-breadcrumb-item${
-                    idx === activeBreadcrumbs.length - 1 ? ' is-current' : ''
-                  }`}
-                >
-                  {crumb.label}
-                </Link>
-              </React.Fragment>
-            ))}
+          <div className="bravo-topbar-left">
+            <button
+              type="button"
+              className="bravo-mobile-menu-toggle bravo-mobile-menu-btn"
+              onClick={() => {
+                setIsCollapsed(false);
+                setIsMobileDrawerOpen((prev) => !prev);
+              }}
+              aria-controls="bravo-primary-navigation"
+              aria-label={isMobileDrawerOpen ? 'Fechar navegação' : 'Abrir navegação'}
+              aria-expanded={isMobileDrawerOpen}
+            >
+              <span aria-hidden="true">☰</span>
+              <span className="bravo-mobile-menu-label">Menu</span>
+            </button>
+
+            <div className="bravo-breadcrumbs" aria-label="Localização na plataforma">
+              {activeBreadcrumbs.map((crumb, idx) => (
+                <React.Fragment key={`${crumb.href}-${idx}`}>
+                  {idx > 0 && <span className="bravo-breadcrumb-sep">/</span>}
+                  <Link
+                    href={crumb.href}
+                    className={`bravo-breadcrumb-item${
+                      idx === activeBreadcrumbs.length - 1 ? ' is-current' : ''
+                    }`}
+                  >
+                    {crumb.label}
+                  </Link>
+                </React.Fragment>
+              ))}
+            </div>
           </div>
 
           <div className="bravo-topbar-right">
-            <span className="bravo-env-pill" title="Operações financeiras externas e captura bancária real estão bloqueadas neste ambiente">
-              Ambiente Controlado · Liquidação Externa Protegida
+            <span
+              className="bravo-env-pill"
+              title="Operações financeiras externas e captura bancária real estão bloqueadas neste ambiente"
+            >
+              Ambiente Controlado · Mobile First
             </span>
+
+            {/* Central de Notificações Operacionais */}
+            <div className="bravo-notif-wrap">
+              <button
+                type="button"
+                className="bravo-notif-btn"
+                onClick={() => setIsNotifOpen((prev) => !prev)}
+                aria-label="Central de notificações e alertas operacionais"
+                aria-expanded={isNotifOpen}
+              >
+                <svg
+                  width="17"
+                  height="17"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+                <span className="bravo-notif-badge">{shellNotifications.length}</span>
+              </button>
+
+              {isNotifOpen && (
+                <div className="bravo-notif-popover" role="dialog" aria-label="Alertas operacionais">
+                  <div className="bravo-notif-header">
+                    <strong>Alertas & Notificações</strong>
+                    <button
+                      type="button"
+                      className="bravo-notif-close"
+                      onClick={() => setIsNotifOpen(false)}
+                    >
+                      Fechar
+                    </button>
+                  </div>
+                  <div className="bravo-notif-list">
+                    {shellNotifications.map((item) => (
+                      <Link
+                        key={item.id}
+                        href={item.href}
+                        className="bravo-notif-item"
+                        onClick={() => setIsNotifOpen(false)}
+                      >
+                        <span className={`bravo-notif-dot is-${item.tone}`} />
+                        <div className="bravo-notif-body">
+                          <span className="bravo-notif-cat">{item.category}</span>
+                          <strong>{item.title}</strong>
+                          <p>{item.detail}</p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {isAuthenticated ? (
               <div className="bravo-user-pill">
@@ -454,7 +625,7 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
                 Sua credencial atual ({roleInfo?.namePtBr ?? activeRoleCode}) possui escopo segregado e não
                 inclui acesso operacional a <strong>{routeRestrictedModule.labelPtBr}</strong>.
               </p>
-              <div style={{ display: 'flex', gap: '12px', marginTop: '20px' }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', marginTop: '20px' }}>
                 <Link
                   href="/"
                   style={{
@@ -490,6 +661,60 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
             children
           )}
         </main>
+
+        {/* Barra de Navegação Inferior Mobile First */}
+        <nav className="bravo-mobile-bottom-nav" aria-label="Navegação rápida mobile">
+          <Link
+            href="/"
+            className={`bravo-bottom-nav-item${isHomeActive ? ' is-active' : ''}`}
+          >
+            {renderModuleIcon('home')}
+            <span>Dashboard</span>
+          </Link>
+          <Link
+            href="/financeiro/operacoes"
+            className={`bravo-bottom-nav-item${isFinanceActive ? ' is-active' : ''}`}
+          >
+            {renderModuleIcon('financeiro')}
+            <span>Financeiro</span>
+          </Link>
+          <Link
+            href="/eventos"
+            className={`bravo-bottom-nav-item${isEventsActive ? ' is-active' : ''}`}
+          >
+            {renderModuleIcon('eventos')}
+            <span>Eventos</span>
+          </Link>
+          <Link
+            href="/comercial"
+            className={`bravo-bottom-nav-item${isProducersActive ? ' is-active' : ''}`}
+          >
+            {renderModuleIcon('comercial')}
+            <span>Produtores</span>
+          </Link>
+          <button
+            type="button"
+            className={`bravo-bottom-nav-item${isMobileDrawerOpen ? ' is-active' : ''}`}
+            onClick={() => setIsMobileDrawerOpen((prev) => !prev)}
+            aria-expanded={isMobileDrawerOpen}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="3" y1="6" x2="21" y2="6" />
+              <line x1="3" y1="12" x2="21" y2="12" />
+              <line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+            <span>Módulos</span>
+          </button>
+        </nav>
       </div>
     </div>
   );
