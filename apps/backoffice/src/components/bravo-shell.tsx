@@ -190,8 +190,11 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
     }
   }, [pathname]);
 
-  // Close mobile drawer on Escape key
+  // Close mobile drawer on Escape key and lock body scroll when drawer is open
   useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.body.style.overflow = isMobileDrawerOpen ? 'hidden' : '';
+    }
     if (!isMobileDrawerOpen && !isNotifOpen) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -200,7 +203,12 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      if (typeof document !== 'undefined') {
+        document.body.style.overflow = '';
+      }
+    };
   }, [isMobileDrawerOpen, isNotifOpen]);
 
   const filteredNavItems = useMemo(() => {
@@ -274,28 +282,24 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
   const isFinanceActive = pathname.startsWith('/financeiro') || pathname.startsWith('/estornos');
   const isEventsActive = pathname.startsWith('/eventos') || pathname.startsWith('/ingressos');
   const isProducersActive = pathname.startsWith('/comercial');
+  const showFullSidebar = !isCollapsed || isMobileDrawerOpen;
 
   return (
     <div
-      className={`bravo-app-shell${isCollapsed ? ' is-collapsed' : ''}${
+      className={`bravo-app-shell${isCollapsed && !isMobileDrawerOpen ? ' is-collapsed' : ''}${
         isMobileDrawerOpen ? ' is-mobile-open is-mobile-drawer-open' : ''
       }`}
     >
-      {/* Backdrop do Drawer Mobile */}
+      {/* Backdrop Unificado do Drawer Mobile */}
       <button
         type="button"
-        className="bravo-mobile-backdrop"
+        className={`bravo-mobile-backdrop bravo-drawer-backdrop${
+          isMobileDrawerOpen ? ' is-open' : ''
+        }`}
         aria-label="Fechar menu de navegação"
         tabIndex={isMobileDrawerOpen ? 0 : -1}
         onClick={() => setIsMobileDrawerOpen(false)}
       />
-      {isMobileDrawerOpen && (
-        <div
-          className="bravo-drawer-backdrop"
-          onClick={() => setIsMobileDrawerOpen(false)}
-          aria-hidden="true"
-        />
-      )}
 
       {/* Sidebar Corporativa BankOS (Desktop Recolhível + Drawer Mobile) */}
       <aside
@@ -307,7 +311,7 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
           <div className="bravo-brand-mark" aria-hidden="true">
             B2
           </div>
-          {!isCollapsed && (
+          {showFullSidebar && (
             <div className="bravo-brand-copy">
               <div className="bravo-brand-title">BRAVO_II</div>
               <div className="bravo-brand-subtitle">ERP Mobile First · DiskIngressos</div>
@@ -320,7 +324,7 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
             title="Fechar menu mobile"
             aria-label="Fechar menu"
           >
-            ×
+            ✕
           </button>
           <button
             type="button"
@@ -333,7 +337,7 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
           </button>
         </div>
 
-        {!isCollapsed && (
+        {showFullSidebar && (
           <div className="bravo-sidebar-search">
             <input
               type="search"
@@ -346,7 +350,7 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
         )}
 
         <nav className="bravo-sidebar-nav">
-          {!isCollapsed && (
+          {showFullSidebar && (
             <div className="bravo-sidebar-section-label">
               Departamentos Habilitados ({filteredNavItems.length})
             </div>
@@ -375,14 +379,14 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
                       <span className="bravo-nav-icon" aria-hidden="true">
                         {badgeIcon}
                       </span>
-                      {!isCollapsed && (
+                      {showFullSidebar && (
                         <span className="bravo-nav-text">
                           <span className="bravo-nav-title">{item.labelPtBr}</span>
                           <span className="bravo-nav-caption">{item.moduleCode}</span>
                         </span>
                       )}
                     </Link>
-                    {!isCollapsed && hasSubItems && (
+                    {showFullSidebar && hasSubItems && (
                       <button
                         type="button"
                         className="bravo-nav-expand"
@@ -395,7 +399,7 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
                     )}
                   </div>
 
-                  {!isCollapsed && hasSubItems && isExpanded && (
+                  {showFullSidebar && hasSubItems && isExpanded && (
                     <ul className="bravo-nav-sublist">
                       {(item.subItems ?? []).map((sub) => {
                         const cleanSubPath = sub.href.split('?')[0];
@@ -426,7 +430,7 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="bravo-sidebar-footer">
-          {!isCollapsed ? (
+          {showFullSidebar ? (
             <div className="bravo-session-card">
               <div className="bravo-session-status-row">
                 <span

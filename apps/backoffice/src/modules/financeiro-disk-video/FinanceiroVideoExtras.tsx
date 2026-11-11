@@ -725,13 +725,13 @@ export default function FinanceiroVideoExtras({ screen }: { screen?: ScreenConfi
                   <tbody>
                     {(data?.balancete ?? []).map((b) => (
                       <tr key={b.code}>
-                        <td>
+                        <td data-label="Conta (Plano Oficial)">
                           <strong>{b.code}</strong> — {b.name}
                         </td>
-                        <td>{b.nature}</td>
-                        <td>{centsToBrl(b.debitosCents)}</td>
-                        <td>{centsToBrl(b.creditosCents)}</td>
-                        <td>
+                        <td data-label="Natureza">{b.nature}</td>
+                        <td data-label="Débitos">{centsToBrl(b.debitosCents)}</td>
+                        <td data-label="Créditos">{centsToBrl(b.creditosCents)}</td>
+                        <td data-label="Saldo">
                           <strong>{centsToBrl(b.saldoCents)}</strong>
                         </td>
                       </tr>
@@ -761,21 +761,21 @@ export default function FinanceiroVideoExtras({ screen }: { screen?: ScreenConfi
                     ) : (
                       (data?.lancamentos ?? []).slice(0, 12).map((l) => (
                         <tr key={l.id}>
-                          <td>
+                          <td data-label="Lançamento">
                             <strong>{l.entryNumber}</strong>
                             <div className="bf-muted" style={{ fontSize: 11 }}>
                               {l.description}
                             </div>
                           </td>
-                          <td style={{ fontSize: 12 }}>
+                          <td data-label="Débito → Crédito" style={{ fontSize: 12 }}>
                             D: {l.debitAccount}
                             <br />
                             C: {l.creditAccount}
                           </td>
-                          <td>
+                          <td data-label="Valor">
                             <strong>{centsToBrl(l.amountCents)}</strong>
                           </td>
-                          <td>
+                          <td data-label="Ação (Imutável)">
                             {l.reversesEntryId ? (
                               <span className="bf-cell-badge">Estorno</span>
                             ) : (
@@ -827,15 +827,15 @@ export default function FinanceiroVideoExtras({ screen }: { screen?: ScreenConfi
                   ) : (
                     (data?.eventosSaldos ?? []).map((ev) => (
                       <tr key={ev.id}>
-                        <td>
+                        <td data-label="Evento">
                           <strong>{ev.title}</strong> ({ev.startsAt})
                         </td>
-                        <td>{ev.producerName}</td>
-                        <td>{ev.feeLabel}</td>
-                        <td>{(ev.advanceReleaseLimitBps / 100).toFixed(1)}%</td>
-                        <td>{centsToBrl(ev.accumulated2101Cents)}</td>
-                        <td>{centsToBrl(ev.paid2101Cents)}</td>
-                        <td>
+                        <td data-label="Produtor">{ev.producerName}</td>
+                        <td data-label="Taxa Disk (Evento)">{ev.feeLabel}</td>
+                        <td data-label="Limite Antecipação">{(ev.advanceReleaseLimitBps / 100).toFixed(1)}%</td>
+                        <td data-label="Acumulado (2.1.01)">{centsToBrl(ev.accumulated2101Cents)}</td>
+                        <td data-label="Já Pago">{centsToBrl(ev.paid2101Cents)}</td>
+                        <td data-label="Disponível p/ Repasse">
                           <strong>{centsToBrl(ev.availableCents)}</strong>
                         </td>
                       </tr>
@@ -871,18 +871,18 @@ export default function FinanceiroVideoExtras({ screen }: { screen?: ScreenConfi
                   ) : (
                     (data?.repasses ?? []).map((p) => (
                       <tr key={p.id}>
-                        <td>
+                        <td data-label="Protocolo">
                           <strong>{p.protocol}</strong>
                         </td>
-                        <td>{p.requestType}</td>
-                        <td>{p.requestedBy}</td>
-                        <td>
+                        <td data-label="Tipo">{p.requestType}</td>
+                        <td data-label="Solicitante">{p.requestedBy}</td>
+                        <td data-label="Valor">
                           <strong>{centsToBrl(p.amountCents)}</strong>
                         </td>
-                        <td>
+                        <td data-label="Status">
                           <span className="bf-cell-badge">{p.status}</span>
                         </td>
-                        <td>
+                        <td data-label="Ação">
                           {p.status !== 'CONCLUIDO_HOMOLOGACAO' ? (
                             <button
                               type="button"
@@ -976,20 +976,20 @@ export default function FinanceiroVideoExtras({ screen }: { screen?: ScreenConfi
                         c.status === 'DIVERGENTE' && c.diffGrossCents === 0 && c.diffFeeCents !== 0;
                       return (
                         <tr key={c.id}>
-                          <td>
+                          <td data-label="Transação Gateway">
                             <strong>{c.externalTxId}</strong> ({c.provider})
                           </td>
-                          <td>
+                          <td data-label="Bruto (GW / Razão)">
                             {centsToBrl(c.grossCents)} / {centsToBrl(c.expectedGrossCents)}
                           </td>
-                          <td>
+                          <td data-label="Taxa (GW / Razão)">
                             {centsToBrl(c.gatewayFeeCents)} / {centsToBrl(c.expectedFeeCents)}
                           </td>
-                          <td>{centsToBrl(c.diffFeeCents)}</td>
-                          <td>
+                          <td data-label="Dif. Taxa">{centsToBrl(c.diffFeeCents)}</td>
+                          <td data-label="Situação">
                             <span className="bf-cell-badge">{c.status}</span>
                           </td>
-                          <td>
+                          <td data-label="Ação de Conciliação">
                             {onlyFeeDiverges ? (
                               <button
                                 type="button"
@@ -1099,22 +1099,22 @@ export default function FinanceiroVideoExtras({ screen }: { screen?: ScreenConfi
                   ) : (
                     (data?.riscos ?? []).map((r) => (
                       <tr key={r.id}>
-                        <td>
+                        <td data-label="Risco">
                           <strong>{r.title}</strong>
                         </td>
-                        <td>{r.category}</td>
-                        <td>
+                        <td data-label="Categoria">{r.category}</td>
+                        <td data-label="P × I = Nível">
                           <strong>
                             {r.probability} × {r.impact} = {r.level}
                           </strong>{' '}
                           ({r.level >= 15 ? 'Crítico' : r.level >= 8 ? 'Alto' : 'Médio'})
                         </td>
-                        <td>{r.control_description}</td>
-                        <td>{r.owner_name}</td>
-                        <td>
+                        <td data-label="Controle">{r.control_description}</td>
+                        <td data-label="Responsável">{r.owner_name}</td>
+                        <td data-label="Status">
                           <span className="bf-cell-badge">{r.status}</span>
                         </td>
-                        <td>
+                        <td data-label="Ação">
                           {r.status !== 'Mitigado' ? (
                             <button
                               type="button"
@@ -1165,23 +1165,23 @@ export default function FinanceiroVideoExtras({ screen }: { screen?: ScreenConfi
                   ) : (
                     (data?.chamados ?? []).map((c) => (
                       <tr key={c.id}>
-                        <td>
+                        <td data-label="Protocolo">
                           <strong>{c.protocol}</strong>
                         </td>
-                        <td>{c.kind}</td>
-                        <td>{c.subject}</td>
-                        <td>{c.amountCents > 0 ? centsToBrl(c.amountCents) : '—'}</td>
-                        <td>
+                        <td data-label="Tipo">{c.kind}</td>
+                        <td data-label="Assunto / Motivo">{c.subject}</td>
+                        <td data-label="Valor Estorno">{c.amountCents > 0 ? centsToBrl(c.amountCents) : '—'}</td>
+                        <td data-label="Status">
                           <span className="bf-cell-badge">{c.status}</span>
                         </td>
-                        <td>
+                        <td data-label="SLA">
                           {c.overdue ? (
                             <span style={{ color: '#dc2626', fontWeight: 700 }}>⚠ ATRASADO</span>
                           ) : (
                             <span style={{ color: '#16a34a' }}>No prazo</span>
                           )}
                         </td>
-                        <td>
+                        <td data-label="Ação Financeira">
                           {c.kind === 'Estorno' && c.status !== 'APROVADO_2' ? (
                             <button
                               type="button"
@@ -1460,18 +1460,18 @@ export default function FinanceiroVideoExtras({ screen }: { screen?: ScreenConfi
                       .filter((p) => filterArea5w === 'TODAS' || p.areaName === filterArea5w)
                       .map((p) => (
                         <tr key={p.id}>
-                          <td>
+                          <td data-label="Código">
                             <strong>{p.planCode}</strong>
                           </td>
-                          <td>{p.areaName}</td>
-                          <td>{p.whatText}</td>
-                          <td>{p.whyText}</td>
-                          <td>{p.whoName}</td>
-                          <td>{p.howText}</td>
-                          <td>
+                          <td data-label="Área">{p.areaName}</td>
+                          <td data-label="O Quê (What)">{p.whatText}</td>
+                          <td data-label="Por Quê (Why)">{p.whyText}</td>
+                          <td data-label="Quem (Who)">{p.whoName}</td>
+                          <td data-label="Como (How)">{p.howText}</td>
+                          <td data-label="Status">
                             <span className="bf-cell-badge">{p.status}</span>
                           </td>
-                          <td>
+                          <td data-label="Ação">
                             {p.status !== 'Concluído' ? (
                               <button
                                 type="button"

@@ -1,25 +1,24 @@
-/* Navegação móvel responsiva: sem alteração das regras de negócio. */
+/* Navegação móvel responsiva e normalização de grades/elementos inline: sem alteração das regras de negócio. */
 .bravo-mobile-menu-toggle,.bravo-mobile-close,.bravo-mobile-backdrop { display: none; }
 .bravo-main-column { min-width: 0; }
 .bravo-workspace { min-width: 0; }
-.bravo-workspace :where(input,select,textarea) { max-width: 100%; }
+.bravo-workspace :where(input,select,textarea) { max-width: 100%; box-sizing: border-box; }
 .bravo-workspace :where(img,svg,video,canvas) { max-width: 100%; }
 .bravo-workspace :where(.p06-table,.b6-table-wrapper,.p10-table-wrap) { max-width: 100%; }
 .bravo-workspace :where(.p06-table,.b6 table,.p10 table) { white-space: normal; }
-.bravo-workspace :where(.bravo-panel,.p06-card,.b6-panel,.p10-panel) { min-width: 0; }
+.bravo-workspace :where(.bravo-panel,.p06-card,.b6-panel,.p10-panel) { min-width: 0; box-sizing: border-box; }
+
 @media (max-width: 1024px) {
   .bravo-app-shell,.bravo-app-shell.is-collapsed { display: block; min-width: 0; }
   .bravo-sidebar {
-    position: fixed; top: 0; bottom: 0; left: 0; width: min(86vw, 328px);
+    position: fixed; top: 0; bottom: 0; left: 0; width: min(86vw, 316px);
     max-width: 100%; height: 100dvh; overflow: hidden; z-index: 101;
     transform: translateX(-105%); transition: transform .22s ease;
-    visibility: hidden; box-shadow: 15px 0 40px rgba(0,0,0,.2);
+    visibility: hidden; box-shadow: 15px 0 40px rgba(0,0,0,.25);
   }
   .bravo-app-shell.is-mobile-open .bravo-sidebar,
   .bravo-sidebar.is-mobile-open { transform: translateX(0); visibility: visible; }
-  .bravo-app-shell.is-collapsed .bravo-sidebar-brand { flex-direction: row; padding: 18px 16px; }
-  .bravo-app-shell.is-collapsed .bravo-sidebar-search,
-  .bravo-app-shell.is-collapsed .bravo-sidebar-section-label,
+  .bravo-app-shell.is-collapsed .bravo-sidebar-brand { flex-direction: row; padding: 16px 14px 14px; }
   .bravo-app-shell.is-collapsed .bravo-brand-copy,
   .bravo-app-shell.is-collapsed .bravo-nav-text,
   .bravo-app-shell.is-collapsed .bravo-sidebar-footer .bravo-session-card { display: flex; }
@@ -30,40 +29,48 @@
   .bravo-app-shell.is-collapsed .bravo-nav-expand { display: inline-flex; }
   .bravo-app-shell.is-collapsed .bravo-collapsed-auth { display: none; }
   .bravo-collapse-btn { display: none; }
-  .bravo-mobile-close { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 44px; height: 44px; border: 1px solid #334155; border-radius: 9px; background: #18253b; color: white; font-size: 27px; cursor: pointer; }
-  .bravo-mobile-backdrop { display: block; position: fixed; inset: 0; z-index: 100; border: 0; background: rgba(2,6,23,.6); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .22s ease; }
-  .bravo-app-shell.is-mobile-open .bravo-mobile-backdrop { opacity: 1; visibility: visible; pointer-events: auto; }
-  .bravo-mobile-menu-toggle { display: inline-flex; align-items: center; justify-content: center; gap: 8px; flex: 0 0 auto; min-height: 44px; padding: 0 12px; border: 1px solid #cbd5e1; border-radius: 9px; background: white; color: #0f172a; font-size: 14px; font-weight: 700; cursor: pointer; }
-  .bravo-topbar { gap: 12px; flex-wrap: wrap; min-width: 0; }
-  .bravo-breadcrumbs { flex: 1 1 220px; min-width: 0; overflow-x: auto; white-space: nowrap; }
-  .bravo-topbar-right { min-width: 0; margin-left: auto; }
+  .bravo-mobile-backdrop {
+    display: block; position: fixed; inset: 0; z-index: 100; border: 0;
+    background: rgba(2,6,23,.58); backdrop-filter: blur(2px);
+    opacity: 0; visibility: hidden; pointer-events: none; transition: opacity .22s ease;
+  }
+  .bravo-app-shell.is-mobile-open .bravo-mobile-backdrop {
+    opacity: 1; visibility: visible; pointer-events: auto;
+  }
   .bravo-workspace,.bravo-workspace-content { min-width: 0; }
-  .bravo-sidebar :is(.bravo-nav-link,.bravo-nav-sublink,.bravo-nav-expand,.bravo-sidebar-btn) { min-height: 44px; }
+  .bravo-sidebar :is(.bravo-nav-link,.bravo-nav-sublink,.bravo-sidebar-btn) { min-height: 44px; }
   .b6-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .b6-statrow { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .bravo-workspace :is(.b6-table-wrapper,.p10-table-wrap) { -webkit-overflow-scrolling: touch; }
 }
-@media (max-width: 600px) {
-  .bravo-topbar { padding: 10px 12px; align-items: center; }
-  .bravo-topbar-right { flex: 1 1 100%; justify-content: flex-end; }
+
+@media (max-width: 768px) {
   .bravo-env-pill { display: none; }
-  .bravo-breadcrumbs { flex-basis: calc(100% - 120px); font-size: 12px; }
   .bravo-user-meta { display: none; }
-  .bravo-workspace,.bravo-workspace-content { padding: 16px 12px calc(92px + env(safe-area-inset-bottom, 0px)); }
   .b6-grid,.b6-statrow,.p10-grid { grid-template-columns: minmax(0,1fr); }
-  .b6-header { flex-direction: column; gap: 12px; }
+  .b6-header { flex-direction: column; align-items: flex-start; gap: 12px; }
   .b6-panel,.p06-card,.bravo-panel,.p10-panel { padding: 14px; }
   .bravo-workspace :is(.b6,.p10) { max-width: 100%; }
-  /* Grades inline de formulários e painéis: uma coluna sem largura mínima de desktop. */
-  .bravo-workspace div[style*="grid-template-columns: repeat(auto-fit"],
-  .bravo-workspace div[style*="grid-template-columns: repeat(auto-fill"],
-  .bravo-workspace div[style*="grid-template-columns: repeat(2"],
-  .bravo-workspace div[style*="grid-template-columns: repeat(3"],
-  .bravo-workspace div[style*="grid-template-columns: repeat(4"] { grid-template-columns: minmax(0,1fr) !important; }
+
+  /* Normalização de todas as grades inline de formulários, filtros e painéis para 1 coluna no mobile/tablet vertical */
+  .bravo-workspace div[style*="grid-template-columns"],
+  .bravo-workspace form[style*="grid-template-columns"],
+  .bravo-workspace section[style*="grid-template-columns"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  /* Evita estouro horizontal de campos de busca com minWidth inline */
+  .bravo-workspace input[style*="min-width"],
+  .bravo-workspace select[style*="min-width"] {
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
   .bravo-workspace :is(.b6-table-wrapper,.p10-table-wrap) { overflow-x: auto; }
-  .bravo-workspace :is(button,input,select,textarea) { font-size: 16px; }
+  .bravo-workspace :is(input,select,textarea) { font-size: 16px; }
   .bravo-workspace :is(button,a) { overflow-wrap: anywhere; }
 }
+
 @media (prefers-reduced-motion: reduce) {
   .bravo-sidebar,.bravo-mobile-backdrop { transition: none; }
 }

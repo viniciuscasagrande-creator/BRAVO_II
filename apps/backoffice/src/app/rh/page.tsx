@@ -753,7 +753,7 @@ export default function RhDiskPage() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
             <select
               value={selectedSubgroup}
               onChange={(e) => setSelectedSubgroup(e.target.value)}

@@ -609,10 +609,10 @@ export function ProducerPortal() {
                             <tbody>
                               {detail.priceLots.map((l) => (
                                 <tr key={l.id}>
-                                  <td>{l.modalityName}</td>
-                                  <td>{l.lotNumber}</td>
-                                  <td>{brlFromCents(l.nominalPriceCents)}</td>
-                                  <td>{l.maxQuantity}</td>
+                                  <td data-label="Modalidade">{l.modalityName}</td>
+                                  <td data-label="Lote">{l.lotNumber}</td>
+                                  <td data-label="Valor do ingresso">{brlFromCents(l.nominalPriceCents)}</td>
+                                  <td data-label="Capacidade cadastrada">{l.maxQuantity}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -747,7 +747,7 @@ export function ProducerPortal() {
                           <p className="eyebrow">DEMONSTRATIVO DO PRODUTOR</p>
                           <h2>Composição do Borderô Financeiro</h2>
                         </div>
-                        <div style={{ display: 'flex', gap: 10 }}>
+                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                           <button onClick={handleDownloadBorderoCsv}>
                             ⬇ Exportar Demonstrativo (CSV)
                           </button>
@@ -770,42 +770,42 @@ export function ProducerPortal() {
                           </thead>
                           <tbody>
                             <tr>
-                              <td>
+                              <td data-label="Rubrica do Demonstrativo">
                                 <strong>Vendas Realizadas (Bruto)</strong>
                               </td>
-                              <td>Valor nominal total dos ingressos emitidos no evento</td>
-                              <td>{brlFromCents(fin.vendasRealizadasBrutoCents)}</td>
+                              <td data-label="Descrição Operacional">Valor nominal total dos ingressos emitidos no evento</td>
+                              <td data-label="Valor">{brlFromCents(fin.vendasRealizadasBrutoCents)}</td>
                             </tr>
                             <tr>
-                              <td>
+                              <td data-label="Rubrica do Demonstrativo">
                                 <strong>Valores Creditados ao Evento</strong>
                               </td>
-                              <td>Montante líquido registrado na conta corrente do evento</td>
-                              <td>{brlFromCents(fin.valoresCreditadosProdutorCents)}</td>
+                              <td data-label="Descrição Operacional">Montante líquido registrado na conta corrente do evento</td>
+                              <td data-label="Valor">{brlFromCents(fin.valoresCreditadosProdutorCents)}</td>
                             </tr>
                             <tr>
-                              <td>
+                              <td data-label="Rubrica do Demonstrativo">
                                 <strong>Retenção de Segurança Pré-Evento</strong>
                               </td>
-                              <td>
+                              <td data-label="Descrição Operacional">
                                 Reserva contratual até a realização do evento (liberação antecipada
                                 de até {fin.percentualLiberacaoPreEvento}%)
                               </td>
-                              <td>- {brlFromCents(fin.retencoesPreEventoCents)}</td>
+                              <td data-label="Valor">- {brlFromCents(fin.retencoesPreEventoCents)}</td>
                             </tr>
                             <tr>
-                              <td>
+                              <td data-label="Rubrica do Demonstrativo">
                                 <strong>Repasses Pagos / Em Processamento</strong>
                               </td>
-                              <td>Solicitações já liquidadas ou em fluxo de aprovação/assinatura</td>
-                              <td>- {brlFromCents(fin.repassesSolicitadosOuPagosCents)}</td>
+                              <td data-label="Descrição Operacional">Solicitações já liquidadas ou em fluxo de aprovação/assinatura</td>
+                              <td data-label="Valor">- {brlFromCents(fin.repassesSolicitadosOuPagosCents)}</td>
                             </tr>
                             <tr>
-                              <td>
+                              <td data-label="Rubrica do Demonstrativo">
                                 <strong>Saldo Disponível para Solicitação</strong>
                               </td>
-                              <td>Valor livre para nova solicitação de repasse ou antecipação</td>
-                              <td>
+                              <td data-label="Descrição Operacional">Valor livre para nova solicitação de repasse ou antecipação</td>
+                              <td data-label="Valor">
                                 <strong>{brlFromCents(fin.saldoDisponivelParaRepasseCents)}</strong>
                               </td>
                             </tr>
@@ -886,14 +886,14 @@ export function ProducerPortal() {
                             <tbody>
                               {(portalData?.repasses ?? []).map((r) => (
                                 <tr key={r.id}>
-                                  <td>
+                                  <td data-label="Protocolo">
                                     <strong>{r.protocol}</strong>
                                   </td>
-                                  <td>{r.requestType}</td>
-                                  <td>{brlFromCents(r.amountCents)}</td>
-                                  <td>{payoutStatusLabels[r.status] ?? r.status}</td>
-                                  <td>{r.notes || 'Em processamento'}</td>
-                                  <td>
+                                  <td data-label="Tipo">{r.requestType}</td>
+                                  <td data-label="Valor">{brlFromCents(r.amountCents)}</td>
+                                  <td data-label="Situação no Fluxo">{payoutStatusLabels[r.status] ?? r.status}</td>
+                                  <td data-label="Histórico / Assinatura">{r.notes || 'Em processamento'}</td>
+                                  <td data-label="Ação do Produtor">
                                     {r.status === 'APROVADO_FINANCEIRO' ? (
                                       <button
                                         className="primary"
@@ -1029,12 +1029,12 @@ export function ProducerPortal() {
                             <tbody>
                               {detail.priceLots.map((l) => (
                                 <tr key={l.id}>
-                                  <td>{l.modalityName}</td>
-                                  <td>{l.categoryType}</td>
-                                  <td>{l.lotNumber}</td>
-                                  <td>{brlFromCents(l.nominalPriceCents)}</td>
-                                  <td>{l.maxQuantity}</td>
-                                  <td>{statuses[l.status] ?? l.status}</td>
+                                  <td data-label="Modalidade">{l.modalityName}</td>
+                                  <td data-label="Categoria">{l.categoryType}</td>
+                                  <td data-label="Lote">{l.lotNumber}</td>
+                                  <td data-label="Preço Nominal">{brlFromCents(l.nominalPriceCents)}</td>
+                                  <td data-label="Capacidade do Lote">{l.maxQuantity}</td>
+                                  <td data-label="Situação">{statuses[l.status] ?? l.status}</td>
                                 </tr>
                               ))}
                             </tbody>

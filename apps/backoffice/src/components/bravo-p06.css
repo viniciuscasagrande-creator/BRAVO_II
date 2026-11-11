@@ -1167,30 +1167,70 @@ body {
    BREAKPOINT TABLET & MOBILE (< 1024px) — DRAWER DESLIZANTE & BOTTOM NAV
    ============================================================================ */
 @media (max-width: 1024px) {
+  html,
+  body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
   .bravo-app-shell,
   .bravo-app-shell.is-collapsed {
+    display: block;
     grid-template-columns: 1fr;
+    min-width: 0;
+    max-width: 100vw;
   }
 
   .bravo-mobile-menu-btn {
     display: inline-flex;
+    min-height: 40px;
+    padding: 0 12px;
+    border-radius: 9px;
+    border: 1px solid #cbd5e1;
+    background: #0f172a;
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 700;
   }
 
   .bravo-collapse-btn {
-    display: none;
+    display: none !important;
   }
 
   .bravo-drawer-close-btn {
     display: inline-flex;
+    width: 40px;
+    height: 40px;
+    border-radius: 9px;
+    border: 1px solid #334155;
+    background: #18253b;
+    color: #ffffff;
+    font-size: 18px;
+    line-height: 1;
   }
 
-  .bravo-drawer-backdrop {
+  .bravo-drawer-backdrop,
+  .bravo-mobile-backdrop {
     display: block;
     position: fixed;
     inset: 0;
+    border: 0;
+    padding: 0;
+    margin: 0;
     background: rgba(11, 17, 32, 0.62);
     backdrop-filter: blur(3px);
-    z-index: 95;
+    z-index: 98;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: opacity 0.22s ease, visibility 0.22s ease;
+  }
+
+  .bravo-app-shell.is-mobile-open .bravo-mobile-backdrop,
+  .bravo-mobile-backdrop.is-open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
   }
 
   .bravo-sidebar {
@@ -1198,21 +1238,69 @@ body {
     top: 0;
     left: 0;
     bottom: 0;
-    width: min(310px, 86vw);
+    width: min(312px, 86vw);
+    max-width: 100%;
     height: 100dvh;
     z-index: 100;
     transform: translateX(-105%);
-    transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+    visibility: hidden;
+    transition: transform 0.24s cubic-bezier(0.22, 1, 0.36, 1), visibility 0.24s ease;
     box-shadow: 12px 0 36px rgba(11, 17, 32, 0.45);
   }
 
+  .bravo-app-shell.is-mobile-open .bravo-sidebar,
   .bravo-sidebar.is-mobile-open {
     transform: translateX(0);
+    visibility: visible;
   }
 
   .bravo-topbar {
-    padding: 0 14px;
-    height: 58px;
+    padding: 8px 14px;
+    min-height: 58px;
+    height: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .bravo-topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .bravo-breadcrumbs {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .bravo-breadcrumb-item {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .bravo-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    margin-left: auto;
+    min-width: 0;
   }
 
   .bravo-env-pill {
@@ -1222,6 +1310,8 @@ body {
   .bravo-workspace,
   .bravo-workspace-content {
     padding: 18px 14px calc(92px + env(safe-area-inset-bottom, 0px));
+    min-width: 0;
+    max-width: 100%;
   }
 
   .bravo-mobile-bottom-nav {
@@ -1281,16 +1371,23 @@ body {
     display: none;
   }
 
-  .bravo-breadcrumbs {
-    font-size: 12px;
-    max-width: 48vw;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+  .bravo-user-pill {
+    padding: 4px 6px;
+    gap: 6px;
+  }
+
+  .bravo-notif-popover {
+    position: fixed;
+    top: 62px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
+    z-index: 120;
   }
 
   .bravo-mobile-dashboard-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .bravo-mobile-modules-grid {
@@ -1304,7 +1401,7 @@ body {
   }
 
   .b6-statrow {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .bravo-panel,
@@ -1314,21 +1411,23 @@ body {
     border-radius: 12px;
   }
 
-  /* Botões e Campos adequados ao toque (Android / iPhone) */
-  input,
-  select,
-  textarea,
+  /* Botões e Campos adequados ao toque (Android / iPhone) sem deformar botões da Topbar/Backdrop */
+  .bravo-workspace input,
+  .bravo-workspace select,
+  .bravo-workspace textarea,
   .b6-field input,
   .b6-field select,
   .b6-field textarea {
     font-size: 16px !important;
     min-height: 44px;
+    max-width: 100%;
   }
 
-  button,
   .b6-btn,
   .bravo-tab,
-  .bravo-tab-btn {
+  .bravo-tab-btn,
+  .bravo-sidebar-btn,
+  .bravo-workspace form button {
     min-height: 42px;
   }
 
@@ -1349,22 +1448,32 @@ body {
     flex-shrink: 0;
   }
 
-  /* Conversão automática de tabelas (.p06-table e .b6 table) em Cards Mobile */
+  /* Tabelas padrão sem data-label: rolagem horizontal suave mantendo o cabeçalho alinhado */
   .p06-table,
-  .p06-table tbody,
-  .b6 table,
-  .b6 tbody {
+  .b6 table {
     display: block;
     width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .p06-table thead,
-  .b6 thead {
+  /* Conversão automática em Cards Mobile quando a tabela possui células com data-label */
+  .p06-table:has(td[data-label]),
+  .p06-table:has(td[data-label]) tbody,
+  .b6 table:has(td[data-label]),
+  .b6 table:has(td[data-label]) tbody {
+    display: block;
+    width: 100%;
+    overflow-x: visible;
+  }
+
+  .p06-table:has(td[data-label]) thead,
+  .b6 table:has(td[data-label]) thead {
     display: none;
   }
 
-  .p06-table tbody tr,
-  .b6 tbody tr {
+  .p06-table:has(td[data-label]) tbody tr,
+  .b6 table:has(td[data-label]) tbody tr {
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -1376,8 +1485,8 @@ body {
     box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
   }
 
-  .p06-table td,
-  .b6 td {
+  .p06-table:has(td[data-label]) td,
+  .b6 table:has(td[data-label]) td {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -1386,10 +1495,11 @@ body {
     border-bottom: 1px dashed #e2e8f0;
     font-size: 13px;
     word-break: break-word;
+    text-align: right;
   }
 
-  .p06-table td:last-child,
-  .b6 td:last-child {
+  .p06-table:has(td[data-label]) td:last-child,
+  .b6 table:has(td[data-label]) td:last-child {
     border-bottom: none;
     padding-bottom: 0;
   }
@@ -1402,11 +1512,47 @@ body {
     text-transform: uppercase;
     color: #64748b;
     flex-shrink: 0;
+    text-align: left;
+  }
+}
+
+@media (max-width: 560px) {
+  .bravo-breadcrumbs .bravo-breadcrumb-sep,
+  .bravo-breadcrumbs .bravo-breadcrumb-item:not(.is-current) {
+    display: none;
+  }
+
+  .bravo-breadcrumbs .bravo-breadcrumb-item.is-current {
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12.5px;
+  }
+
+  .bravo-page-header-actions {
+    width: 100%;
+  }
+
+  .bravo-page-header-actions > * {
+    flex: 1 1 auto;
+    justify-content: center;
+    text-align: center;
   }
 }
 
 @media (max-width: 480px) {
   .bravo-mobile-modules-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .bravo-mobile-menu-label {
+    display: none;
+  }
+
+  .bravo-mobile-menu-btn {
+    padding: 0 10px;
+    min-width: 40px;
   }
 }

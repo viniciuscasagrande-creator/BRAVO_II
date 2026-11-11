@@ -49,9 +49,17 @@ export function PageHeader({
         borderBottom: '1px solid #e2e8f0',
       }}
     >
-      <div>
+      <div style={{ minWidth: 0, flex: '1 1 260px' }}>
         {(categoryLabel || statusLabel) && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '8px',
+              marginBottom: '8px',
+            }}
+          >
             {categoryLabel && (
               <span
                 style={{
@@ -64,6 +72,8 @@ export function PageHeader({
                   backgroundColor: '#eff6ff',
                   color: '#1d4ed8',
                   border: '1px solid #bfdbfe',
+                  maxWidth: '100%',
+                  overflowWrap: 'anywhere',
                 }}
               >
                 {categoryLabel}
@@ -79,6 +89,8 @@ export function PageHeader({
                   backgroundColor: '#f8fafc',
                   color: '#334155',
                   border: '1px solid #cbd5e1',
+                  maxWidth: '100%',
+                  overflowWrap: 'anywhere',
                 }}
               >
                 {statusLabel}
@@ -86,14 +98,39 @@ export function PageHeader({
             )}
           </div>
         )}
-        <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 700, color: '#0f172a', letterSpacing: '-0.02em' }}>
+        <h1
+          style={{
+            margin: 0,
+            fontSize: 'clamp(19px, 3vw, 24px)',
+            fontWeight: 700,
+            color: '#0f172a',
+            letterSpacing: '-0.02em',
+            lineHeight: 1.25,
+            overflowWrap: 'anywhere',
+          }}
+        >
           {title}
         </h1>
-        <p style={{ margin: '6px 0 0 0', fontSize: '14px', color: '#475569', maxWidth: '860px', lineHeight: 1.55 }}>
+        <p
+          style={{
+            margin: '6px 0 0 0',
+            fontSize: '14px',
+            color: '#475569',
+            maxWidth: '860px',
+            lineHeight: 1.55,
+          }}
+        >
           {subtitle}
         </p>
       </div>
-      {actions ? <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>{actions}</div> : null}
+      {actions ? (
+        <div
+          className="bravo-page-header-actions"
+          style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', alignItems: 'center' }}
+        >
+          {actions}
+        </div>
+      ) : null}
     </header>
   );
 }
@@ -271,6 +308,7 @@ export function MetricSummaryCard({ label, value, helperText, tone = 'default' }
           : '#0f172a';
   return (
     <div
+      className="bravo-kpi-card"
       style={{
         padding: '20px',
         borderRadius: '14px',
@@ -280,12 +318,30 @@ export function MetricSummaryCard({ label, value, helperText, tone = 'default' }
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
+        minWidth: 0,
       }}
     >
-      <div style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: '#64748b' }}>
+      <div
+        style={{
+          fontSize: '12px',
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.04em',
+          color: '#64748b',
+        }}
+      >
         {label}
       </div>
-      <div style={{ fontSize: '28px', fontWeight: 800, color: accentColor, margin: '10px 0 6px 0', letterSpacing: '-0.02em' }}>
+      <div
+        style={{
+          fontSize: 'clamp(22px, 3vw, 28px)',
+          fontWeight: 800,
+          color: accentColor,
+          margin: '10px 0 6px 0',
+          letterSpacing: '-0.02em',
+          overflowWrap: 'anywhere',
+        }}
+      >
         {value}
       </div>
       <div style={{ fontSize: '12px', color: '#64748b', lineHeight: 1.45 }}>{helperText}</div>
@@ -308,12 +364,14 @@ export function ActionPanel({ title, subtitle, badge, actions, rightSlot, childr
   const headerActions = actions ?? rightSlot;
   return (
     <section
+      className="bravo-panel"
       style={{
         backgroundColor: '#ffffff',
         border: '1px solid #e2e8f0',
         borderRadius: '14px',
         padding: '22px',
         boxShadow: '0 4px 14px rgba(15, 23, 42, 0.03)',
+        minWidth: 0,
       }}
     >
       <div
@@ -328,9 +386,19 @@ export function ActionPanel({ title, subtitle, badge, actions, rightSlot, childr
           borderBottom: '1px solid #f1f5f9',
         }}
       >
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <h2 style={{ margin: 0, fontSize: '16px', fontWeight: 700, color: '#0f172a' }}>{title}</h2>
+        <div style={{ minWidth: 0, flex: '1 1 220px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+            <h2
+              style={{
+                margin: 0,
+                fontSize: '16px',
+                fontWeight: 700,
+                color: '#0f172a',
+                overflowWrap: 'anywhere',
+              }}
+            >
+              {title}
+            </h2>
             {badge && (
               <span
                 style={{
