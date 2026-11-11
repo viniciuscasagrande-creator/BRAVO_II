@@ -130,11 +130,19 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [moduleSearch, setModuleSearch] = useState('');
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   const activeRoleCode = actor.roles[0] ?? 'FINANCEIRO_DISK';
   const roleInfo = CANONICAL_ROLES[activeRoleCode];
+  const actorInitials = (actor.fullName || 'OP')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase();
 
   const shellNotifications = useMemo(
     () => [
@@ -178,6 +186,7 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     setIsMobileDrawerOpen(false);
     setIsNotifOpen(false);
+    setIsUserMenuOpen(false);
     const matched = CANONICAL_NAVIGATION_MENU.find(
       (item) =>
         item.href !== '/' &&
@@ -195,11 +204,12 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
     if (typeof document !== 'undefined') {
       document.body.style.overflow = isMobileDrawerOpen ? 'hidden' : '';
     }
-    if (!isMobileDrawerOpen && !isNotifOpen) return;
+    if (!isMobileDrawerOpen && !isNotifOpen && !isUserMenuOpen) return;
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setIsMobileDrawerOpen(false);
         setIsNotifOpen(false);
+        setIsUserMenuOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -209,7 +219,7 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
         document.body.style.overflow = '';
       }
     };
-  }, [isMobileDrawerOpen, isNotifOpen]);
+  }, [isMobileDrawerOpen, isNotifOpen, isUserMenuOpen]);
 
   const filteredNavItems = useMemo(() => {
     const q = moduleSearch.trim().toLowerCase();
@@ -485,6 +495,18 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
 
       {/* Área Principal BankOS */}
       <div className="bravo-main-column">
+        {(isNotifOpen || isUserMenuOpen) && (
+          <button
+            type="button"
+            className="bravo-popover-backdrop"
+            aria-label="Fechar painel flutuante"
+            onClick={() => {
+              setIsNotifOpen(false);
+              setIsUserMenuOpen(false);
+            }}
+          />
+        )}
+
         <header className="bravo-topbar">
           <div className="bravo-topbar-left">
             <button
@@ -492,13 +514,30 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
               className="bravo-mobile-menu-toggle bravo-mobile-menu-btn"
               onClick={() => {
                 setIsCollapsed(false);
+                setIsNotifOpen(false);
+                setIsUserMenuOpen(false);
                 setIsMobileDrawerOpen((prev) => !prev);
               }}
               aria-controls="bravo-primary-navigation"
               aria-label={isMobileDrawerOpen ? 'Fechar navegação' : 'Abrir navegação'}
               aria-expanded={isMobileDrawerOpen}
             >
-              <span aria-hidden="true">☰</span>
+              <svg
+                className="bravo-topbar-icon-svg"
+                width="18"
+                height="18"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
               <span className="bravo-mobile-menu-label">Menu</span>
             </button>
 
@@ -527,24 +566,30 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
               Ambiente Controlado · Mobile First
             </span>
 
-            {/* Central de Notificações Operacionais */}
+            {/* Central de Notificações Operacionais (Ícone Padronizado Fixo) */}
             <div className="bravo-notif-wrap">
               <button
                 type="button"
-                className="bravo-notif-btn"
-                onClick={() => setIsNotifOpen((prev) => !prev)}
+                className={`bravo-notif-btn${isNotifOpen ? ' is-active' : ''}`}
+                onClick={() => {
+                  setIsUserMenuOpen(false);
+                  setIsNotifOpen((prev) => !prev);
+                }}
+                title="Notificações e alertas operacionais"
                 aria-label="Central de notificações e alertas operacionais"
                 aria-expanded={isNotifOpen}
               >
                 <svg
-                  width="17"
-                  height="17"
+                  className="bravo-topbar-icon-svg"
+                  width="18"
+                  height="18"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
+                  aria-hidden="true"
                 >
                   <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
                   <path d="M13.73 21a2 2 0 0 1-3.46 0" />
@@ -585,36 +630,142 @@ export function BravoShell({ children }: { children: React.ReactNode }) {
               )}
             </div>
 
-            {isAuthenticated ? (
-              <div className="bravo-user-pill">
-                <span className="bravo-user-avatar">
-                  {(actor.fullName || 'OP')
-                    .split(' ')
-                    .filter(Boolean)
-                    .slice(0, 2)
-                    .map((n) => n[0])
-                    .join('')
-                    .toUpperCase()}
-                </span>
-                <span className="bravo-user-meta">
-                  <strong>{actor.fullName}</strong>
-                  <small>{roleInfo?.namePtBr ?? activeRoleCode}</small>
-                </span>
-                <button
-                  type="button"
-                  className="bravo-topbar-logout"
-                  onClick={() => {
-                    void logoutFromServer().then(() => router.push('/login'));
-                  }}
+            {/* Central de Conta / Operador (Ícone Padronizado Fixo no Mobile + Pill no Desktop) */}
+            <div className="bravo-user-wrap">
+              <button
+                type="button"
+                className={`bravo-user-btn${isUserMenuOpen ? ' is-active' : ''}`}
+                onClick={() => {
+                  setIsNotifOpen(false);
+                  setIsUserMenuOpen((prev) => !prev);
+                }}
+                title={
+                  isAuthenticated
+                    ? `${actor.fullName} (${roleInfo?.namePtBr ?? activeRoleCode})`
+                    : 'Conta e sessão do operador'
+                }
+                aria-label="Menu de usuário e sessão operacional"
+                aria-expanded={isUserMenuOpen}
+              >
+                <svg
+                  className="bravo-topbar-icon-svg"
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
                 >
-                  Sair
-                </button>
-              </div>
-            ) : (
-              <Link href="/login" className="bravo-topbar-login-btn">
-                Acessar Conta
-              </Link>
-            )}
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span
+                  className={`bravo-user-status-badge ${isAuthenticated ? 'is-online' : 'is-preview'}`}
+                  aria-hidden="true"
+                />
+              </button>
+
+              {isAuthenticated ? (
+                <div className="bravo-user-pill">
+                  <span className="bravo-user-avatar">{actorInitials}</span>
+                  <span className="bravo-user-meta">
+                    <strong>{actor.fullName}</strong>
+                    <small>{roleInfo?.namePtBr ?? activeRoleCode}</small>
+                  </span>
+                  <button
+                    type="button"
+                    className="bravo-topbar-logout"
+                    onClick={() => {
+                      void logoutFromServer().then(() => router.push('/login'));
+                    }}
+                  >
+                    Sair
+                  </button>
+                </div>
+              ) : (
+                <Link href="/login" className="bravo-topbar-login-btn">
+                  Acessar Conta
+                </Link>
+              )}
+
+              {isUserMenuOpen && (
+                <div className="bravo-user-popover" role="dialog" aria-label="Sessão do operador">
+                  <div className="bravo-notif-header">
+                    <strong>Conta & Sessão Operacional</strong>
+                    <button
+                      type="button"
+                      className="bravo-notif-close"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      Fechar
+                    </button>
+                  </div>
+                  <div className="bravo-user-popover-body">
+                    <div className="bravo-user-popover-profile">
+                      <span className="bravo-user-avatar is-large">
+                        {isAuthenticated ? actorInitials : 'B2'}
+                      </span>
+                      <div className="bravo-user-popover-info">
+                        <div className="bravo-session-status-row">
+                          <span
+                            className={`bravo-status-dot ${isAuthenticated ? 'is-online' : 'is-preview'}`}
+                            aria-hidden="true"
+                          />
+                          <span className="bravo-user-popover-status">
+                            {isLoadingSession
+                              ? 'Verificando sessão...'
+                              : isAuthenticated
+                                ? 'Sessão Autenticada'
+                                : 'Sessão Não Autenticada'}
+                          </span>
+                        </div>
+                        <strong>{isAuthenticated ? actor.fullName : 'Operador Desconectado'}</strong>
+                        <small>
+                          {isAuthenticated
+                            ? roleInfo?.namePtBr ?? activeRoleCode
+                            : 'Autentique-se para operar módulos restritos'}
+                        </small>
+                      </div>
+                    </div>
+
+                    <div className="bravo-user-popover-actions">
+                      {isAuthenticated ? (
+                        <>
+                          <Link
+                            href="/login"
+                            className="bravo-user-popover-btn is-secondary"
+                            onClick={() => setIsUserMenuOpen(false)}
+                          >
+                            Trocar Perfil / Operador
+                          </Link>
+                          <button
+                            type="button"
+                            className="bravo-user-popover-btn is-danger"
+                            onClick={() => {
+                              setIsUserMenuOpen(false);
+                              void logoutFromServer().then(() => router.push('/login'));
+                            }}
+                          >
+                            Encerrar Sessão
+                          </button>
+                        </>
+                      ) : (
+                        <Link
+                          href="/login"
+                          className="bravo-user-popover-btn is-primary"
+                          onClick={() => setIsUserMenuOpen(false)}
+                        >
+                          Acessar Conta Corporativa →
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 

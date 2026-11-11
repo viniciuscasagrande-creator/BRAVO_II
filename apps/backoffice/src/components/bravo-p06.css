@@ -835,30 +835,67 @@ body {
   display: none;
 }
 
-/* Central de Notificações Topbar */
-.bravo-notif-wrap {
-  position: relative;
+/* Central de Notificações & Operador Topbar (Ícones Padronizados Fixos) */
+.bravo-popover-backdrop {
+  position: fixed;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: rgba(15, 23, 42, 0.18);
+  z-index: 85;
+  cursor: default;
 }
 
-.bravo-notif-btn {
+.bravo-notif-wrap,
+.bravo-user-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.bravo-topbar-icon-svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  display: block;
+}
+
+.bravo-notif-btn,
+.bravo-user-btn {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0;
   border-radius: 10px;
-  border: 1px solid var(--bravo-border);
+  border: 1px solid #cbd5e1;
   background: #f8fafc;
   color: #0f172a;
   cursor: pointer;
-  transition: background-color 0.15s ease;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.bravo-notif-btn:hover {
+/* No Desktop (> 1024px), exibe o pill completo e oculta o botão compacto de ícone do usuário */
+.bravo-user-btn {
+  display: none;
+}
+
+.bravo-notif-btn:hover,
+.bravo-notif-btn.is-active,
+.bravo-user-btn:hover,
+.bravo-user-btn.is-active {
   background: #eff6ff;
-  border-color: #bfdbfe;
+  border-color: #93c5fd;
   color: #1d4ed8;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
 }
 
 .bravo-notif-badge {
@@ -867,19 +904,42 @@ body {
   right: -4px;
   min-width: 18px;
   height: 18px;
-  padding: 0 5px;
+  padding: 0 4px;
   border-radius: 999px;
   background: #dc2626;
   color: #ffffff;
   font-size: 10px;
   font-weight: 800;
+  line-height: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border: 2px solid #ffffff;
+  pointer-events: none;
 }
 
-.bravo-notif-popover {
+.bravo-user-status-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+  background: #64748b;
+  border: 2px solid #ffffff;
+  pointer-events: none;
+}
+
+.bravo-user-status-badge.is-online {
+  background: #10b981;
+}
+
+.bravo-user-status-badge.is-preview {
+  background: #f59e0b;
+}
+
+.bravo-notif-popover,
+.bravo-user-popover {
   position: absolute;
   top: calc(100% + 10px);
   right: 0;
@@ -887,9 +947,112 @@ body {
   background: #ffffff;
   border: 1px solid #cbd5e1;
   border-radius: 14px;
-  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
-  z-index: 90;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.22);
+  z-index: 120;
   overflow: hidden;
+}
+
+.bravo-user-popover-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.bravo-user-popover-profile {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.bravo-user-avatar.is-large {
+  width: 42px;
+  height: 42px;
+  font-size: 14px;
+}
+
+.bravo-user-popover-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.bravo-user-popover-status {
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #475569;
+}
+
+.bravo-user-popover-info strong {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bravo-user-popover-info small {
+  font-size: 12px;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.bravo-user-popover-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bravo-user-popover-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  box-sizing: border-box;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.bravo-user-popover-btn.is-primary {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.bravo-user-popover-btn.is-primary:hover {
+  background: #1e293b;
+}
+
+.bravo-user-popover-btn.is-secondary {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.bravo-user-popover-btn.is-secondary:hover {
+  background: #f1f5f9;
+}
+
+.bravo-user-popover-btn.is-danger {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.bravo-user-popover-btn.is-danger:hover {
+  background: #fee2e2;
 }
 
 .bravo-notif-header {
@@ -1169,7 +1332,7 @@ body {
 @media (max-width: 1024px) {
   html,
   body {
-    overflow-x: hidden;
+    overflow-x: clip;
     max-width: 100vw;
   }
 
@@ -1183,14 +1346,19 @@ body {
 
   .bravo-mobile-menu-btn {
     display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 40px;
     min-height: 40px;
     padding: 0 12px;
-    border-radius: 9px;
+    border-radius: 10px;
     border: 1px solid #cbd5e1;
     background: #0f172a;
     color: #ffffff;
     font-size: 13px;
     font-weight: 700;
+    box-sizing: border-box;
   }
 
   .bravo-collapse-btn {
@@ -1255,15 +1423,23 @@ body {
   }
 
   .bravo-topbar {
-    padding: 8px 14px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 58px;
     min-height: 58px;
-    height: auto;
+    padding: 8px 14px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-wrap: nowrap;
     gap: 10px;
     min-width: 0;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
+    z-index: 95;
   }
 
   .bravo-topbar-left {
@@ -1294,7 +1470,7 @@ body {
   }
 
   .bravo-topbar-right {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 8px;
     flex: 0 0 auto;
@@ -1303,13 +1479,38 @@ body {
     min-width: 0;
   }
 
-  .bravo-env-pill {
-    display: none;
+  .bravo-env-pill,
+  .bravo-user-pill,
+  .bravo-topbar-login-btn {
+    display: none !important;
+  }
+
+  .bravo-notif-btn,
+  .bravo-user-btn {
+    display: inline-flex !important;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
+    padding: 0;
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+
+  .bravo-notif-popover,
+  .bravo-user-popover {
+    position: fixed;
+    top: 64px;
+    right: 12px;
+    left: auto;
+    width: min(360px, calc(100vw - 24px));
+    max-height: calc(100dvh - 144px);
+    z-index: 120;
   }
 
   .bravo-workspace,
   .bravo-workspace-content {
-    padding: 18px 14px calc(92px + env(safe-area-inset-bottom, 0px));
+    padding: calc(58px + 18px) 14px calc(92px + env(safe-area-inset-bottom, 0px));
     min-width: 0;
     max-width: 100%;
   }
@@ -1372,17 +1573,18 @@ body {
   }
 
   .bravo-user-pill {
-    padding: 4px 6px;
-    gap: 6px;
+    display: none !important;
   }
 
-  .bravo-notif-popover {
+  .bravo-notif-popover,
+  .bravo-user-popover {
     position: fixed;
-    top: 62px;
+    top: 64px;
     left: 12px;
     right: 12px;
     width: auto;
-    max-width: none;
+    max-width: 380px;
+    margin-left: auto;
     z-index: 120;
   }
 
@@ -1552,7 +1754,20 @@ body {
   }
 
   .bravo-mobile-menu-btn {
-    padding: 0 10px;
+    width: 40px;
+    height: 40px;
     min-width: 40px;
+    min-height: 40px;
+    padding: 0;
+    border-radius: 10px;
+    justify-content: center;
+  }
+
+  .bravo-notif-popover,
+  .bravo-user-popover {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-width: none;
   }
 }

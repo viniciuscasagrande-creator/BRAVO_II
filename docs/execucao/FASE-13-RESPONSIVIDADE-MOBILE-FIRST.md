@@ -33,6 +33,12 @@ Adaptar a interface do Backoffice (`apps/backoffice`), da biblioteca compartilha
 7. **Portal do Produtor — `gridColumn: 'span 2'` Forçando 2 Colunas no Mobile (`portal.css`)**:
    - *Problema*: elementos com `style={{ gridColumn: 'span 2' }}` dentro de `.metrics` e `.form-grid` forçavam a criação de uma 2ª coluna implícita no CSS Grid mesmo com `grid-template-columns: 1fr`.
    - *Correção*: adicionado `.producer-portal .metrics > *, .producer-portal .form-grid > * { grid-column: 1 / -1 !important; min-width: 0; }` em `@media (max-width: 768px)` nos dois `portal.css`.
+8. **Padronização e Fixação dos Ícones de Notificação e Usuário na Topbar Mobile (`bravo-shell.tsx`, `bravo-p06.css`)**:
+   - *Problema*: no mobile/tablet (`<= 1024px`), o botão de notificações (`.bravo-notif-btn`) era um quadrado de `38x38px`, enquanto ao lado dele o controle de usuário era ou um pill horizontal (`.bravo-user-pill` com círculo `"B2"` + botão `"Sair"`) ou um retângulo escuro largo (`"Acessar Conta"`), causando formatos e alturas discrepantes; além disso, `overflow-x: hidden` em `html, body` quebrava o `position: sticky` da `.bravo-topbar` ao rolar a tela no celular.
+   - *Correção*:
+     - Em `@media (max-width: 1024px)`, `.bravo-topbar` passa a ser fixa (`position: fixed; top: 0; left: 0; right: 0; height: 58px; z-index: 95;`) com `overflow-x: clip` em `html, body` e compensação `padding-top: calc(58px + 18px)` em `.bravo-workspace`.
+     - Padronizados os controles de **Menu** (`.bravo-mobile-menu-btn`), **Notificações** (`.bravo-notif-btn`) e **Conta/Operador** (`.bravo-user-btn`) com ícones vetoriais SVG `18x18` (`className="bravo-topbar-icon-svg"`, `strokeWidth="2"`) dentro de botões gêmeos fixos de `40x40px` (`border-radius: 10px`).
+     - No mobile/tablet (`<= 1024px`), `.bravo-user-pill` e `.bravo-topbar-login-btn` dão lugar ao botão de ícone fixo `.bravo-user-btn` (com badge indicador de sessão `.bravo-user-status-badge` verde/âmbar) que abre o painel flutuante fixo `.bravo-user-popover` (`top: 64px`) com dados da sessão, troca de operador, login/logout e fechamento automático por backdrop (`.bravo-popover-backdrop`) ou tecla `Escape`.
 
 ## 3. Arquivos Criados e Alterados
 - `packages/ui/src/index.tsx`
